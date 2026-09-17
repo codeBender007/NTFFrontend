@@ -1,0 +1,860 @@
+.operator-checksheet-page,
+.operator-checksheet-page * {
+  box-sizing: border-box;
+}
+
+.operator-checksheet-page {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+  color: #111111;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.operator-checksheet-page button {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.operator-checksheet-tabs {
+  width: 100%;
+  height: 31px;
+
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+
+  padding-left: 10px;
+
+  background: #f4f4f4;
+  border-bottom: 1px solid #999999;
+}
+
+.operator-checksheet-tab {
+  height: 30px;
+  min-width: 58px;
+
+  margin: 0;
+  padding: 0 18px;
+
+  border: 1px solid #999999;
+  border-bottom: 0;
+
+  background: #e9e9e9;
+
+  font-size: 12px;
+  line-height: 29px;
+
+  cursor: pointer;
+}
+
+.operator-checksheet-tab-active {
+  background: #ffffff;
+  font-weight: 700;
+}
+
+.operator-checksheet-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  background: #ffffff;
+}
+
+.operator-checksheet-sheet {
+  position: relative;
+
+  margin: 0 auto;
+
+  background: #ffffff;
+}
+
+/* =========================================================
+   TOP HEADER
+========================================================= */
+
+.operator-checksheet-top {
+  position: relative;
+
+  width: 1866px;
+  height: 163px;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #111111;
+
+  font-size: 11px;
+}
+
+/* Logo */
+
+.operator-checksheet-logo {
+  position: absolute;
+
+  left: 11px;
+  top: 4px;
+
+  color: #174d7c;
+
+  font-family: Georgia, "Times New Roman", serif;
+
+  font-size: 30px;
+  line-height: 32px;
+
+  font-weight: 700;
+
+  text-decoration: underline;
+}
+
+/* Main title */
+
+.operator-checksheet-title {
+  position: absolute;
+
+  left: 300px;
+  top: 9px;
+
+  width: 700px;
+
+  text-align: center;
+
+  font-size: 16px;
+  line-height: 20px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   OPERATOR CATEGORY
+========================================================= */
+
+.operator-checksheet-category {
+  position: absolute;
+
+  left: 61px;
+  top: 39px;
+
+  width: 268px;
+  height: 124px;
+
+  border: 1px solid #111111;
+
+  background: #ffffff;
+}
+
+.operator-checksheet-category-title {
+  width: 100%;
+  height: 25px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-bottom: 1px solid #111111;
+
+  font-size: 11px;
+  line-height: 25px;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-category-row {
+  width: 100%;
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+
+  padding-left: 13px;
+
+  border-bottom: 1px solid #111111;
+
+  font-size: 11px;
+  line-height: 24px;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-category-row:last-child {
+  border-bottom: 0;
+}
+
+.operator-checksheet-checkbox {
+  display: block;
+
+  width: 30px;
+  height: 20px;
+
+  margin-right: 13px;
+
+  flex: 0 0 30px;
+
+  border: 2px solid #111111;
+
+  background: #ffffff;
+}
+
+/* =========================================================
+   OPERATOR DETAILS
+========================================================= */
+
+.operator-checksheet-details {
+  position: absolute;
+
+  left: 329px;
+  top: 39px;
+
+  width: 259px;
+  height: 100px;
+
+  border: 1px solid #111111;
+
+  background: #ffffff;
+}
+
+.operator-checksheet-detail-row {
+  width: 100%;
+  height: 20px;
+
+  display: flex;
+  align-items: center;
+
+  padding-left: 6px;
+
+  border-bottom: 1px solid #111111;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-detail-row:last-child {
+  border-bottom: 0;
+}
+
+.operator-checksheet-detail-line {
+  flex: 1;
+
+  height: 12px;
+
+  margin-left: 8px;
+  margin-right: 6px;
+
+  border-bottom: 1px solid #111111;
+}
+
+/* =========================================================
+   JUDGEMENT
+========================================================= */
+
+.operator-checksheet-judgement {
+  position: absolute;
+
+  left: 588px;
+  top: 39px;
+
+  width: 367px;
+  height: 100px;
+
+  border: 1px solid #111111;
+
+  background: #ffffff;
+}
+
+.operator-checksheet-judgement-title {
+  width: 100%;
+  height: 25px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-bottom: 1px solid #111111;
+
+  font-size: 11px;
+}
+
+.operator-checksheet-judgement-row {
+  width: 100%;
+  height: 37px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+
+  border-bottom: 1px solid #111111;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-judgement-row:last-child {
+  border-bottom: 0;
+}
+
+.operator-checksheet-small-box {
+  display: block;
+
+  width: 28px;
+  height: 21px;
+
+  flex: 0 0 28px;
+
+  border: 2px solid #111111;
+
+  background: #ffffff;
+}
+
+/* =========================================================
+   THEORY
+========================================================= */
+
+.operator-checksheet-theory-label {
+  position: absolute;
+
+  left: 955px;
+  top: 0;
+
+  width: 114px;
+  height: 139px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  border-left: 1px solid #111111;
+  border-right: 1px solid #111111;
+
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.operator-checksheet-questions {
+  position: absolute;
+
+  left: 1069px;
+  top: 0;
+
+  width: 505px;
+  height: 139px;
+
+  border-right: 1px solid #111111;
+}
+
+.operator-checksheet-question {
+  width: 505px;
+  height: 27.8px;
+
+  display: grid;
+
+  grid-template-columns:
+    45px
+    1fr
+    98px;
+
+  border-bottom: 1px solid #111111;
+}
+
+.operator-checksheet-qno {
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+
+  padding-left: 7px;
+
+  border-right: 1px solid #111111;
+
+  font-size: 11px;
+}
+
+.operator-checksheet-qtext {
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+
+  padding-left: 8px;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-qoptions {
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-left: 1px solid #111111;
+
+  font-size: 10px;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   SCORE
+========================================================= */
+
+.operator-checksheet-score {
+  position: absolute;
+
+  left: 1574px;
+  top: 0;
+
+  width: 292px;
+  height: 139px;
+
+  font-size: 10px;
+}
+
+.operator-checksheet-score-field {
+  width: 292px;
+  height: 27px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  padding: 0 5px;
+
+  border: 1px solid #111111;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-score-field:first-child {
+  justify-content: space-between;
+}
+
+.operator-checksheet-score-field:nth-child(2) {
+  margin-top: -1px;
+}
+
+.operator-checksheet-score-label {
+  position: absolute;
+
+  left: 0;
+  top: 70px;
+
+  width: 145px;
+  height: 42px;
+
+  padding: 4px 5px;
+
+  font-size: 10px;
+  line-height: 15px;
+}
+
+.operator-checksheet-passing {
+  position: absolute;
+
+  left: -56px;
+  top: 112px;
+
+  width: 235px;
+  height: 27px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 30px;
+
+  padding: 0 5px;
+
+  border: 1px solid #111111;
+
+  font-size: 10px;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   MAIN TABLE HEADER
+========================================================= */
+
+.operator-checksheet-grid-header {
+  width: 1866px;
+  height: 50px;
+
+  display: flex;
+
+  border-top: 1px solid #111111;
+  border-bottom: 2px solid #111111;
+
+  background: #ffffff;
+}
+
+/*
+  IMPORTANT:
+  Left section is EXACTLY 565px.
+  Observation section starts at exactly x=565.
+*/
+
+.operator-checksheet-left-header {
+  width: 565px;
+  height: 50px;
+
+  flex: 0 0 565px;
+
+  display: grid;
+
+  grid-template-columns:
+    61px
+    392px
+    52px
+    60px;
+}
+
+.operator-checksheet-header-sno,
+.operator-checksheet-header-description,
+.operator-checksheet-header-cycle,
+.operator-checksheet-header-method {
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-right: 1px solid #111111;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  overflow: hidden;
+}
+
+.operator-checksheet-header-sno {
+  border-left: 1px solid #111111;
+}
+
+.operator-checksheet-header-description {
+  font-size: 13px;
+}
+
+/* =========================================================
+   DAY HEADER
+========================================================= */
+
+.operator-checksheet-day-header {
+  width: 1301px;
+  height: 50px;
+
+  flex: 0 0 1301px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(7, 1fr);
+}
+
+.operator-checksheet-day {
+  width: 100%;
+  height: 50px;
+
+  display: grid;
+
+  grid-template-rows:
+    24px
+    26px;
+
+  border-right: 2px solid #111111;
+
+  overflow: hidden;
+}
+
+.operator-checksheet-day-title {
+  width: 100%;
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-bottom: 1px solid #111111;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-cycle-header {
+  width: 100%;
+  height: 26px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(10, minmax(0, 1fr));
+}
+
+.operator-checksheet-cycle-number {
+  height: 26px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-right: 1px solid #111111;
+
+  font-size: 10px;
+
+  min-width: 0;
+}
+
+.operator-checksheet-cycle-number:last-child {
+  border-right: 0;
+}
+
+/* =========================================================
+   TABLE BODY
+========================================================= */
+
+.operator-checksheet-body {
+  width: 1866px;
+
+  display: flex;
+  align-items: flex-start;
+
+  background: #ffffff;
+}
+
+.operator-checksheet-left-body {
+  width: 565px;
+
+  flex: 0 0 565px;
+}
+
+.operator-checksheet-left-row {
+  width: 565px;
+
+  display: grid;
+
+  grid-template-columns:
+    61px
+    392px
+    52px
+    60px;
+}
+
+.operator-checksheet-sno-cell,
+.operator-checksheet-description-cell,
+.operator-checksheet-cycle-cell,
+.operator-checksheet-method-cell {
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+
+  border-right: 1px solid #111111;
+  border-bottom: 1px solid #111111;
+
+  overflow: hidden;
+
+  font-size: 10px;
+}
+
+.operator-checksheet-sno-cell {
+  justify-content: center;
+
+  border-left: 1px solid #111111;
+}
+
+.operator-checksheet-description-cell {
+  justify-content: flex-start;
+
+  padding: 2px 4px;
+
+  text-align: left;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-cycle-cell {
+  justify-content: center;
+
+  font-size: 10px;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-method-cell {
+  justify-content: center;
+
+  padding: 0;
+
+  text-align: center;
+}
+
+.operator-checksheet-method-cell span {
+  display: block;
+
+  writing-mode: vertical-rl;
+
+  transform: rotate(180deg);
+
+  font-size: 9px;
+  line-height: 11px;
+
+  text-align: center;
+
+  white-space: normal;
+}
+
+/* =========================================================
+   OBSERVATION CELLS
+========================================================= */
+
+.operator-checksheet-observation {
+  width: 1301px;
+
+  flex: 0 0 1301px;
+}
+
+.operator-checksheet-observation-row {
+  width: 1301px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(70, minmax(0, 1fr));
+}
+
+.operator-checksheet-observation-cell {
+  width: 100%;
+  height: 100%;
+
+  min-width: 0;
+
+  margin: 0;
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-right: 1px solid #111111;
+  border-bottom: 1px solid #111111;
+
+  background: #ffffff;
+
+  color: #111111;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.operator-checksheet-observation-cell:hover {
+  background: #f4f4f4;
+}
+
+.operator-checksheet-observation-cell:focus {
+  outline: none;
+}
+
+.operator-checksheet-observation-cell:focus-visible {
+  outline: 1px solid #555555;
+  outline-offset: -2px;
+}
+
+.operator-checksheet-day-end {
+  border-right: 2px solid #111111;
+}
+
+/* =========================================================
+   BOTTOM TABLE
+========================================================= */
+
+.operator-checksheet-bottom {
+  width: 1866px;
+
+  border-left: 1px solid #111111;
+  border-top: 1px solid #111111;
+
+  background: #ffffff;
+}
+
+.operator-checksheet-bottom-head,
+.operator-checksheet-bottom-row {
+  width: 1866px;
+
+  display: grid;
+
+  grid-template-columns:
+    61px
+    58px
+    336px
+    1fr;
+}
+
+.operator-checksheet-bottom-head {
+  height: 27px;
+}
+
+.operator-checksheet-bottom-row {
+  height: 25px;
+}
+
+.operator-checksheet-bottom-head > div,
+.operator-checksheet-bottom-row > div {
+  height: 100%;
+
+  border-right: 1px solid #111111;
+  border-bottom: 1px solid #111111;
+
+  padding: 4px;
+
+  font-size: 11px;
+}
+
+.operator-checksheet-bottom-head > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.operator-checksheet-bottom-row > div:first-child {
+  font-size: 16px;
+  padding-top: 2px;
+}
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.operator-checksheet-loading {
+  width: 100%;
+  min-height: 300px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #ffffff;
+
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1866px) {
+  .operator-checksheet-sheet {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}

@@ -132,16 +132,15 @@ const TrainingEffectivenessForm = () => {
           /* =========================
              A4 PAGE
           ========================= */
-
-          .training-page {
-            width: 794px;
-            height: 1123px;
-            margin: 20px auto;
-            background: #ffffff;
-            position: relative;
-            padding: 32px 56px 55px 56px;
-            overflow: hidden;
-          }
+.training-page {
+  width: 100%;
+  min-height: 1123px;
+  margin: 0;
+  background: #ffffff;
+  position: relative;
+  padding: 32px 56px 55px 56px;
+  overflow: hidden;
+}
 
           /* =========================
              HEADER
