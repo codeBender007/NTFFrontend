@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import logo from "../assets/images/NTF_logo_black.png";
 import sidebarBg from "../assets/images/sidebar_bg.png";
-import { ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const Sidebar = ({
@@ -180,6 +180,44 @@ const Sidebar = ({
               );
             })}
           </nav>
+
+          {/* Logout Button */}
+          <div className="mt-auto px-3 pb-4">
+            <button
+              onClick={() => {
+                // Add your logout logic here
+                console.log("Logout clicked");
+              }}
+              className={`group relative flex w-full items-center rounded-xl py-2.5 transition-all duration-200 ${
+                collapsed ? "justify-center" : "gap-3 px-3"
+              } text-red-500 hover:bg-red-50 hover:text-red-600`}
+            >
+              {/* Logout Icon */}
+              <div
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-200 bg-red-100 text-red-500 group-hover:bg-red-200 group-hover:text-red-600 ${
+                  collapsed ? "mx-auto" : ""
+                }`}
+              >
+                <LogOut size={20} />
+              </div>
+
+              {/* Logout Text */}
+              {!collapsed && (
+                <span className="whitespace-nowrap text-sm font-medium">
+                  Logout
+                </span>
+              )}
+
+              {/* Tooltip when Collapsed */}
+              {collapsed && (
+                <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                  <div className="whitespace-nowrap rounded-lg bg-dark px-3 py-1.5 text-xs font-medium text-white shadow-lg">
+                    Logout
+                  </div>
+                </div>
+              )}
+            </button>
+          </div>
         </div>
       </aside>
     </>

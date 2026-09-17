@@ -7,6 +7,8 @@ const EMPTY_ROW = {
   participant: "",
   department: "",
   designation: "",
+  signHod: "",
+  signParticipants: "",
 };
 
 const TrainingSchedule = () => {
@@ -75,9 +77,9 @@ const TrainingSchedule = () => {
           {/* =====================================================
               HEADER
           ====================================================== */}
-          <div className="grid grid-cols-[90px_1fr_300px] border-b border-black">
+          <div className="grid grid-cols-1 border-b border-black sm:grid-cols-[90px_1fr_300px]">
             {/* NTF */}
-            <div className="flex items-center justify-center border-r border-black">
+            <div className="flex items-center justify-center border-b border-black py-3 sm:border-b-0 sm:border-r sm:py-0">
               <img
                 src={logo}
                 alt="NTF Logo"
@@ -86,14 +88,14 @@ const TrainingSchedule = () => {
             </div>
 
             {/* TITLE */}
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center border-b border-black px-3 py-3 sm:border-b-0 sm:px-0 sm:py-0">
               <h1 className="text-xl font-bold tracking-wide sm:text-2xl">
                 TRAINING SCHEDULE
               </h1>
             </div>
 
             {/* DOCUMENT INFORMATION */}
-            <div className="border-l border-black text-xs">
+            <div className="text-xs sm:border-l sm:border-black">
               <div className="flex min-h-[30px] items-center border-b border-black px-2">
                 <span>Doc.No: TF-05(A.MD-02)</span>
               </div>
@@ -122,7 +124,7 @@ const TrainingSchedule = () => {
                 type="text"
                 value={details.title}
                 onChange={handleDetailChange("title")}
-                className="ml-3 w-full border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                className="ml-3 w-full min-w-0 border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
               />
             </div>
 
@@ -137,7 +139,7 @@ const TrainingSchedule = () => {
                   type="text"
                   value={details.trainer}
                   onChange={handleDetailChange("trainer")}
-                  className="ml-3 w-full border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                  className="ml-3 w-full min-w-0 border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
                 />
               </div>
 
@@ -150,7 +152,7 @@ const TrainingSchedule = () => {
                   type="text"
                   value={details.internalExternal}
                   onChange={handleDetailChange("internalExternal")}
-                  className="ml-2 w-full border-0 bg-transparent px-1 outline-none"
+                  className="ml-2 w-full min-w-0 border-0 bg-transparent px-1 outline-none"
                 />
               </div>
             </div>
@@ -165,7 +167,7 @@ const TrainingSchedule = () => {
                   type="text"
                   value={details.date}
                   onChange={handleDetailChange("date")}
-                  className="ml-2 w-full border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                  className="ml-2 w-full min-w-0 border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
                 />
               </div>
 
@@ -177,7 +179,7 @@ const TrainingSchedule = () => {
                   type="text"
                   value={details.periodFrom}
                   onChange={handleDetailChange("periodFrom")}
-                  className="w-full border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                  className="w-full min-w-0 border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
                 />
 
                 <span>to</span>
@@ -186,7 +188,7 @@ const TrainingSchedule = () => {
                   type="text"
                   value={details.periodTo}
                   onChange={handleDetailChange("periodTo")}
-                  className="w-full border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                  className="w-full min-w-0 border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
                 />
               </div>
 
@@ -198,7 +200,7 @@ const TrainingSchedule = () => {
                   type="text"
                   value={details.venue}
                   onChange={handleDetailChange("venue")}
-                  className="ml-3 w-full border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                  className="ml-3 w-full min-w-0 border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
                 />
               </div>
             </div>
@@ -296,7 +298,7 @@ const TrainingSchedule = () => {
                         type="text"
                         value={row.participant}
                         onChange={handleRowChange(index, "participant")}
-                        className="w-full border-0 bg-transparent text-sm outline-none"
+                        className="w-full min-w-0 border-0 bg-transparent text-sm outline-none"
                       />
                     </td>
 
@@ -306,7 +308,7 @@ const TrainingSchedule = () => {
                         type="text"
                         value={row.department}
                         onChange={handleRowChange(index, "department")}
-                        className="w-full border-0 bg-transparent text-sm outline-none"
+                        className="w-full min-w-0 border-0 bg-transparent text-sm outline-none"
                       />
                     </td>
 
@@ -316,18 +318,28 @@ const TrainingSchedule = () => {
                         type="text"
                         value={row.designation}
                         onChange={handleRowChange(index, "designation")}
-                        className="w-full border-0 bg-transparent text-sm outline-none"
+                        className="w-full min-w-0 border-0 bg-transparent text-sm outline-none"
                       />
                     </td>
 
                     {/* SIGN HOD */}
-                    <td className="border-r border-t border-black">
-                      {/* Empty signature area */}
+                    <td className="border-r border-t border-black px-2">
+                      <input
+                        type="text"
+                        value={row.signHod}
+                        onChange={handleRowChange(index, "signHod")}
+                        className="w-full min-w-0 border-0 bg-transparent text-sm outline-none"
+                      />
                     </td>
 
                     {/* SIGN PARTICIPANTS */}
-                    <td className="border-t border-black">
-                      {/* Empty signature area */}
+                    <td className="border-t border-black px-2">
+                      <input
+                        type="text"
+                        value={row.signParticipants}
+                        onChange={handleRowChange(index, "signParticipants")}
+                        className="w-full min-w-0 border-0 bg-transparent text-sm outline-none"
+                      />
                     </td>
                   </tr>
                 ))}

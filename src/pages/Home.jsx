@@ -5,7 +5,7 @@ import GridViewRoundedIcon from "@mui/icons-material/GridViewRounded";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 
-import homeBg from "../assets/images/home-bg.png";
+// import homeBg from "../assets/images/home-bg.png";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -34,9 +34,9 @@ const Home = () => {
   return (
     <main
       className="relative min-h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
-      style={{
-        backgroundImage: `url(${homeBg})`,
-      }}
+      // style={{
+      //   // backgroundImage: `url(${homeBg})`,
+      // }}
     >
       <div className="absolute inset-0 bg-white/20" />
 

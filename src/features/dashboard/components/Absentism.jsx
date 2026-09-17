@@ -1,3 +1,4 @@
+
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
@@ -8,9 +9,17 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend,
+  ChartDataLabels
+);
 
 const labels = [
   "01 May",
@@ -36,7 +45,10 @@ const chartData = {
   datasets: [
     {
       label: "Requirement",
-      data: [45, 55, 40, 60, 50, 34, 60, 45, 55, 40, 60, 50, 34, 60, 55, 45],
+      data: [
+        45, 55, 40, 60, 50, 34, 60, 45,
+        55, 40, 60, 50, 34, 60, 55, 45,
+      ],
       backgroundColor: "#feb532",
 
       // Fixed thin bar width
@@ -57,63 +69,86 @@ const chartData = {
 const options = {
   responsive: true,
   maintainAspectRatio: false,
+
   interaction: {
     mode: "index",
     intersect: false,
   },
+
   plugins: {
     legend: {
       display: false,
     },
+
     tooltip: {
-      backgroundColor: "#1E293B",
-      titleColor: "#FFFFFF",
-      bodyColor: "#FFFFFF",
-      padding: 10,
-      cornerRadius: 8,
-      displayColors: true,
-      callbacks: {
-        label: function (context) {
-          return ` ${context.dataset.label}: ${context.raw}`;
-        },
+      enabled: false,
+      external: () => {},
+    },
+
+    // Data number on top of every bar
+    datalabels: {
+      display: true,
+      anchor: "end",
+      align: "top",
+      offset: 4,
+      color: "#334155",
+      font: {
+        size: 10,
+        weight: "600",
+        family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       },
+      formatter: (value) => value,
     },
   },
+
   scales: {
     x: {
       offset: true,
+
       grid: {
         display: false,
         drawBorder: false,
       },
+
       border: {
         display: false,
       },
+
       barPercentage: 0.98,
       categoryPercentage: 0.4,
+
       ticks: {
         color: "#64748B",
+
         font: {
           size: 10,
           weight: "500",
         },
+
         padding: 5,
       },
     },
+
     y: {
       beginAtZero: true,
+      max: 80,
+
       ticks: {
-        stepSize: 10,
+        stepSize: 20,
         color: "#64748B",
+
         font: {
           size: 9,
         },
+
         padding: 8,
       },
+
       grid: {
-        color: "#E8EDF5",
+        display: false,
         drawTicks: false,
       },
+
       border: {
         display: false,
       },
@@ -129,7 +164,8 @@ const Absentism = () => {
         <div className="flex items-center justify-between">
           {/* Left side */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#fff0f0] flex items-center justify-center text-[#e92553]">
+            {/* Icon - same color as graph */}
+            <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-[#feb532]">
               <EventBusyIcon sx={{ fontSize: 20 }} />
             </div>
 
@@ -137,6 +173,7 @@ const Absentism = () => {
               <h2 className="text-sm font-bold text-slate-800">
                 Daily Absenteeism
               </h2>
+
               <p className="text-[10px] text-slate-500 mt-0.5">
                 Tracking planned vs unplanned absenteeism movement
               </p>
@@ -145,10 +182,11 @@ const Absentism = () => {
 
           {/* Right side */}
           <div className="flex items-center gap-4">
-            {/* Monthly average */}
-            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-              <span className="text-[10px] font-semibold text-rose-600">
+            {/* Monthly average - same color as graph */}
+            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#feb532]"></span>
+
+              <span className="text-[10px] font-semibold text-[#feb532]">
                 Monthly Average: 4.8%
               </span>
             </span>
@@ -167,30 +205,12 @@ const Absentism = () => {
 
         {/* Legend */}
         <div className="flex justify-end items-center gap-4 mt-3">
-          {/* Planned Leave */}
+          {/* Absent Employees */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#3B82F6]"></span>
+            <span className="w-2 h-2 rounded-full bg-[#feb532]"></span>
 
             <span className="text-[9px] font-medium text-slate-500">
-              Planned Leave
-            </span>
-          </div>
-
-          {/* Unplanned Absent */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#EF4444]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Unplanned Absent
-            </span>
-          </div>
-
-          {/* Total Absent */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#6F4AE7]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Total Absent
+              Absent Employees
             </span>
           </div>
         </div>
@@ -212,3 +232,4 @@ const Absentism = () => {
 };
 
 export default Absentism;
+

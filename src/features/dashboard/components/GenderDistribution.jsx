@@ -8,9 +8,17 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend,
+  ChartDataLabels
+);
 
 const labels = [
   "01 May",
@@ -36,9 +44,25 @@ const chartData = {
   datasets: [
     {
       label: "Female",
-      data: [45, 55, 40, 60, 50, 34, 60, 45, 55, 40, 60, 50, 34, 60, 55, 45],
-      backgroundColor: "#eb5199",
-      barThickness: 28,
+      data: [
+        45,
+        55,
+        40,
+        60,
+        50,
+        34,
+        60,
+        45,
+        55,
+        40,
+        60,
+        50,
+        34,
+        60,
+        55,
+        45,
+      ],
+      backgroundColor: "#ba58a5",
 
       borderRadius: {
         topLeft: 5,
@@ -46,13 +70,31 @@ const chartData = {
         bottomLeft: 0,
         bottomRight: 0,
       },
+
       borderSkipped: "bottom",
     },
+
     {
       label: "Male",
-      data: [30, 46, 24, 50, 40, 20, 45, 30, 46, 24, 50, 40, 20, 45, 46, 32],
-      backgroundColor: "#3a81f5",
-      barThickness: 28,
+      data: [
+        30,
+        46,
+        24,
+        50,
+        40,
+        20,
+        45,
+        30,
+        46,
+        24,
+        50,
+        40,
+        20,
+        45,
+        46,
+        32,
+      ],
+      backgroundColor: "#2a62d9",
 
       borderRadius: {
         topLeft: 5,
@@ -60,6 +102,7 @@ const chartData = {
         bottomLeft: 0,
         bottomRight: 0,
       },
+
       borderSkipped: "bottom",
     },
   ],
@@ -68,63 +111,92 @@ const chartData = {
 const options = {
   responsive: true,
   maintainAspectRatio: false,
+
   interaction: {
     mode: "index",
     intersect: false,
   },
+
   plugins: {
     legend: {
       display: false,
     },
+
+    // Tooltip completely disabled
     tooltip: {
-      backgroundColor: "#1E293B",
-      titleColor: "#FFFFFF",
-      bodyColor: "#FFFFFF",
-      padding: 10,
-      cornerRadius: 8,
-      displayColors: true,
-      callbacks: {
-        label: function (context) {
-          return ` ${context.dataset.label}: ${context.raw}`;
-        },
+      enabled: false,
+      external: () => {},
+    },
+
+    // Number displayed on top of every bar
+    datalabels: {
+      display: true,
+      anchor: "end",
+      align: "top",
+      offset: 4,
+      color: "#334155",
+      font: {
+        size: 10,
+        weight: "600",
+        family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       },
+      formatter: (value) => value,
     },
   },
+
   scales: {
     x: {
       offset: true,
+
       grid: {
         display: false,
         drawBorder: false,
       },
+
       border: {
         display: false,
       },
-      barPercentage: 0.98,
+
+      // Space between individual bars, like the manpower graph
+      barPercentage: 0.3,
       categoryPercentage: 0.4,
+
       ticks: {
         color: "#64748B",
+
         font: {
           size: 10,
           weight: "500",
         },
+
         padding: 5,
       },
     },
+
     y: {
       beginAtZero: true,
+
+      // Extra space above highest bars
+      max: 80,
+
       ticks: {
         stepSize: 20,
+
         color: "#64748B",
+
         font: {
           size: 9,
         },
+
         padding: 8,
       },
+
+      // Horizontal lines removed
       grid: {
-        color: "#E8EDF5",
+        display: false,
         drawTicks: false,
       },
+
       border: {
         display: false,
       },
@@ -136,67 +208,71 @@ const GenderDistribution = () => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-5 pt-4">
-        <div className="flex items-center justify-between">
-          {/* Left side */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#fdecf2] flex items-center justify-center text-[#e53c8f]">
-              <PeopleAltIcon sx={{ fontSize: 20 }} />
-            </div>
-
-            <div>
-              <h2 className="text-sm font-bold text-slate-800">
-                Gender Distribution
-              </h2>
-
-              <p className="text-[10px] text-slate-500 mt-0.5">
-                Deployed headcount with day-over-day movement
-              </p>
-            </div>
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-4">
-            {/* Ratio */}
-            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-50">
-              <span className="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
-
-              <span className="text-[10px] font-semibold text-pink-600 whitespace-nowrap">
-                Ratio: 48% F / 52% M
-              </span>
-            </span>
-
-            {/* More button */}
-            <button className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition">
-              <MoreVertIcon
-                sx={{
-                  fontSize: 17,
-                  color: "#64748B",
-                }}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="flex justify-end items-center gap-4 mt-3">
-          {/* Female */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#EC4899]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Female
-            </span>
-          </div>
-
-          {/* Male */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#3B82F6]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">Male</span>
-          </div>
-        </div>
+     {/* Header */}
+<div className="px-5 pt-4">
+  <div className="flex items-center justify-between">
+    {/* Left side */}
+    <div className="flex items-center gap-3">
+      {/* Icon - same color as Female bar */}
+      <div className="w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center text-[#ba58a5]">
+        <PeopleAltIcon sx={{ fontSize: 20 }} />
       </div>
+
+      <div>
+        <h2 className="text-sm font-bold text-slate-800">
+          Gender Distribution
+        </h2>
+
+        <p className="text-[10px] text-slate-500 mt-0.5">
+          Deployed headcount with day-over-day movement
+        </p>
+      </div>
+    </div>
+
+    {/* Right side */}
+    <div className="flex items-center gap-4">
+      {/* Ratio - same color as Female bar */}
+      <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-50">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#ba58a5]"></span>
+
+        <span className="text-[10px] font-semibold text-[#ba58a5] whitespace-nowrap">
+          Ratio: 48% F / 52% M
+        </span>
+      </span>
+
+      {/* More button */}
+      <button className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition">
+        <MoreVertIcon
+          sx={{
+            fontSize: 17,
+            color: "#64748B",
+          }}
+        />
+      </button>
+    </div>
+  </div>
+
+  {/* Legend */}
+  <div className="flex justify-end items-center gap-4 mt-3">
+    {/* Female */}
+    <div className="flex items-center gap-1.5">
+      <span className="w-2 h-2 rounded-full bg-[#ba58a5]"></span>
+
+      <span className="text-[9px] font-medium text-slate-500">
+        Female
+      </span>
+    </div>
+
+    {/* Male */}
+    <div className="flex items-center gap-1.5">
+      <span className="w-2 h-2 rounded-full bg-[#2a62d9]"></span>
+
+      <span className="text-[9px] font-medium text-slate-500">
+        Male
+      </span>
+    </div>
+  </div>
+</div>
 
       {/* Scrollable Chart */}
       <div className="px-4 pb-4 pt-2 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">

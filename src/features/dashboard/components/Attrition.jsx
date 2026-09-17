@@ -1,3 +1,4 @@
+
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
@@ -8,9 +9,17 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend,
+  ChartDataLabels
+);
 
 const labels = [
   "01 May",
@@ -36,10 +45,12 @@ const chartData = {
   datasets: [
     {
       label: "Requirement",
-      data: [45, 55, 40, 60, 50, 34, 60, 45, 55, 40, 60, 50, 34, 60, 55, 45],
+      data: [
+        45, 55, 40, 60, 50, 34, 60, 45,
+        55, 40, 60, 50, 34, 60, 55, 45,
+      ],
       backgroundColor: "#1D4ED8",
 
-      // Fixed thin bar width
       barThickness: 22,
 
       borderRadius: {
@@ -57,63 +68,85 @@ const chartData = {
 const options = {
   responsive: true,
   maintainAspectRatio: false,
+
   interaction: {
     mode: "index",
     intersect: false,
   },
+
   plugins: {
     legend: {
       display: false,
     },
-    tooltip: {
-      backgroundColor: "#1E293B",
-      titleColor: "#FFFFFF",
-      bodyColor: "#FFFFFF",
-      padding: 10,
-      cornerRadius: 8,
-      displayColors: true,
-      callbacks: {
-        label: function (context) {
-          return ` ${context.dataset.label}: ${context.raw}`;
-        },
+
+    datalabels: {
+      display: true,
+      anchor: "end",
+      align: "top",
+      offset: 4,
+      color: "#334155",
+      font: {
+        size: 10,
+        weight: "600",
+        family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       },
+      formatter: (value) => value,
+    },
+
+    tooltip: {
+      enabled: false,
+      external: () => {},
     },
   },
+
   scales: {
     x: {
       offset: true,
+
       grid: {
         display: false,
         drawBorder: false,
       },
+
       border: {
         display: false,
       },
+
       barPercentage: 0.35,
       categoryPercentage: 0.5,
+
       ticks: {
         color: "#64748B",
+
         font: {
           size: 10,
           weight: "500",
         },
+
         padding: 5,
       },
     },
+
     y: {
       beginAtZero: true,
+      max: 80,
+
       ticks: {
         stepSize: 20,
         color: "#64748B",
+
         font: {
           size: 9,
         },
+
         padding: 8,
       },
+
       grid: {
-        color: "#E8EDF5",
+        display: false,
         drawTicks: false,
       },
+
       border: {
         display: false,
       },
@@ -129,9 +162,9 @@ const Attrition = () => {
         <div className="flex items-center justify-between">
           {/* Left side */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#f9f7de] flex items-center justify-center text-[#dfa44a]">
-              <PeopleAltIcon sx={{ fontSize: 20 }} />
-            </div>
+           <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-[#1D4ED8]">
+  <PeopleAltIcon sx={{ fontSize: 20 }} />
+</div>
 
             <div>
               <h2 className="text-sm font-bold text-slate-800">
@@ -147,10 +180,10 @@ const Attrition = () => {
           {/* Right side */}
           <div className="flex items-center gap-4">
             {/* Monthly average */}
-            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8]"></span>
 
-              <span className="text-[10px] font-semibold text-amber-600">
+              <span className="text-[10px] font-semibold text-[#1D4ED8]">
                 Monthly Average: 3.4%
               </span>
             </span>
@@ -169,29 +202,13 @@ const Attrition = () => {
 
         {/* Legend */}
         <div className="flex justify-end items-center gap-4 mt-3">
-          {/* Requirement */}
+          {/* Employees Left */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
+            <span className="w-2 h-2 rounded-full bg-[#1D4ED8]"></span>
 
             <span className="text-[9px] font-medium text-slate-500">
-              Requirement
+              Employees Left
             </span>
-          </div>
-
-          {/* Present */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#6F4AE7]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Present
-            </span>
-          </div>
-
-          {/* Total */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#06B6D4]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">Total</span>
           </div>
         </div>
       </div>
@@ -212,3 +229,4 @@ const Attrition = () => {
 };
 
 export default Attrition;
+

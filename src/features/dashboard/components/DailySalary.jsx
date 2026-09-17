@@ -1,3 +1,4 @@
+
 import PaymentsIcon from "@mui/icons-material/Payments";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
@@ -8,9 +9,17 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend,
+  ChartDataLabels
+);
 
 const labels = [
   "01 May",
@@ -37,10 +46,24 @@ const chartData = {
     {
       label: "Regular Wages",
       data: [
-        140, 155, 130, 165, 150, 110, 160, 140, 155, 130, 165, 150, 110, 160,
-        155, 138,
+        140,
+        155,
+        130,
+        165,
+        150,
+        110,
+        160,
+        140,
+        155,
+        130,
+        165,
+        150,
+        110,
+        160,
+        155,
+        138,
       ],
-      backgroundColor: "#F59E0B",
+      backgroundColor: "#002a3d",
       barThickness: 28,
 
       borderRadius: {
@@ -49,6 +72,7 @@ const chartData = {
         bottomLeft: 0,
         bottomRight: 0,
       },
+
       borderSkipped: "bottom",
     },
   ],
@@ -59,64 +83,89 @@ const yAxisFormatter = (val) => `₹${val}k`;
 const options = {
   responsive: true,
   maintainAspectRatio: false,
+
   interaction: {
     mode: "index",
     intersect: false,
   },
+
   plugins: {
     legend: {
       display: false,
     },
+
     tooltip: {
-      backgroundColor: "#1E293B",
-      titleColor: "#FFFFFF",
-      bodyColor: "#FFFFFF",
-      padding: 10,
-      cornerRadius: 8,
-      displayColors: true,
-      callbacks: {
-        label: function (context) {
-          return ` ${context.dataset.label}: ${yAxisFormatter(context.raw)}`;
-        },
+      enabled: false,
+      external: () => {},
+    },
+
+    // Number displayed on top of every bar
+    datalabels: {
+      display: true,
+      anchor: "end",
+      align: "top",
+      offset: 4,
+      color: "#334155",
+      font: {
+        size: 10,
+        weight: "600",
+        family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       },
+      formatter: (value) => value,
     },
   },
+
   scales: {
     x: {
       offset: true,
+
       grid: {
         display: false,
         drawBorder: false,
       },
+
       border: {
         display: false,
       },
+
       barPercentage: 0.98,
       categoryPercentage: 0.4,
+
       ticks: {
         color: "#64748B",
+
         font: {
           size: 10,
           weight: "500",
         },
+
         padding: 5,
       },
     },
+
     y: {
       beginAtZero: true,
+
       ticks: {
         stepSize: 50,
+
         color: "#64748B",
+
         font: {
           size: 9,
         },
+
         padding: 8,
+
         callback: (value) => yAxisFormatter(value),
       },
+
+      // Horizontal lines removed
       grid: {
-        color: "#E8EDF5",
+        display: false,
         drawTicks: false,
       },
+
       border: {
         display: false,
       },
@@ -132,13 +181,14 @@ const DailySalary = () => {
         <div className="flex items-center justify-between">
           {/* Left side */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#eafef5] flex items-center justify-center text-[#02bc7b]">
+            {/* Icon - same color as graph */}
+            <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-[#002a3d]">
               <PaymentsIcon sx={{ fontSize: 20 }} />
             </div>
 
             <div>
               <h2 className="text-sm font-bold text-slate-800">
-                Daily Salary &amp; Wage Distribution
+                Daily Salary Distribution
               </h2>
 
               <p className="text-[10px] text-slate-500 mt-0.5">
@@ -149,11 +199,11 @@ const DailySalary = () => {
 
           {/* Right side */}
           <div className="flex items-center gap-4">
-            {/* Average daily */}
-            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            {/* Average daily - same color as graph */}
+            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#002a3d]"></span>
 
-              <span className="text-[10px] font-semibold text-emerald-600">
+              <span className="text-[10px] font-semibold text-[#002a3d]">
                 Avg Daily: ₹1.68L
               </span>
             </span>
@@ -174,28 +224,10 @@ const DailySalary = () => {
         <div className="flex justify-end items-center gap-4 mt-3">
           {/* Regular Wages */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#06B6D4]"></span>
+            <span className="w-2 h-2 rounded-full bg-[#002a3d]"></span>
 
             <span className="text-[9px] font-medium text-slate-500">
-              Regular Wages
-            </span>
-          </div>
-
-          {/* Overtime */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Overtime (OT)
-            </span>
-          </div>
-
-          {/* Total Payout */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#6F4AE7]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Total Payout
+              Average Daily Salary
             </span>
           </div>
         </div>
@@ -217,3 +249,5 @@ const DailySalary = () => {
 };
 
 export default DailySalary;
+
+

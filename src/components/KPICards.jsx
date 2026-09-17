@@ -74,7 +74,7 @@ const KPICards = ({ data = [], gridClass }) => {
             `}
           >
             {/* Decorative Wave */}
-            <div className="pointer-events-none absolute bottom-0 right-0 h-[65px] w-[55%]">
+            {/* <div className="pointer-events-none absolute bottom-0 right-0 h-[65px] w-[55%]">
               <svg
                 viewBox="0 0 220 100"
                 className="h-full w-full"
@@ -94,7 +94,7 @@ const KPICards = ({ data = [], gridClass }) => {
                   opacity="0.65"
                 />
               </svg>
-            </div>
+            </div> */}
 
             {/* Main Content */}
             <div className="relative z-10 flex h-full items-center">

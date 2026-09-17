@@ -17,9 +17,7 @@ const Navbar = ({ activeMenu }) => {
           >
             <HomeOutlinedIcon sx={{ fontSize: 20 }} />
           </button>
-
           <ChevronRightOutlinedIcon sx={{ fontSize: 18, color: "#9CA3AF" }} />
-
           <h1 className="text-base sm:text-xl font-bold text-gray-800 truncate">
             {activeMenu}
           </h1>
@@ -27,12 +25,12 @@ const Navbar = ({ activeMenu }) => {
       </div>
 
       <div className="flex items-center gap-3 sm:gap-5 shrink-0">
-        <div className="relative">
+        {/* <div className="relative">
           <button className="p-1.5 sm:p-2 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition">
             <NotificationsNoneOutlinedIcon sx={{ fontSize: 20 }} />
           </button>
           <span className="absolute top-1 right-1 h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary"></span>
-        </div>
+        </div> */}
         <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-gradient-to-r from-primary-light to-primary-dark flex items-center justify-center text-white font-semibold text-sm">
           TA
         </div>

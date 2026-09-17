@@ -1,44 +1,173 @@
 import { useState } from "react";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 
+const preColumns = [
+  "SNo.",
+  "PAYCODE",
+  "Card No",
+  "Employee Name",
+  "Department Name",
+  "Subdepartment Name",
+  "Designation",
+  "Date Of Join",
+];
+
+const dateColumns = [
+  "01/09",
+  "02/09",
+  "03/09",
+  "04/09",
+  "05/09",
+  "06/09",
+  "07/09",
+  "08/09",
+  "09/09",
+  "10/09",
+  "11/09",
+  "12/09",
+  "13/09",
+  "14/09",
+];
+
+const postColumns = [
+  "DW",
+  "HLD",
+  "CL",
+  "EL",
+  "ML",
+  "PL",
+  "SL",
+  "REST",
+  "TOTAL",
+  "ABS",
+  "Paid_Days",
+];
+
+const TOTAL_COLUMNS = preColumns.length + dateColumns.length * 2 + postColumns.length;
+
 const rows = [
   {
     id: 1,
-    empId: "NTF00123",
-    employee: "Rohit Sharma",
-    department: "Production",
-    subDepartment: "Assembly",
-    line: "Line 1",
-    shift: "Shift A",
-    date: "01 Aug 2026",
-    checkIn: "08:55 AM",
-    checkOut: "05:35 PM",
-    status: "Active",
-    workHours: "8h 40m",
+    sno: 1,
+    paycode: "10144",
+    cardNo: "00010144",
+    employeeName: "Vishnu",
+    departmentName: "LB",
+    subDepartmentName: "LB",
+    designation: "ASSEMBLER",
+    dateOfJoin: "01/11/2018",
+    attendance: [
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "HLD", b: "HLD" },
+      { a: "P", b: "P" },
+      { a: "WO", b: "WO" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "WO", b: "WO" },
+      { a: "HLD", b: "HLD" },
+    ],
+    dw: 10,
+    hld: 2,
+    cl: 0.0,
+    el: 0.0,
+    ml: 0.0,
+    pl: 0.0,
+    sl: 0.0,
+    rest: 2,
+    total: 14,
+    abs: 0,
+    paidDays: 14,
+  },
+  {
+    id: 2,
+    sno: 2,
+    paycode: "10382",
+    cardNo: "00010382",
+    employeeName: "DEEPAK",
+    departmentName: "ACCESSORIES",
+    subDepartmentName: "ACCESSORIES",
+    designation: "HELPER",
+    dateOfJoin: "18/06/2020",
+    attendance: [
+      { a: "A", b: "A" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "HLD", b: "HLD" },
+      { a: "P", b: "P" },
+      { a: "WO", b: "WO" },
+      { a: "A", b: "A" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "A", b: "A" },
+      { a: "P", b: "P" },
+      { a: "WO", b: "WO" },
+      { a: "HLD", b: "HLD" },
+    ],
+    dw: 7,
+    hld: 2,
+    cl: 0.0,
+    el: 0.0,
+    ml: 0.0,
+    pl: 0.0,
+    sl: 0.0,
+    rest: 2,
+    total: 14,
+    abs: 3,
+    paidDays: 11,
+  },
+  {
+    id: 3,
+    sno: 3,
+    paycode: "10503",
+    cardNo: "00010503",
+    employeeName: "Virender",
+    departmentName: "STORE",
+    subDepartmentName: "STORE",
+    designation: "HELPER",
+    dateOfJoin: "26/05/2021",
+    attendance: [
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "HLD", b: "HLD" },
+      { a: "P", b: "P" },
+      { a: "POW", b: "POW" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "P", b: "P" },
+      { a: "WO", b: "WO" },
+      { a: "POH", b: "POH" },
+    ],
+    dw: 10,
+    hld: 2,
+    cl: 0.0,
+    el: 0.0,
+    ml: 0.0,
+    pl: 0.0,
+    sl: 0.0,
+    rest: 2,
+    total: 14,
+    abs: 0,
+    paidDays: 14,
   },
 ];
-
-const statusStyles = {
-  Active: {
-    badge: "bg-green-100 text-green-700 ring-green-600/20",
-    dot: "bg-green-500",
-  },
-  Inactive: {
-    badge: "bg-red-100 text-red-700 ring-red-600/20",
-    dot: "bg-red-500",
-  },
-};
 
 const AttendanceTable = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search] = useState("");
-  const [statusFilter] = useState("");
-  const [shiftFilter] = useState("");
-  const [menu, setMenu] = useState(null);
 
   const handleChangePage = (_, newPage) => {
     setPage(newPage);
@@ -49,32 +178,25 @@ const AttendanceTable = () => {
     setPage(0);
   };
 
-  const handleMenuOpen = (event, rowId) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setMenu({ rowId, top: rect.bottom + 4, right: window.innerWidth - rect.right });
-  };
-
-  const handleMenuClose = () => {
-    setMenu(null);
-  };
-
   const filteredRows = rows.filter(
     (row) =>
-      (row.employee.toLowerCase().includes(search.toLowerCase()) ||
-        row.empId.toLowerCase().includes(search.toLowerCase()) ||
-        row.department.toLowerCase().includes(search.toLowerCase())) &&
-      (statusFilter === "" || row.status === statusFilter) &&
-      (shiftFilter === "" || row.shift === shiftFilter),
+      row.employeeName.toLowerCase().includes(search.toLowerCase()) ||
+      row.cardNo.toLowerCase().includes(search.toLowerCase()) ||
+      row.departmentName.toLowerCase().includes(search.toLowerCase()),
   );
 
   const displayedRows = filteredRows.slice(
     page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+    page * rowsPerPage + rowsPerPage,
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
   const from = filteredRows.length === 0 ? 0 : page * rowsPerPage + 1;
   const to = Math.min(filteredRows.length, (page + 1) * rowsPerPage);
+
+  const renderAttendance = (value) => (
+    <span className="text-[11px] text-gray-500">{value}</span>
+  );
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -94,40 +216,44 @@ const AttendanceTable = () => {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1100px] border-collapse">
+        <table className="w-full min-w-[3600px] border-collapse">
           <thead>
             <tr className="bg-gray-100/80">
-              {[
-                "Employee ID",
-                "Name",
-                "Department",
-                "Sub Dept.",
-                "Line",
-                "Shift",
-                "Date",
-                "Check In",
-                "Check Out",
-                "Status",
-                "Work Hrs.",
-                "Actions",
-              ].map((head) => (
+              {preColumns.map((head) => (
                 <th
                   key={head}
-                  className={`px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-600 border-b border-r border-gray-200 ${
-                    head === "Actions" ? "text-center" : "text-left"
-                  }`}
+                  className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-600 border-b border-r border-gray-200 text-center whitespace-nowrap"
+                >
+                  {head}
+                </th>
+              ))}
+              {dateColumns.map((date) => (
+                <th
+                  key={date}
+                  colSpan={2}
+                  className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-600 border-b border-r border-gray-200 text-center whitespace-nowrap"
+                >
+                  {date}
+                </th>
+              ))}
+              {postColumns.map((head) => (
+                <th
+                  key={head}
+                  className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-600 border-b border-r border-gray-200 text-center whitespace-nowrap"
                 >
                   {head}
                 </th>
               ))}
             </tr>
+
+
           </thead>
 
           <tbody>
             {displayedRows.length === 0 && (
               <tr>
                 <td
-                  colSpan={12}
+                  colSpan={TOTAL_COLUMNS}
                   className="px-4 py-12 text-center text-sm text-gray-400"
                 >
                   No attendance records found
@@ -135,116 +261,88 @@ const AttendanceTable = () => {
               </tr>
             )}
 
-            {displayedRows.map((row, rowIdx) => {
-              const status = statusStyles[row.status] || statusStyles.Active;
-
-              return (
-                <tr
-                  key={row.id}
-                  className={`whitespace-nowrap transition hover:bg-primary/5 ${
-                    rowIdx % 2 === 1 ? "bg-gray-50/50" : "bg-white"
-                  }`}
-                >
-                  <td className="px-4 py-3 text-xs font-medium text-gray-500 border-b border-r border-gray-100">
-                    {row.empId}
-                  </td>
-                  <td className="px-4 py-3 border-b border-r border-gray-100">
-                    <span className="text-xs font-medium text-gray-500">
-                      {row.employee}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-3 text-xs text-gray-500 border-b border-r border-gray-100">
-                    {row.department}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-500 border-b border-r border-gray-100">
-                    {row.subDepartment}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-500 border-b border-r border-gray-100">
-                    {row.line}
-                  </td>
-
-                  <td className="px-4 py-3 border-b border-r border-gray-100">
-                    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-gray-100 text-gray-500">
-                      {row.shift}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-3 text-xs text-gray-500 border-b border-r border-gray-100">
-                    {row.date}
-                  </td>
-
-                  <td className="px-4 py-3 text-xs font-medium text-gray-500 border-b border-r border-gray-100">
-                    {row.checkIn}
-                  </td>
-
-                  <td className="px-4 py-3 text-xs font-medium text-gray-500 border-b border-r border-gray-100">
-                    {row.checkOut}
-                  </td>
-
-                  <td className="px-4 py-3 text-center border-b border-r border-gray-100">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${status.badge}`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${status.dot}`}
-                      />
-                      {row.status}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-3 text-xs tabular-nums font-medium text-gray-500 border-b border-r border-gray-100">
-                    {row.workHours}
-                  </td>
-
-                  <td className="px-4 py-3 text-center border-b border-gray-100">
-                    <button
-                      type="button"
-                      title="More actions"
-                      onClick={(event) => handleMenuOpen(event, row.id)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E5E7EB] text-[#6B7280] transition hover:border-[#6F4AE7] hover:text-[#6F4AE7]"
-                    >
-                      <MoreVertIcon sx={{ fontSize: 18 }} />
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+            {displayedRows.map((row, rowIdx) => (
+              <tr
+                key={row.id}
+                className={`whitespace-nowrap transition hover:bg-primary/5 ${
+                  rowIdx % 2 === 1 ? "bg-gray-50/50" : "bg-white"
+                }`}
+              >
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.sno}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-700 border-b border-r border-gray-100 text-center">
+                  {row.paycode}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.cardNo}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-semibold text-gray-800 border-b border-r border-gray-100 text-center">
+                  {row.employeeName}
+                </td>
+                <td className="px-3 py-3 text-[11px] text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.departmentName}
+                </td>
+                <td className="px-3 py-3 text-[11px] text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.subDepartmentName}
+                </td>
+                <td className="px-3 py-3 text-[11px] text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.designation}
+                </td>
+                <td className="px-3 py-3 text-[11px] text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.dateOfJoin}
+                </td>
+                {row.attendance.flatMap((entry, i) => [
+                  <td
+                    key={`${i}-a`}
+                    className="px-2 py-3 border-b border-r border-gray-100 text-center"
+                  >
+                    {renderAttendance(entry.a)}
+                  </td>,
+                  <td
+                    key={`${i}-b`}
+                    className="px-2 py-3 border-b border-r border-gray-100 text-center"
+                  >
+                    {renderAttendance(entry.b)}
+                  </td>,
+                ])}
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.dw}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.hld}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.cl}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.el}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.ml}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.pl}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.sl}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.rest}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.total}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.abs}
+                </td>
+                <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
+                  {row.paidDays}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
-
-        {/* Row actions menu */}
-        {menu && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={handleMenuClose} />
-            <div
-              className="fixed z-50 min-w-[160px] rounded-xl bg-white py-1 shadow-xl"
-              style={{ top: menu.top, right: menu.right }}
-            >
-              <button
-                type="button"
-                onClick={handleMenuClose}
-                className="block w-full px-4 py-2 text-left text-[13px] text-gray-700 hover:bg-gray-100"
-              >
-                View Details
-              </button>
-              <button
-                type="button"
-                onClick={handleMenuClose}
-                className="block w-full px-4 py-2 text-left text-[13px] text-gray-700 hover:bg-gray-100"
-              >
-                Edit Record
-              </button>
-              <button
-                type="button"
-                onClick={handleMenuClose}
-                className="block w-full px-4 py-2 text-left text-[13px] text-[#EF4444] hover:bg-red-50"
-              >
-                Delete
-              </button>
-            </div>
-          </>
-        )}
 
         {/* Pagination */}
         <div className="flex min-h-[48px] items-center justify-between gap-2 border-t border-[#E5E7EB] px-2">

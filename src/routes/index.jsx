@@ -20,6 +20,9 @@ import LMSDashboard from "../features/lms/pages/LMSDashboard";
 import Operators from "../features/lms/pages/OperatorsPage";
 import UsersPage from "../features/lms/pages/UsersPage";
 import OperatorProfile from "../features/lms/pages/OperatorProfile";
+import TrainingEffectivenessPage from "../features/lms/pages/TrainingEffectivenessPage";
+import OperatorObservancePage from "../features/lms/pages/OperatorObservancePage";
+
 
 const App = () => {
   return (
@@ -63,6 +66,9 @@ const App = () => {
         <Route path="/lms/l1" element={<L1 />} />
 
         <Route path="/lms/l1/preview" element={<L1Preview />} />
+                <Route path="/lms/training" element={<TrainingEffectivenessPage />} />
+                <Route path="/lms/operator-observance" element={<OperatorObservancePage />} />
+
       </Routes>
     </BrowserRouter>
   );

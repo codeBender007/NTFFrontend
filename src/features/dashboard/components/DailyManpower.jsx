@@ -37,7 +37,6 @@ const labels = [
 // Chart data
 const chartData = {
   labels,
-
   datasets: [
     {
       label: "Actual",
@@ -75,6 +74,7 @@ const chartData = {
       label: "Requirement",
       data: [70, 95, 50, 98, 76, 40, 92, 62, 87, 48],
       backgroundColor: "#FFB52E",
+
       borderRadius: {
         topLeft: 5,
         topRight: 5,
@@ -121,12 +121,14 @@ const options = {
       formatter: (value) => value,
     },
   },
+
   scales: {
     x: {
       offset: true,
 
+      // Vertical lines removed
       grid: {
-        display: false, // vertical lines completely off
+        display: false,
         drawBorder: false,
       },
 
@@ -134,10 +136,7 @@ const options = {
         display: false,
       },
 
-      // 3 bars almost touching
       barPercentage: 0.3,
-
-      // Groups clearly separated
       categoryPercentage: 0.4,
 
       ticks: {
@@ -167,8 +166,9 @@ const options = {
         padding: 8,
       },
 
+      // Horizontal lines removed
       grid: {
-        color: "#E8EDF5",
+        display: false,
         drawTicks: false,
       },
 
@@ -183,78 +183,81 @@ const DailyManpower = () => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-5 pt-4">
-        <div className="flex items-center justify-between">
-          {/* Left side */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
-              <PeopleAltIcon sx={{ fontSize: 20 }} />
-            </div>
-
-            <div>
-              <h2 className="text-sm font-bold text-slate-800">
-                Daily Manpower Dashboard
-              </h2>
-
-              <p className="text-[10px] text-slate-500 mt-0.5">
-                Deployed headcount with day-over-day movement
-              </p>
-            </div>
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-4">
-            {/* Active shift */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#ECFDF5]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-
-              <span className="text-[10px] font-semibold text-emerald-600">
-                Active Shift
-              </span>
-            </div>
-
-            {/* More button */}
-            <button className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition">
-              <MoreVertIcon
-                sx={{
-                  fontSize: 17,
-                  color: "#64748B",
-                }}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="flex justify-end items-center gap-4 mt-3">
-          {/* Present */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#4285F4]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Actual
-            </span>
-          </div>
-
-          {/* Absent */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#26B7A0]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Present
-            </span>
-          </div>
-
-          {/* Total */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#FFB52E]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Requirement
-            </span>
-          </div>
-        </div>
+<div className="px-5 pt-4">
+  <div className="flex items-center justify-between">
+    {/* Left side */}
+    <div className="flex items-center gap-3">
+      {/* Icon - same color as Actual bar */}
+      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-[#4285F4]">
+        <PeopleAltIcon sx={{ fontSize: 20 }} />
       </div>
+
+      <div>
+        <h2 className="text-sm font-bold text-slate-800">
+          Daily Manpower Dashboard
+        </h2>
+
+        <p className="text-[10px] text-slate-500 mt-0.5">
+          Deployed headcount with day-over-day movement
+        </p>
+      </div>
+    </div>
+
+    {/* Right side */}
+    <div className="flex items-center gap-4">
+      {/* Active shift - same color as Actual bar */}
+      <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#4285F4]"></span>
+
+        <span className="text-[10px] font-semibold text-[#4285F4]">
+          Active Shift
+        </span>
+      </div>
+
+      {/* More button */}
+      <button className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition">
+        <MoreVertIcon
+          sx={{
+            fontSize: 17,
+            color: "#64748B",
+          }}
+        />
+      </button>
+    </div>
+  </div>
+
+  {/* Legend */}
+  <div className="flex justify-end items-center gap-4 mt-3">
+    {/* Actual */}
+    <div className="flex items-center gap-1.5">
+      <span className="w-2 h-2 rounded-full bg-[#4285F4]"></span>
+
+      <span className="text-[9px] font-medium text-slate-500">
+        Actual
+      </span>
+    </div>
+
+    {/* Present */}
+    <div className="flex items-center gap-1.5">
+      <span className="w-2 h-2 rounded-full bg-[#26B7A0]"></span>
+
+      <span className="text-[9px] font-medium text-slate-500">
+        Present
+      </span>
+    </div>
+
+    {/* Requirement */}
+    <div className="flex items-center gap-1.5">
+      <span className="w-2 h-2 rounded-full bg-[#FFB52E]"></span>
+
+      <span className="text-[9px] font-medium text-slate-500">
+        Requirement
+      </span>
+    </div>
+  </div>
+</div>
+
+
 
       {/* Scrollable Chart */}
       <div
