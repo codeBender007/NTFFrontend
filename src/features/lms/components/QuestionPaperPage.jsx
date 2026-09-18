@@ -185,6 +185,8 @@ const QuestionPaperPage = ({ level = "L0" }) => {
       marks: `${totalMarks} Marks`,
       fullMarks: "Full Marks",
       level,
+      sections,
+      meta,
     });
 
     setSections((prev) =>
@@ -281,7 +283,10 @@ const QuestionPaperPage = ({ level = "L0" }) => {
     }
   };
 
-  const handlePreview = () => navigate(previewPath);
+  const handlePreview = () => {
+    saveAll();
+    navigate(previewPath);
+  };
 
   return (
     <div className="flex h-screen bg-[#F4F5F9]">

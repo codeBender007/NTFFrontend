@@ -2,9 +2,7 @@ import { useState } from "react";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import logo from "../../../assets/images/NTF_logo_black.png";
 
-// ============================================================
-// FEEDBACK QUESTIONS
-// ============================================================
+
 
 const questions = [
   {
@@ -43,14 +41,10 @@ const questions = [
   },
 ];
 
-// ============================================================
-// MAIN COMPONENT
-// ============================================================
+
 
 const TrainingFeedback = () => {
-  // ==========================================================
-  // PARTICIPANT DETAILS
-  // ==========================================================
+  
 
   const [details, setDetails] = useState({
     participant: "",
@@ -65,15 +59,10 @@ const TrainingFeedback = () => {
     duration: "",
   });
 
-  // ==========================================================
-  // FEEDBACK ANSWERS
-  // ==========================================================
 
   const [answers, setAnswers] = useState(questions.map(() => ""));
 
-  // ==========================================================
-  // HANDLE INPUT CHANGE
-  // ==========================================================
+  
 
   const handleDetailChange = (field) => (event) => {
     setDetails({
@@ -82,9 +71,7 @@ const TrainingFeedback = () => {
     });
   };
 
-  // ==========================================================
-  // HANDLE FEEDBACK SELECTION
-  // ==========================================================
+ 
 
   const handleAnswerChange = (questionIndex, answer) => {
     const updatedAnswers = [...answers];
@@ -94,9 +81,6 @@ const TrainingFeedback = () => {
     setAnswers(updatedAnswers);
   };
 
-  // ==========================================================
-  // RENDER RATING MARK (tick on the selected option, cross on the rest)
-  // ==========================================================
 
   const renderRatingMark = (answer, option) => {
     if (answer === option) {
@@ -110,15 +94,11 @@ const TrainingFeedback = () => {
     return null;
   };
 
-  // ==========================================================
-  // RETURN
-  // ==========================================================
+
 
   return (
     <>
-      {/* ======================================================
-          PRINT BUTTON
-      ======================================================= */}
+
 
       <div className="mb-4 flex justify-end print:hidden">
         <button

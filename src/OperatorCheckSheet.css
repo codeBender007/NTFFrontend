@@ -176,6 +176,9 @@
   line-height: 24px;
 
   white-space: nowrap;
+
+  cursor: pointer;
+  user-select: none;
 }
 
 .operator-checksheet-category-row:last-child {
@@ -183,7 +186,10 @@
 }
 
 .operator-checksheet-checkbox {
-  display: block;
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
 
   width: 30px;
   height: 20px;
@@ -195,6 +201,10 @@
   border: 2px solid #111111;
 
   background: #ffffff;
+
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
 }
 
 /* =========================================================
@@ -297,7 +307,10 @@
 }
 
 .operator-checksheet-small-box {
-  display: block;
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
 
   width: 28px;
   height: 21px;
@@ -307,6 +320,12 @@
   border: 2px solid #111111;
 
   background: #ffffff;
+
+  cursor: pointer;
+
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 21px;
 }
 
 /* =========================================================
@@ -458,7 +477,7 @@
 .operator-checksheet-passing {
   position: absolute;
 
-  left: -56px;
+  left: 0;
   top: 112px;
 
   width: 235px;

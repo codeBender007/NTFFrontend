@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import logo from "../../../assets/images/NTF_logo_black.png";
 
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz";
@@ -22,20 +21,30 @@ const loadSavedPaper = (storageKey) => {
   }
 };
 
-const QuestionPaperPreview = ({ level = "L0" }) => {
+const loadMeta = (storageKey) => {
+  try {
+    const raw = localStorage.getItem(`${storageKey}_meta`);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
   const navigate = useNavigate();
   const storageKey = `${level.toLowerCase()}_question_paper`;
-  const editorPath = `/lms/${level.toLowerCase()}`;
-  const [sections] = useState(() => loadSavedPaper(storageKey));
+  const editorPath = paper
+    ? `/lms/${level.toLowerCase()}/editor`
+    : `/lms/${level.toLowerCase()}`;
+  const [sections] = useState(() =>
+    paper
+      ? paper.sections?.length
+        ? paper.sections
+        : loadSavedPaper(storageKey)
+      : loadSavedPaper(storageKey)
+  );
   const [showAnswerKey, setShowAnswerKey] = useState(false);
-  const [paperMeta] = useState(() => {
-    try {
-      const raw = localStorage.getItem(`${storageKey}_meta`);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [paperMeta] = useState(() => (paper ? paper.meta || {} : loadMeta(storageKey)));
 
   const totalQuestions = sections.reduce((acc, s) => acc + (s.questions?.length || 0), 0);
   const totalMarks = sections.reduce(
@@ -45,21 +54,75 @@ const QuestionPaperPreview = ({ level = "L0" }) => {
 
   const testTitle = paperMeta.headerTitle || "SKILL EVALUATION TEST PAPER";
   const subTitle = paperMeta.subTitle || "New Manpower for DOJO Hiring";
-  const department = paperMeta.departments || "Production";
   const duration = paperMeta.duration || 60;
+  const passPercentage = Number(paperMeta.passPercentage) || 80;
+
+  const Question = ({ number, question }) => (
+    <div className="mb-5 break-inside-avoid">
+      <p className="text-[12px] font-medium leading-[1.4] text-black">
+        <span className="mr-1">{number}.</span>
+        {question.question || `Question ${number}`}
+      </p>
+
+      {question.options && question.options.length > 0 ? (
+        <div className="mt-2 pl-4">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+            {question.options.map((option, index) => {
+              const isCorrect = showAnswerKey && question.correctOption === option.id;
+              return (
+                <div
+                  key={option.id}
+                  className={`flex items-start text-[11px] leading-[1.4] ${
+                    isCorrect ? "font-bold text-emerald-700" : "text-black"
+                  }`}
+                >
+                  <span className="mr-1">({ALPHABET[index]})</span>
+                  <span>{option.value || `Option ${option.label}`}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="ml-4 mt-3 w-4/5 border-b border-dotted border-gray-500" />
+      )}
+    </div>
+  );
+
+  const renderFooter = () => (
+    <div className="mt-auto flex items-center justify-between px-2 pt-8 text-[10px] text-black">
+      <span>F18(AMD-02)</span>
+      <span>Rev. 00</span>
+    </div>
+  );
+
+  let compiledSections = [];
+  let globalNumber = 1;
+
+  sections.forEach((section) => {
+    const qs = section.questions || [];
+    if (qs.length === 0) return;
+
+    const numbered = qs.map((q) => ({ ...q, number: globalNumber++ }));
+
+    compiledSections.push({
+      section,
+      leftQs: numbered.filter((q, i) => i % 2 === 0),
+      rightQs: numbered.filter((q, i) => i % 2 !== 0),
+    });
+  });
 
   return (
-    <div className="min-h-screen bg-[#F5F7FB] print:bg-white">
-
+    <>
       {/* ── Sticky Top Toolbar (hidden in print) ── */}
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-xs print:hidden">
         <div className="h-14 px-4 sm:px-8 flex items-center justify-between max-w-5xl mx-auto gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
-              onClick={() => navigate(editorPath)}
+              onClick={() => navigate("/lms")}
               className="h-9 w-9 rounded-xl bg-gray-100 text-gray-600 hover:bg-primary/10 hover:text-primary transition flex items-center justify-center shrink-0"
-              title="Back to editor"
+              title="Back to Dojo Hiring"
             >
               <ArrowBackOutlinedIcon sx={{ fontSize: 18 }} />
             </button>
@@ -106,252 +169,176 @@ const QuestionPaperPreview = ({ level = "L0" }) => {
         </div>
       </div>
 
-      {/* ── A4 Paper Sheet ── */}
-      <div className="max-w-[760px] mx-auto px-4 py-6 print:p-0 print:max-w-none">
-        <div
-          className="bg-white shadow-xl rounded-2xl overflow-hidden print:shadow-none print:rounded-none"
-          style={{ fontFamily: "'Segoe UI', Arial, sans-serif" }}
-        >
-          <div className="p-8 sm:p-10 space-y-5 print:p-8">
-
-            {/* ── PAPER HEADER ── */}
-            <div className="flex items-start gap-5 pb-3 border-b border-gray-400">
-              {/* Logo */}
-              <div className="shrink-0">
-                <img src={logo} alt="NTF Logo" className="h-12 w-auto object-contain" />
+      {/* =====================================================
+          PAPER SHEET (Day-1 style)
+      ====================================================== */}
+      {compiledSections.length === 0 || totalQuestions === 0 ? (
+        <div className="mx-auto mt-10 max-w-[760px] border-2 border-dashed border-gray-200 rounded-xl py-14 text-center bg-white">
+          <p className="text-sm font-semibold text-gray-500">No questions added yet.</p>
+          <button
+            type="button"
+            onClick={() => navigate(editorPath)}
+            className="mt-4 inline-flex h-10 items-center rounded-xl bg-primary px-5 text-xs font-semibold text-white shadow-sm"
+          >
+            Go to Editor &amp; Add Questions
+          </button>
+        </div>
+      ) : (
+        <div className="mx-auto w-full max-w-[1100px] bg-white text-black print:max-w-none">
+          <div className="min-h-[1120px] px-[35px] py-[35px]">
+            {/* =================================================
+                HEADER
+            ================================================== */}
+            <div className="relative">
+              <div className="absolute left-0 top-0">
+                <img src={logo} alt="NTF Logo" className="h-[58px] w-auto object-contain" />
               </div>
 
-              {/* Center Title Block */}
-              <div className="flex-1 text-center">
-                <h1 className="text-lg font-black text-gray-900 uppercase tracking-wide leading-tight">
-                  {testTitle}
-                </h1>
-                <p className="text-xs text-gray-500 mt-0.5 font-medium">{subTitle}</p>
-              </div>
-            </div>
-
-            {/* ── METADATA BOX ── */}
-            <div className="border border-gray-300 rounded-lg p-4">
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-[11px] text-gray-800">
-                {/* Left column */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-22 font-semibold text-gray-700 shrink-0">Test Title</span>
-                    <span className="text-gray-500 shrink-0">:</span>
-                    <span className="flex-1 border-b border-gray-300 pb-0.5 text-gray-900 truncate font-medium">
-                      {testTitle}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-22 font-semibold text-gray-700 shrink-0">Department</span>
-                    <span className="text-gray-500 shrink-0">:</span>
-                    <span className="flex-1 border-b border-gray-300 pb-0.5 text-gray-900 truncate font-medium">
-                      {department}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-22 font-semibold text-gray-700 shrink-0">Total Marks</span>
-                    <span className="text-gray-500 shrink-0">:</span>
-                    <span className="flex-1 border-b border-gray-300 pb-0.5 text-gray-900 font-medium">
-                      {totalMarks}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right column */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 font-semibold text-gray-700 shrink-0">Duration</span>
-                    <span className="text-gray-500 shrink-0">:</span>
-                    <span className="flex-1 border-b border-gray-300 pb-0.5 text-gray-900 font-medium">
-                      {duration} Min
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 font-semibold text-gray-700 shrink-0">Date</span>
-                    <span className="text-gray-500 shrink-0">:</span>
-                    <span className="flex-1 border-b border-gray-300 pb-0.5 text-gray-900 font-medium">
-                      &nbsp;
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 font-semibold text-gray-700 shrink-0">Instructions</span>
-                    <span className="text-gray-500 shrink-0">:</span>
-                    <span className="flex-1 border-b border-gray-300 pb-0.5 text-gray-900 font-medium">
-                      See below
-                    </span>
-                  </div>
-                </div>
+              <div className="pt-[40px] text-center">
+                <h1 className="text-[16px] font-bold uppercase leading-tight">{testTitle}</h1>
+                {subTitle && (
+                  <p className="mt-1 text-[11px] text-gray-700">{subTitle}</p>
+                )}
               </div>
             </div>
 
-            {/* ── INSTRUCTIONS BOX ── */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 print:bg-white print:border-gray-300">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-5 w-5 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <AssignmentOutlinedIcon sx={{ fontSize: 13, color: "#6F4AE7" }} />
-                </div>
-                <span className="text-[11px] font-black text-gray-800 uppercase tracking-widest">
-                  Instructions
+            {/* =================================================
+                INFORMATION BOX
+            ================================================== */}
+            <div className="mt-4 border border-black px-5 py-4">
+              <div className="flex items-center text-[12px]">
+                <span>अंक -</span>
+                <span
+                  className="ml-2 min-w-[40px] border-b border-dotted border-black px-1 outline-none"
+                  contentEditable
+                  suppressContentEditableWarning
+                  spellCheck={false}
+                >
+                  / {totalMarks}
                 </span>
               </div>
-              <ul className="space-y-1 text-[11px] text-gray-700 pl-1">
-                {[
-                  "Read all the questions carefully before answering.",
-                  "Choose the correct / most appropriate option.",
-                  "Each question carries equal marks unless mentioned.",
-                  "There is no negative marking.",
-                  "Use of calculator or mobile phones is not allowed.",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-1.5">
-                    <span className="mt-1 h-1 w-1 rounded-full bg-gray-500 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
 
-            {/* ── SECTIONS ── */}
-            {sections.length === 0 || totalQuestions === 0 ? (
-              <div className="border-2 border-dashed border-gray-200 rounded-xl py-14 text-center">
-                <p className="text-sm font-semibold text-gray-500">No questions added yet.</p>
-                <button
-                  type="button"
-                  onClick={() => navigate(editorPath)}
-                  className="mt-4 inline-flex h-10 items-center rounded-xl bg-primary px-5 text-xs font-semibold text-white shadow-sm"
-                >
-                  Go to Editor &amp; Add Questions
-                </button>
+              <p
+                className="mt-4 text-[11px] outline-none"
+                contentEditable
+                suppressContentEditableWarning
+                spellCheck={false}
+              >
+                (ऑब्जेक्टिव टेस्ट में पास होने के लिए {passPercentage}% अंक लाना अनिवार्य है।)
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 text-[12px]">
+                <div className="flex items-center">
+                  <span>समय -</span>
+                  <span
+                    className="ml-2 inline-block min-h-[16px] w-[130px] border-b border-dotted border-black px-1 outline-none"
+                    contentEditable
+                    suppressContentEditableWarning
+                    spellCheck={false}
+                  >
+                    {duration} मिनट
+                  </span>
+                </div>
+
+                <div className="flex items-center">
+                  <span>दिनांक-</span>
+                  <span
+                    className="ml-2 inline-block min-h-[16px] w-[180px] border-b border-dotted border-black px-1 outline-none"
+                    contentEditable
+                    suppressContentEditableWarning
+                    spellCheck={false}
+                  />
+                </div>
               </div>
-            ) : (
-              sections.map((section, sIdx) => {
-                const qs = section.questions || [];
-                if (qs.length === 0) return null;
 
-                // compute global start index for this section
-                let globalStart = 1;
-                for (let i = 0; i < sIdx; i++) {
-                  globalStart += sections[i].questions?.length || 0;
-                }
-
-                const sectionMarks = qs.reduce((a, q) => a + (Number(q.marks) || 0), 0);
-
-                // split into left and right columns
-                const leftQs = qs.filter((_, i) => i % 2 === 0);
-                const rightQs = qs.filter((_, i) => i % 2 !== 0);
-
-                const leftGlobalStart = (localIdx) => globalStart + localIdx * 2;
-                const rightGlobalStart = (localIdx) => globalStart + localIdx * 2 + 1;
-
-                return (
-                  <div key={section.id || sIdx} className="space-y-4 print:break-before-auto">
-
-                    {/* ── Section Divider Banner ── */}
-                    <div className="relative flex items-center my-4">
-                      <div className="flex-1 h-px bg-gray-300" />
-                      <div className="mx-3 px-5 py-1 rounded-full border border-primary/40 bg-primary/5 text-[11px] font-bold text-primary uppercase tracking-widest shrink-0 print:border-gray-400 print:text-gray-800 print:bg-white">
-                        {section.name?.toUpperCase() || `SECTION – ${String.fromCharCode(65 + sIdx)}`}
-                      </div>
-                      <div className="flex-1 h-px bg-gray-300" />
-                    </div>
-
-                    {/* ── Two-Column Question Grid with center dashed border ── */}
-                    <div className="grid grid-cols-2 gap-0 border-t border-gray-200">
-                      {/* Left Column */}
-                      <div className="pr-4 border-r border-dashed border-gray-300 space-y-5 pt-4">
-                        {leftQs.map((q, li) => {
-                          const num = leftGlobalStart(li);
-                          return (
-                            <div key={q.id || li} className="space-y-1.5 break-inside-avoid">
-                              {/* Question text */}
-                              <p className="text-[11px] font-semibold text-gray-900 leading-snug">
-                                <span className="mr-1">{num}.</span>
-                                {q.question || `Question ${num}`}
-                              </p>
-                              {/* Options in 2×2 grid */}
-                              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 pl-3">
-                                {q.options?.map((opt, oi) => {
-                                  const isCorrect = showAnswerKey && q.correctOption === opt.id;
-                                  return (
-                                    <div
-                                      key={opt.id}
-                                      className={`flex items-start gap-1 text-[10.5px] leading-snug ${
-                                        isCorrect ? "font-bold text-emerald-700" : "text-gray-700"
-                                      }`}
-                                    >
-                                      <span className="shrink-0 font-medium">
-                                        {ALPHABET[oi]})
-                                      </span>
-                                      <span className="truncate">{opt.value || `Option ${opt.label}`}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Right Column */}
-                      <div className="pl-4 space-y-5 pt-4">
-                        {rightQs.map((q, ri) => {
-                          const num = rightGlobalStart(ri);
-                          if (num > globalStart + qs.length - 1) return null;
-                          return (
-                            <div key={q.id || ri} className="space-y-1.5 break-inside-avoid">
-                              {/* Question text */}
-                              <p className="text-[11px] font-semibold text-gray-900 leading-snug">
-                                <span className="mr-1">{num}.</span>
-                                {q.question || `Question ${num}`}
-                              </p>
-                              {/* Options in 2×2 grid */}
-                              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 pl-3">
-                                {q.options?.map((opt, oi) => {
-                                  const isCorrect = showAnswerKey && q.correctOption === opt.id;
-                                  return (
-                                    <div
-                                      key={opt.id}
-                                      className={`flex items-start gap-1 text-[10.5px] leading-snug ${
-                                        isCorrect ? "font-bold text-emerald-700" : "text-gray-700"
-                                      }`}
-                                    >
-                                      <span className="shrink-0 font-medium">
-                                        {ALPHABET[oi]})
-                                      </span>
-                                      <span className="truncate">{opt.value || `Option ${opt.label}`}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Section marks indicator (right-aligned) */}
-                    <div className="text-right">
-                      <span className="text-[10px] font-bold text-gray-500 italic">
-                        ({sectionMarks} {sectionMarks === 1 ? "Mark" : "Marks"})
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-
+              <div className="mt-5 flex flex-wrap items-center gap-y-3 text-[12px]">
+                <span className="whitespace-nowrap">सदस्य का नाम</span>
+                <span
+                  className="mx-2 inline-block min-h-[16px] w-[250px] border-b border-dotted border-black px-1 outline-none"
+                  contentEditable
+                  suppressContentEditableWarning
+                  spellCheck={false}
+                />
+                <span className="whitespace-nowrap">क्वालिफिकेशन</span>
+                <span
+                  className="mx-2 inline-block min-h-[16px] w-[220px] border-b border-dotted border-black px-1 outline-none"
+                  contentEditable
+                  suppressContentEditableWarning
+                  spellCheck={false}
+                />
+                <span className="whitespace-nowrap">यूनिट नाम</span>
+                <span
+                  className="ml-2 inline-block min-h-[16px] w-[180px] border-b border-dotted border-black px-1 outline-none"
+                  contentEditable
+                  suppressContentEditableWarning
+                  spellCheck={false}
+                />
+              </div>
             </div>
-        </div>
-      </div>
 
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          body { background: white !important; }
-          .print\\:hidden { display: none !important; }
-        }
-      `}</style>
-    </div>
+            {/* =================================================
+                QUESTIONS
+            ================================================== */}
+            <div className="mt-8 grid grid-cols-2 gap-x-[80px]">
+              {compiledSections.map(({ section, leftQs, rightQs }) => (
+                <Fragment key={section.id}>
+                  <div className="col-span-2">
+                    <h2 className="mb-4 mt-6 text-[16px] font-bold uppercase">
+                      {section.name || "Section"}
+                    </h2>
+                  </div>
+
+                  <div>
+                    {leftQs.map((q) => (
+                      <Question key={q.id} number={q.number} question={q} />
+                    ))}
+                  </div>
+
+                  <div>
+                    {rightQs.map((q) => (
+                      <Question key={q.id} number={q.number} question={q} />
+                    ))}
+                  </div>
+                </Fragment>
+              ))}
+            </div>
+
+            {/* FOOTER */}
+            {renderFooter()}
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          PRINT CSS
+      ====================================================== */}
+      <style>
+        {`
+          @media print {
+            html,
+            body {
+              margin: 0;
+              padding: 0;
+              background: white !important;
+            }
+
+            @page {
+              size: A4 portrait;
+              margin: 0;
+            }
+
+            .print\\:hidden {
+              display: none !important;
+            }
+
+            .break-inside-avoid {
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
+          }
+        `}
+      </style>
+    </>
   );
 };
 

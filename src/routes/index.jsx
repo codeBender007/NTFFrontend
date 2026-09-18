@@ -22,6 +22,7 @@ import UsersPage from "../features/lms/pages/UsersPage";
 import OperatorProfile from "../features/lms/pages/OperatorProfile";
 import TrainingEffectivenessPage from "../features/lms/pages/TrainingEffectivenessPage";
 import OperatorObservancePage from "../features/lms/pages/OperatorObservancePage";
+import SavedPaperPreview from "../features/lms/pages/SavedPaperPreview";
 
 
 const App = () => {
@@ -32,7 +33,6 @@ const App = () => {
         <Route path="/home" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/attendance" element={<Attendance />} />
-
         <Route path="/dashboard/requirement" element={<Requirement />} />
         <Route path="/lms" element={<LMS />} />
         <Route path="/lms/dashboard" element={<LMSDashboard />} />
@@ -49,6 +49,8 @@ const App = () => {
           element={<MachinePage />}
         />
 
+      
+
         <Route path="/lms/roles" element={<Roles />} />
 
         <Route path="/lms/operators" element={<Operators />} />
@@ -60,12 +62,12 @@ const App = () => {
         <Route path="/lms/l0" element={<L0 />} />
 
         <Route path="/lms/l0/editor" element={<L0Editor />} />
-
         <Route path="/lms/l0/preview" element={<L0Preview />} />
 
         <Route path="/lms/l1" element={<L1 />} />
 
         <Route path="/lms/l1/preview" element={<L1Preview />} />
+        <Route path="/lms/paper/preview/:id" element={<SavedPaperPreview />} />
                 <Route path="/lms/training" element={<TrainingEffectivenessPage />} />
                 <Route path="/lms/operator-observance" element={<OperatorObservancePage />} />
 

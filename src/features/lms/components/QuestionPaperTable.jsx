@@ -1,13 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import Filters from "../../../components/Filters";
 import { getSavedPapers } from "../utils/testPapers";
 
 const QuestionPaperTable = ({ onCreate }) => {
+  const navigate = useNavigate();
   const [rows] = useState(() => getSavedPapers());
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -74,12 +76,12 @@ const QuestionPaperTable = ({ onCreate }) => {
                     "Course / Module",
                     "Passing Criteria",
                     "Total Marks",
-                    "Actions",
+                    "Preview",
                   ].map((head) => (
                     <th
                       key={head}
                       className={`px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-600 border-b border-r border-gray-200 ${
-                        head === "Actions" ? "text-center" : "text-left"
+                        head === "Preview" ? "text-center" : "text-left"
                       }`}
                     >
                       {head}
@@ -148,10 +150,12 @@ const QuestionPaperTable = ({ onCreate }) => {
                     <td className="px-4 py-3 text-center border-b border-gray-100">
                       <button
                         type="button"
-                        title="More actions"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E5E7EB] text-[#6B7280] transition hover:border-[#6F4AE7] hover:text-[#6F4AE7]"
+                        onClick={() => navigate(`/lms/paper/preview/${row.id}`)}
+                        title="Preview paper"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#E5E7EB] bg-white px-3 text-[11px] font-semibold text-[#6F4AE7] transition hover:border-[#6F4AE7] hover:bg-primary/5"
                       >
-                        <MoreVertIcon sx={{ fontSize: 18 }} />
+                        <VisibilityOutlinedIcon sx={{ fontSize: 15 }} />
+                        Preview
                       </button>
                     </td>
                   </tr>

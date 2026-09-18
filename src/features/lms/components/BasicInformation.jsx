@@ -2,7 +2,6 @@ import { useState } from "react";
 import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
 import KeyboardArrowUpOutlinedIcon from "@mui/icons-material/KeyboardArrowUpOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 
 const inputClass =
   "w-full h-10 rounded-xl border border-gray-200 px-3.5 text-sm outline-none bg-gray-50/50 text-gray-800 placeholder:text-gray-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 transition";
@@ -32,6 +31,7 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
     sections: initialData.sections || "Section A",
     lines: initialData.lines || "Line 1",
     subSections: initialData.subSections || "Sub Section 1",
+    machines: initialData.machines || "",
     duration: initialData.duration || 30,
     passPercentage: initialData.passPercentage || 80,
   });
@@ -194,7 +194,7 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
             </div>
 
             <div>
-              <label className={labelClass}>Line / Station</label>
+              <label className={labelClass}>Line</label>
               <div className="relative">
                 <select
                   name="lines"
@@ -206,6 +206,24 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
                   <option value="Line 1">Line 1</option>
                   <option value="Line 2">Line 2</option>
                   <option value="Line 3">Line 3</option>
+                </select>
+                <KeyboardArrowDownOutlinedIcon
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  sx={{ fontSize: 18 }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Machine</label>
+              <div className="relative">
+                <select
+                  name="machines"
+                  value={formData.machines}
+                  onChange={handleChange}
+                  className={selectClass}
+                >
+                  <option value="">Select Machine</option>
                 </select>
                 <KeyboardArrowDownOutlinedIcon
                   className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"

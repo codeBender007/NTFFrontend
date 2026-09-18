@@ -602,10 +602,159 @@ const TrainingEffectivenessForm = () => {
           @media screen and (max-width: 820px) {
             body {
               overflow-x: auto;
+              background: #f4f4f4;
             }
 
             .training-page {
-              margin: 10px;
+              width: auto;
+              min-height: auto;
+              margin: 0;
+              padding: 16px 14px 40px 14px;
+              overflow: visible;
+            }
+
+            .training-header {
+              height: auto;
+              min-height: 46px;
+              margin-bottom: 12px;
+              position: relative;
+            }
+
+            .training-logo {
+              width: 50px;
+              height: 36px;
+              top: 0;
+            }
+
+            .training-title {
+              left: 58px;
+              top: 9px;
+              transform: none;
+              font-size: 13px;
+              line-height: 16px;
+              white-space: normal;
+              text-align: left;
+            }
+
+            .field-row {
+              grid-template-columns: 1fr;
+            }
+
+            .field-label {
+              font-size: 12px;
+              white-space: normal;
+            }
+
+            .field-input {
+              font-size: 13px;
+            }
+
+            .section-title {
+              margin-top: 18px;
+              font-size: 13px;
+            }
+
+            .instruction {
+              font-size: 12px;
+            }
+
+            .rating-table {
+              font-size: 11px;
+            }
+
+            .rating-table th,
+            .rating-table td {
+              padding: 4px 3px;
+            }
+
+            .rating-table th {
+              font-size: 11px;
+              height: auto;
+            }
+
+            .rating-table td {
+              height: 40px;
+            }
+
+            .rating-table .objective {
+              width: 38%;
+            }
+
+            .rating-table .rating {
+              width: 18%;
+            }
+
+            .rating-table .remarks {
+              width: 37%;
+            }
+
+            .rating-select {
+              font-size: 12px;
+              height: 26px;
+            }
+
+            .remarks-input {
+              font-size: 11px;
+            }
+
+            .other-input {
+              width: 100%;
+              font-size: 11px;
+            }
+
+            .review-section {
+              margin-top: 14px;
+            }
+
+            .index-line {
+              width: 140px;
+            }
+
+            .checkbox-row {
+              flex-wrap: wrap;
+              gap: 6px 14px;
+              align-items: flex-start;
+            }
+
+            .checkbox-item {
+              font-size: 10px;
+            }
+
+            .action-options {
+              margin-left: 8px;
+              gap: 20px;
+            }
+
+            .signature-table {
+              font-size: 10px;
+            }
+
+            .signature-table td {
+              height: 48px;
+            }
+
+            .criteria-title {
+              font-size: 12px;
+            }
+
+            .criteria-table {
+              font-size: 10px;
+            }
+
+            .criteria-table th,
+            .criteria-table td {
+              padding: 4px 3px;
+            }
+
+            .criteria-table th {
+              font-size: 10px;
+              height: auto;
+            }
+
+            .footer {
+              left: 14px;
+              right: 14px;
+              bottom: 14px;
             }
           }
         `}
@@ -791,7 +940,7 @@ const TrainingEffectivenessForm = () => {
               <tr>
                 <td className="serial">1</td>
 
-                <td className="objective-cell">
+                <td className="objective-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                   General Awareness
                 </td>
 
@@ -823,7 +972,7 @@ const TrainingEffectivenessForm = () => {
               <tr>
                 <td className="serial">2</td>
 
-                <td className="objective-cell">
+                <td className="objective-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                   Improvement in Knowledge
                 </td>
 
@@ -855,7 +1004,7 @@ const TrainingEffectivenessForm = () => {
               <tr>
                 <td className="serial">3</td>
 
-                <td className="objective-cell">
+                <td className="objective-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                   Improvement in Skill
                 </td>
 
@@ -887,7 +1036,7 @@ const TrainingEffectivenessForm = () => {
               <tr>
                 <td className="serial">4</td>
 
-                <td className="objective-cell">
+                <td className="objective-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                   Build Confidence
                 </td>
 
@@ -919,7 +1068,7 @@ const TrainingEffectivenessForm = () => {
               <tr>
                 <td className="serial">5</td>
 
-                <td className="objective-cell">
+                <td className="objective-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                   Develop positive attitude towards the subject
                 </td>
 
@@ -951,7 +1100,7 @@ const TrainingEffectivenessForm = () => {
               <tr>
                 <td className="serial">6</td>
 
-                <td className="objective-cell">
+                <td className="objective-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                   Potential to Train/Guide others
                 </td>
 
@@ -984,7 +1133,9 @@ const TrainingEffectivenessForm = () => {
                 <td className="serial">7</td>
 
                 <td className="objective-cell">
-                  Other (Specify):
+                  <span contentEditable suppressContentEditableWarning spellCheck={false}>
+                    Other (Specify):
+                  </span>
 
                   <input
                     type="text"
@@ -1333,15 +1484,15 @@ const TrainingEffectivenessForm = () => {
 
             <tr>
 
-              <td className="score-cell">
+              <td className="score-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 0
               </td>
 
-              <td className="level-cell">
+              <td className="level-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 Not Achieved
               </td>
 
-              <td>
+              <td contentEditable suppressContentEditableWarning spellCheck={false}>
                 No noticeable improvement or understanding of the topic.
                 Unable to apply the knowledge/skill covered during the
                 training.
@@ -1351,17 +1502,17 @@ const TrainingEffectivenessForm = () => {
 
             <tr>
 
-              <td className="score-cell">
+              <td className="score-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 1
               </td>
 
-              <td className="level-cell">
+              <td className="level-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 Minimal
                 <br />
                 Achievement
               </td>
 
-              <td>
+              <td contentEditable suppressContentEditableWarning spellCheck={false}>
                 A little understanding on the subject. Very little
                 improvement observed. Employee remembers training points
                 only superficially or inconsistently. No significant
@@ -1373,17 +1524,17 @@ const TrainingEffectivenessForm = () => {
 
             <tr>
 
-              <td className="score-cell">
+              <td className="score-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 2
               </td>
 
-              <td className="level-cell">
+              <td className="level-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 Partial
                 <br />
                 Achievement
               </td>
 
-              <td>
+              <td contentEditable suppressContentEditableWarning spellCheck={false}>
                 Subject understanding is satisfactory. Some improvement
                 visible but inconsistent. Employee applies training
                 occasionally or in limited situations. Awareness exists but
@@ -1395,17 +1546,17 @@ const TrainingEffectivenessForm = () => {
 
             <tr>
 
-              <td className="score-cell">
+              <td className="score-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 3
               </td>
 
-              <td className="level-cell">
+              <td className="level-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 Largely
                 <br />
                 Achieved
               </td>
 
-              <td>
+              <td contentEditable suppressContentEditableWarning spellCheck={false}>
                 Understand the subject fairly and Clear improvement seen.
                 Employee regularly applies learning in work, shows good
                 awareness and consistency. Training objectives are mostly
@@ -1417,15 +1568,15 @@ const TrainingEffectivenessForm = () => {
 
             <tr>
 
-              <td className="score-cell">
+              <td className="score-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 4
               </td>
 
-              <td className="level-cell">
+              <td className="level-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 Fully Achieved
               </td>
 
-              <td>
+              <td contentEditable suppressContentEditableWarning spellCheck={false}>
                 Understand the subject completely and Training objectives
                 completely achieved. Employee demonstrates strong,
                 consistent, and independent application of learning.
