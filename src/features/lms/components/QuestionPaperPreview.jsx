@@ -145,7 +145,7 @@ const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
               }`}
             >
               <VisibilityOutlinedIcon sx={{ fontSize: 15 }} />
-              <span className="hidden sm:inline">{showAnswerKey ? "Answer Key" : "Student View"}</span>
+              <span className="hidden sm:inline">{showAnswerKey ? "Hide Answer Key" : "Answer Key"}</span>
             </button>
 
             <button

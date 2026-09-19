@@ -28,7 +28,6 @@ const loadUsers = () => {
     const stored = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY));
 
     if (Array.isArray(stored)) return stored;
-
     return SEED_USERS;
   } catch {
     return SEED_USERS;

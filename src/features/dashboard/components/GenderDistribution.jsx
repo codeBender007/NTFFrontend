@@ -1,5 +1,4 @@
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -62,7 +61,7 @@ const chartData = {
         55,
         45,
       ],
-      backgroundColor: "#ba58a5",
+backgroundColor: "#ba58a5",
 
       borderRadius: {
         topLeft: 5,
@@ -157,9 +156,11 @@ const options = {
         display: false,
       },
 
-      // Space between individual bars, like the manpower graph
-      barPercentage: 0.3,
-      categoryPercentage: 0.4,
+      // Keep bars ~25px thick while adding a gap between the
+      // Female + Male bars in each group: bar = 0.83 * slot,
+      // slot = half of a 0.6-width category, so gap stays ~5px
+      barPercentage: 0.55,
+      categoryPercentage: 0.6,
 
       ticks: {
         color: "#64748B",
@@ -228,49 +229,6 @@ const GenderDistribution = () => {
         </p>
       </div>
     </div>
-
-    {/* Right side */}
-    <div className="flex items-center gap-4">
-      {/* Ratio - same color as Female bar */}
-      <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-50">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#ba58a5]"></span>
-
-        <span className="text-[10px] font-semibold text-[#ba58a5] whitespace-nowrap">
-          Ratio: 48% F / 52% M
-        </span>
-      </span>
-
-      {/* More button */}
-      <button className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition">
-        <MoreVertIcon
-          sx={{
-            fontSize: 17,
-            color: "#64748B",
-          }}
-        />
-      </button>
-    </div>
-  </div>
-
-  {/* Legend */}
-  <div className="flex justify-end items-center gap-4 mt-3">
-    {/* Female */}
-    <div className="flex items-center gap-1.5">
-      <span className="w-2 h-2 rounded-full bg-[#ba58a5]"></span>
-
-      <span className="text-[9px] font-medium text-slate-500">
-        Female
-      </span>
-    </div>
-
-    {/* Male */}
-    <div className="flex items-center gap-1.5">
-      <span className="w-2 h-2 rounded-full bg-[#2a62d9]"></span>
-
-      <span className="text-[9px] font-medium text-slate-500">
-        Male
-      </span>
-    </div>
   </div>
 </div>
 
@@ -283,6 +241,27 @@ const GenderDistribution = () => {
           }}
         >
           <Bar data={chartData} options={options} />
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex justify-center items-center gap-4 pb-4">
+        {/* Female */}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#ba58a5]"></span>
+
+          <span className="text-xs font-medium text-slate-500">
+            Female
+          </span>
+        </div>
+
+        {/* Male */}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#2a62d9]"></span>
+
+          <span className="text-xs font-medium text-slate-500">
+            Male
+          </span>
         </div>
       </div>
     </div>

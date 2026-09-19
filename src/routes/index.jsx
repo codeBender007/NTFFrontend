@@ -24,7 +24,6 @@ import TrainingEffectivenessPage from "../features/lms/pages/TrainingEffectivene
 import OperatorObservancePage from "../features/lms/pages/OperatorObservancePage";
 import SavedPaperPreview from "../features/lms/pages/SavedPaperPreview";
 
-
 const App = () => {
   return (
     <BrowserRouter basename={BASE_URL}>
@@ -39,38 +38,25 @@ const App = () => {
         <Route path="/lms/department" element={<DepartmentPage />} />
         {/* Sub-Departments */}
         <Route path="/lms/subdepartment/:deptId" element={<SectionPage />} />
-
         {/* Lines */}
         <Route path="/lms/line/:deptId/:subDeptId" element={<LinesPage />} />
-
         {/* Machines */}
         <Route
           path="/lms/machine/:deptId/:subDeptId/:lineId"
           element={<MachinePage />}
         />
-
-      
-
         <Route path="/lms/roles" element={<Roles />} />
-
         <Route path="/lms/operators" element={<Operators />} />
-
         <Route path="/lms/users" element={<UsersPage />} />
-
         <Route path="/lms/operator/:id" element={<OperatorProfile />} />
-
         <Route path="/lms/l0" element={<L0 />} />
-
         <Route path="/lms/l0/editor" element={<L0Editor />} />
         <Route path="/lms/l0/preview" element={<L0Preview />} />
-
         <Route path="/lms/l1" element={<L1 />} />
-
         <Route path="/lms/l1/preview" element={<L1Preview />} />
         <Route path="/lms/paper/preview/:id" element={<SavedPaperPreview />} />
-                <Route path="/lms/training" element={<TrainingEffectivenessPage />} />
-                <Route path="/lms/operator-observance" element={<OperatorObservancePage />} />
-
+        <Route path="/lms/training" element={<TrainingEffectivenessPage />} />
+        <Route path="/lms/operator-observance" element={<OperatorObservancePage />} />
       </Routes>
     </BrowserRouter>
   );

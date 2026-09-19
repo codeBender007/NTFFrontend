@@ -1,6 +1,5 @@
 
 import PaymentsIcon from "@mui/icons-material/Payments";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -64,7 +63,7 @@ const chartData = {
         138,
       ],
       backgroundColor: "#002a3d",
-      barThickness: 28,
+      barThickness: 25,
 
       borderRadius: {
         topLeft: 5,
@@ -196,40 +195,6 @@ const DailySalary = () => {
               </p>
             </div>
           </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-4">
-            {/* Average daily - same color as graph */}
-            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#002a3d]"></span>
-
-              <span className="text-[10px] font-semibold text-[#002a3d]">
-                Avg Daily: ₹1.68L
-              </span>
-            </span>
-
-            {/* More button */}
-            <button className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition">
-              <MoreVertIcon
-                sx={{
-                  fontSize: 17,
-                  color: "#64748B",
-                }}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="flex justify-end items-center gap-4 mt-3">
-          {/* Regular Wages */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#002a3d]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Average Daily Salary
-            </span>
-          </div>
         </div>
       </div>
 
@@ -242,6 +207,18 @@ const DailySalary = () => {
           }}
         >
           <Bar data={chartData} options={options} />
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex justify-center items-center gap-4 pb-4">
+        {/* Regular Wages */}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#002a3d]"></span>
+
+          <span className="text-xs font-medium text-slate-500">
+            Average Daily Salary
+          </span>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useRef, useState } from "react";
 import logo from "../../../assets/images/NTF_logo_black.png";
 
 const QUESTIONS = {
@@ -130,6 +130,10 @@ const QUESTIONS = {
 
 const ALPHABET = ["a", "b", "c", "d"];
 
+const PAGE_WIDTH = 1000;
+const PAGE_GAP = 24;
+const TOTAL_PAGES = 2;
+
 const Day1QuestionPaper = () => {
   const [info, setInfo] = useState({
     time: "30 मिनट",
@@ -138,6 +142,16 @@ const Day1QuestionPaper = () => {
     designation: "",
     unit: "",
   });
+
+  const [pageIndex, setPageIndex] = useState(0);
+  const controlRef = useRef(null);
+
+  const rowWidth = TOTAL_PAGES * PAGE_WIDTH + (TOTAL_PAGES - 1) * PAGE_GAP;
+  const offset = pageIndex * (PAGE_WIDTH + PAGE_GAP);
+
+  const goToPage = (index) => {
+    setPageIndex(Math.max(0, Math.min(TOTAL_PAGES - 1, index)));
+  };
 
   // Change information fields
   const handleInfoChange = (field) => (event) => {
@@ -191,22 +205,75 @@ const Day1QuestionPaper = () => {
 
   return (
     <>
-      {/* PRINT BUTTON */}
-      <div className="mb-4 flex justify-end print:hidden">
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="bg-black px-5 py-2 text-sm font-medium text-white hover:bg-gray-800"
-        >
-          Print
-        </button>
+      {/* =====================================================
+          CONTROL BAR (PAGINATION + PRINT)
+      ====================================================== */}
+      <div
+        ref={controlRef}
+        className="mb-4 flex items-center justify-between print:hidden"
+      >
+        <span className="text-sm font-medium text-gray-600">
+          {pageIndex + 1} / {TOTAL_PAGES}
+        </span>
+
+        <div className="flex items-center gap-2">
+          {/* PREVIOUS PAGE */}
+          <button
+            type="button"
+            onClick={() => goToPage(pageIndex - 1)}
+            disabled={pageIndex === 0}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-xl text-gray-700 shadow-sm transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Previous page"
+          >
+            ‹
+          </button>
+
+          {/* NEXT PAGE */}
+          <button
+            type="button"
+            onClick={() => goToPage(pageIndex + 1)}
+            disabled={pageIndex >= TOTAL_PAGES - 1}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-xl text-gray-700 shadow-sm transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Next page"
+          >
+            ›
+          </button>
+
+          {/* PRINT */}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="bg-black px-5 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            Print
+          </button>
+        </div>
       </div>
 
       {/* =====================================================
-          PAGE 1
+          PAGER (HORIZONTAL SLIDE)
       ====================================================== */}
-      <div className="mx-auto w-full max-w-[1100px] bg-white text-black print:max-w-none">
-        <div className="min-h-[1120px] px-[35px] py-[35px]">
+      <div
+        className="day1-pager relative mx-auto overflow-hidden"
+        style={{ width: PAGE_WIDTH }}
+      >
+        <div
+          className="day1-pager-row flex transition-transform duration-500 ease-in-out"
+          style={{
+            width: rowWidth,
+            gap: PAGE_GAP,
+            transform: `translateX(${-offset}px)`,
+          }}
+        >
+          {/* =====================================================
+              PAGE 1
+          ====================================================== */}
+          <div
+            className="day1-page-box shrink-0"
+            style={{ width: PAGE_WIDTH }}
+          >
+            <div className="h-full w-full bg-white text-black">
+              <div className="min-h-[1120px] px-[35px] py-[35px]">
           {/* =====================================================
               HEADER
           ====================================================== */}
@@ -347,15 +414,20 @@ const Day1QuestionPaper = () => {
           </div>
 
           {/* FOOTER */}
-          <Footer />
+              <Footer />
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* =====================================================
-          PAGE 2
-      ====================================================== */}
-      <div className="mx-auto mt-8 w-full max-w-[1100px] bg-white text-black print:mt-0 print:max-w-none">
-        <div className="flex min-h-[1120px] flex-col px-[35px] py-[35px]">
+          {/* =====================================================
+              PAGE 2
+          ====================================================== */}
+          <div
+            className="day1-page-box shrink-0"
+            style={{ width: PAGE_WIDTH }}
+          >
+            <div className="h-full w-full bg-white text-black">
+              <div className="flex min-h-[1120px] flex-col px-[35px] py-[35px]">
           {/* =====================================================
               QUESTIONS PAGE 2
           ====================================================== */}
@@ -408,8 +480,11 @@ const Day1QuestionPaper = () => {
           </div>
 
           {/* FOOTER */}
-          <Footer />
+              <Footer />
+            </div>
+          </div>
         </div>
+      </div>
       </div>
 
       {/* =====================================================
@@ -444,8 +519,25 @@ const Day1QuestionPaper = () => {
               page-break-inside: avoid;
             }
 
-            /* Keep second page separate */
-            .max-w-\\[1100px\\] + .max-w-\\[1100px\\] {
+            .day1-pager {
+              overflow: visible !important;
+            }
+
+            .day1-pager-row {
+              display: block !important;
+              width: auto !important;
+              height: auto !important;
+              gap: 0 !important;
+              transform: none !important;
+              transition: none !important;
+            }
+
+            .day1-page-box {
+              width: auto !important;
+              height: auto !important;
+            }
+
+            .day1-page-box + .day1-page-box {
               page-break-before: always;
             }
           }

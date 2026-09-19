@@ -1,5 +1,4 @@
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,16 +21,16 @@ ChartJS.register(
 
 // Chart labels
 const labels = [
-  "Line 1",
-  "Line 2",
-  "Line 3",
-  "Line 4",
-  "Line 5",
-  "Line 6",
-  "Line 7",
-  "Line 8",
-  "Line 9",
-  "Line 10",
+  "01 May",
+  "02 May",
+  "03 May",
+  "04 May",
+  "05 May",
+  "06 May",
+  "07 May",
+  "08 May",
+  "09 May",
+  "10 May",
 ];
 
 // Chart data
@@ -202,63 +201,8 @@ const DailyManpower = () => {
         </p>
       </div>
     </div>
-
-    {/* Right side */}
-    <div className="flex items-center gap-4">
-      {/* Active shift - same color as Actual bar */}
-      <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#4285F4]"></span>
-
-        <span className="text-[10px] font-semibold text-[#4285F4]">
-          Active Shift
-        </span>
-      </div>
-
-      {/* More button */}
-      <button className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition">
-        <MoreVertIcon
-          sx={{
-            fontSize: 17,
-            color: "#64748B",
-          }}
-        />
-      </button>
-    </div>
-  </div>
-
-  {/* Legend */}
-  <div className="flex justify-end items-center gap-4 mt-3">
-    {/* Actual */}
-    <div className="flex items-center gap-1.5">
-      <span className="w-2 h-2 rounded-full bg-[#4285F4]"></span>
-
-      <span className="text-[9px] font-medium text-slate-500">
-        Actual
-      </span>
-    </div>
-
-    {/* Present */}
-    <div className="flex items-center gap-1.5">
-      <span className="w-2 h-2 rounded-full bg-[#26B7A0]"></span>
-
-      <span className="text-[9px] font-medium text-slate-500">
-        Present
-      </span>
-    </div>
-
-    {/* Requirement */}
-    <div className="flex items-center gap-1.5">
-      <span className="w-2 h-2 rounded-full bg-[#FFB52E]"></span>
-
-      <span className="text-[9px] font-medium text-slate-500">
-        Requirement
-      </span>
-    </div>
   </div>
 </div>
-
-
-
       {/* Scrollable Chart */}
       <div
         className="
@@ -278,6 +222,36 @@ const DailyManpower = () => {
           }}
         >
           <Bar data={chartData} options={options} />
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex justify-center items-center gap-4 pb-4">
+        {/* Actual */}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#4285F4]"></span>
+
+          <span className="text-xs font-medium text-slate-500">
+            Actual
+          </span>
+        </div>
+
+        {/* Present */}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#26B7A0]"></span>
+
+          <span className="text-xs font-medium text-slate-500">
+            Present
+          </span>
+        </div>
+
+        {/* Requirement */}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#FFB52E]"></span>
+
+          <span className="text-xs font-medium text-slate-500">
+            Requirement
+          </span>
         </div>
       </div>
     </div>

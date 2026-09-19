@@ -1,6 +1,5 @@
 
 import EventBusyIcon from "@mui/icons-material/EventBusy";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -52,7 +51,7 @@ const chartData = {
       backgroundColor: "#feb532",
 
       // Fixed thin bar width
-      barThickness: 28,
+      barThickness: 25,
 
       borderRadius: {
         topLeft: 5,
@@ -179,40 +178,6 @@ const Absentism = () => {
               </p>
             </div>
           </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-4">
-            {/* Monthly average - same color as graph */}
-            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#feb532]"></span>
-
-              <span className="text-[10px] font-semibold text-[#feb532]">
-                Monthly Average: 4.8%
-              </span>
-            </span>
-
-            {/* More button */}
-            <button className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition">
-              <MoreVertIcon
-                sx={{
-                  fontSize: 17,
-                  color: "#64748B",
-                }}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="flex justify-end items-center gap-4 mt-3">
-          {/* Absent Employees */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#feb532]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Absent Employees
-            </span>
-          </div>
         </div>
       </div>
 
@@ -225,6 +190,18 @@ const Absentism = () => {
           }}
         >
           <Bar data={chartData} options={options} />
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex justify-center items-center gap-4 pb-4">
+        {/* Absent Employees */}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#feb532]"></span>
+
+          <span className="text-xs font-medium text-slate-500">
+            Absent Employees
+          </span>
         </div>
       </div>
     </div>

@@ -74,9 +74,7 @@ const TrainingSchedule = () => {
       <div className="mx-auto w-full max-w-[1100px] bg-white p-3 text-black sm:p-5 print:max-w-none print:p-0">
         {/* OUTER BORDER */}
         <div className="border border-black">
-          {/* =====================================================
-              HEADER
-          ====================================================== */}
+          {/* HEADER*/}
           <div className="grid grid-cols-1 border-b border-black sm:grid-cols-[90px_1fr_300px]">
             {/* NTF */}
             <div className="flex items-center justify-center border-b border-black py-3 sm:border-b-0 sm:border-r sm:py-0">
@@ -110,9 +108,7 @@ const TrainingSchedule = () => {
             </div>
           </div>
 
-          {/* =====================================================
-              TRAINING INFORMATION
-          ====================================================== */}
+          {/* TRAINING INFORMATION */}
           <div className="border-b border-black px-3 py-3 text-sm sm:px-4">
             {/* TRAINING TITLE */}
             <div className="mb-3 flex items-center">
@@ -206,9 +202,7 @@ const TrainingSchedule = () => {
             </div>
           </div>
 
-          {/* =====================================================
-              INSTRUCTION
-          ====================================================== */}
+          {/* INSTRUCTION */}
           <div className="border-b border-black px-3 py-2 text-sm sm:px-4">
             <p className="font-medium leading-5">
               Following employees are required to attend the above training
@@ -221,9 +215,7 @@ const TrainingSchedule = () => {
             </p>
           </div>
 
-          {/* =====================================================
-              PARTICIPANT TABLE
-          ====================================================== */}
+          {/* PARTICIPANT TABLE */}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] border-collapse">
               {/* TABLE HEADER */}

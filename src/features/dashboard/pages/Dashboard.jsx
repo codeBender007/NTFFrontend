@@ -11,6 +11,8 @@ import Filters from "../../../components/Filters";
 import Attrition from "../components/Attrition";
 import Absentism from "../components/Absentism";
 import DailySalary from "../components/DailySalary";
+import DojoManpowerTrend from "../components/DojoManpowerTrend";
+import SkillLevelDistribution from "../components/SkillLevelDistribution";
 
 import GenderDistribution from "../components/GenderDistribution";
 // import GenderAttendance from "../components/GenderAttendance";
@@ -69,9 +71,13 @@ const Dashboard = () => {
           <KPICards data={kpiData} />
           <Filters />
           <DailyManpower />
-          <Attrition />
-          <Absentism />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Attrition />
+            <Absentism />
+          </div>
           <DailySalary />
+          <DojoManpowerTrend />
+          <SkillLevelDistribution />
           <GenderDistribution />
           {/* <GenderAttendance /> */}
         </main>

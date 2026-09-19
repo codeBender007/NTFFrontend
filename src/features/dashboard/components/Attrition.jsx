@@ -1,6 +1,5 @@
 
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,22 +21,18 @@ ChartJS.register(
 );
 
 const labels = [
-  "01 May",
-  "02 May",
-  "03 May",
-  "04 May",
-  "05 May",
-  "06 May",
-  "07 May",
-  "08 May",
-  "09 May",
-  "10 May",
-  "11 May",
-  "12 May",
-  "13 May",
-  "14 May",
-  "15 May",
-  "16 May",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 const chartData = {
@@ -46,12 +41,12 @@ const chartData = {
     {
       label: "Requirement",
       data: [
-        45, 55, 40, 60, 50, 34, 60, 45,
-        55, 40, 60, 50, 34, 60, 55, 45,
+        45, 55, 40, 60, 50, 34,
+        60, 45, 55, 40, 60, 50,
       ],
       backgroundColor: "#1D4ED8",
 
-      barThickness: 22,
+      barThickness: 25,
 
       borderRadius: {
         topLeft: 5,
@@ -168,47 +163,13 @@ const Attrition = () => {
 
             <div>
               <h2 className="text-sm font-bold text-slate-800">
-                Daily Attrition Rate
+                Monthly Attrition Rate
               </h2>
 
               <p className="text-[10px] text-slate-500 mt-0.5">
-                Deployed headcount with day-over-day movement
+                Deployed headcount with month-over-month movement
               </p>
             </div>
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-4">
-            {/* Monthly average */}
-            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8]"></span>
-
-              <span className="text-[10px] font-semibold text-[#1D4ED8]">
-                Monthly Average: 3.4%
-              </span>
-            </span>
-
-            {/* More button */}
-            <button className="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition">
-              <MoreVertIcon
-                sx={{
-                  fontSize: 17,
-                  color: "#64748B",
-                }}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="flex justify-end items-center gap-4 mt-3">
-          {/* Employees Left */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#1D4ED8]"></span>
-
-            <span className="text-[9px] font-medium text-slate-500">
-              Employees Left
-            </span>
           </div>
         </div>
       </div>
@@ -218,10 +179,22 @@ const Attrition = () => {
         <div
           className="h-[230px]"
           style={{
-            minWidth: "1600px",
+            minWidth: "1200px",
           }}
         >
           <Bar data={chartData} options={options} />
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex justify-center items-center gap-4 pb-4">
+        {/* Employees Left */}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#1D4ED8]"></span>
+
+          <span className="text-xs font-medium text-slate-500">
+            Employees Left
+          </span>
         </div>
       </div>
     </div>
