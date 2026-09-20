@@ -149,8 +149,8 @@ const TrainingEffectivenessForm = () => {
           .training-header {
             position: relative;
             width: 100%;
-            height: 60px;
-            border-bottom: 1px solid #4f81bd;
+            height: 70px;
+            border-bottom: 1px solid #000000;
             margin-bottom: 20px;
           }
 
@@ -158,8 +158,8 @@ const TrainingEffectivenessForm = () => {
             position: absolute;
             left: 0;
             top: -2px;
-            width: 74px;
-            height: 48px;
+            width: 96px;
+            height: 62px;
             object-fit: contain;
             object-position: left top;
           }
@@ -171,8 +171,8 @@ const TrainingEffectivenessForm = () => {
             transform: translateX(-50%);
             font-size: 20px;
             line-height: 22px;
-            font-weight: 400;
-            color: #1f4e79;
+            font-weight: 700;
+            color: #000000;
             white-space: nowrap;
             text-align: center;
           }
@@ -230,7 +230,7 @@ const TrainingEffectivenessForm = () => {
             font-size: 14px;
             line-height: 17px;
             font-weight: bold;
-            color: #1f4e79;
+            color: #000000;
             margin-top: 27px;
             margin-bottom: 4px;
           }
@@ -350,7 +350,7 @@ const TrainingEffectivenessForm = () => {
           .review-title {
             font-size: 14px;
             line-height: 18px;
-            color: #1f4e79;
+            color: #000000;
             font-weight: bold;
             margin-bottom: 8px;
           }
@@ -513,7 +513,7 @@ const TrainingEffectivenessForm = () => {
             font-size: 13px;
             line-height: 17px;
             font-weight: bold;
-            color: #1f4e79;
+            color: #000000;
             margin-bottom: 4px;
           }
 
@@ -621,13 +621,13 @@ const TrainingEffectivenessForm = () => {
             }
 
             .training-logo {
-              width: 50px;
-              height: 36px;
+              width: 64px;
+              height: 46px;
               top: 0;
             }
 
             .training-title {
-              left: 58px;
+              left: 70px;
               top: 9px;
               transform: none;
               font-size: 13px;

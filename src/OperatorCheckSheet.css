@@ -561,77 +561,92 @@
 }
 
 /* =========================================================
-   DAY HEADER
+   7 DAYS × 10 CYCLES OBSERVATION HEADER
 ========================================================= */
 
-.operator-checksheet-day-header {
+.operator-checksheet-observation-header {
   width: 1301px;
   height: 50px;
-
   flex: 0 0 1301px;
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(7, 1fr);
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
 }
 
-.operator-checksheet-day {
-  width: 100%;
+.operator-checksheet-day-group {
+  width: calc(1301px / 7);
   height: 50px;
+  flex: 0 0 calc(1301px / 7);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 
-  display: grid;
-
-  grid-template-rows:
-    24px
-    26px;
-
-  border-right: 2px solid #111111;
-
-  overflow: hidden;
+.operator-checksheet-day-group:last-child {
+  border-right: 0;
 }
 
 .operator-checksheet-day-title {
   width: 100%;
-  height: 24px;
-
+  height: 20px;
+  flex: 0 0 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-
+  gap: 2px;
   border-bottom: 1px solid #111111;
-
-  font-size: 11px;
-
+  border-right: 2px solid #111111;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 20px;
   white-space: nowrap;
+  overflow: hidden;
 }
 
-.operator-checksheet-cycle-header {
+.operator-checksheet-day-group:last-child .operator-checksheet-day-title {
+  border-right: 0;
+}
+
+.operator-checksheet-day-date {
+  width: 34px;
+  min-width: 10px;
+  max-width: 34px;
+  height: 14px;
+  outline: none;
+  border-bottom: 1px solid #111111;
+  font-weight: 400;
+  line-height: 13px;
+  cursor: text;
+}
+
+.operator-checksheet-cycle-row {
   width: 100%;
-  height: 26px;
-
+  height: 30px;
+  flex: 0 0 30px;
   display: grid;
-
-  grid-template-columns:
-    repeat(10, minmax(0, 1fr));
+  grid-template-columns: repeat(10, minmax(0, 1fr));
 }
 
-.operator-checksheet-cycle-number {
-  height: 26px;
-
+.operator-checksheet-observation-header-cell {
+  width: 100%;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-right: 1px solid #111111;
-
-  font-size: 10px;
-
+  border-bottom: 1px solid #111111;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 30px;
   min-width: 0;
 }
 
-.operator-checksheet-cycle-number:last-child {
-  border-right: 0;
+.operator-checksheet-day-end {
+  border-right: 2px solid #111111 !important;
+}
+
+.operator-checksheet-day-group:last-child .operator-checksheet-day-end {
+  border-right: 0 !important;
 }
 
 /* =========================================================
@@ -648,6 +663,8 @@
 }
 
 .operator-checksheet-left-body {
+  position: relative;
+
   width: 565px;
 
   flex: 0 0 565px;
@@ -730,6 +747,45 @@
 }
 
 /* =========================================================
+   MERGED METHOD GROUPS
+========================================================= */
+
+.operator-checksheet-method-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60px;
+  pointer-events: none;
+}
+
+.operator-checksheet-method-group {
+  position: absolute;
+  left: 0;
+  width: 60px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-right: 1px solid #111111;
+  border-bottom: 1px solid #111111;
+  background: #ffffff;
+
+  overflow: hidden;
+}
+
+.operator-checksheet-method-group span {
+  display: block;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+
+  text-align: center;
+  font-size: 9px;
+  line-height: 10px;
+  white-space: normal;
+}
+
+/* =========================================================
    OBSERVATION CELLS
 ========================================================= */
 
@@ -788,65 +844,300 @@
   outline-offset: -2px;
 }
 
+/* =========================================================
+   PLAIN / BOXED OBSERVATION ROWS
+========================================================= */
+
+.operator-checksheet-plain-row
+  .operator-checksheet-observation-cell {
+  border-right: 0;
+}
+
+.operator-checksheet-plain-row
+  .operator-checksheet-observation-cell:hover {
+  background: #f4f4f4;
+}
+
+.operator-checksheet-boxed-row
+  .operator-checksheet-observation-cell {
+  border-right: 1px solid #111111;
+}
+
+.operator-checksheet-boxed-row
+  .operator-checksheet-observation-cell:last-child {
+  border-right: 0;
+}
+
 .operator-checksheet-day-end {
-  border-right: 2px solid #111111;
+  border-right: 2px solid #111111 !important;
 }
 
 /* =========================================================
-   BOTTOM TABLE
+   BOTTOM SECTION - EXACT FIXED LAYOUT
 ========================================================= */
 
-.operator-checksheet-bottom {
-  width: 1866px;
-
-  border-left: 1px solid #111111;
-  border-top: 1px solid #111111;
-
-  background: #ffffff;
+.operator-checksheet-page .operator-checksheet-bottom {
+  display: block !important;
+  width: 1010px !important;
+  min-width: 1010px !important;
+  max-width: 1010px !important;
+  height: 126px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  border-top: 1px solid #111111 !important;
+  border-left: 1px solid #111111 !important;
+  border-right: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  font-family: Arial, Helvetica, sans-serif !important;
 }
 
-.operator-checksheet-bottom-head,
-.operator-checksheet-bottom-row {
-  width: 1866px;
-
-  display: grid;
-
-  grid-template-columns:
-    61px
-    58px
-    336px
-    1fr;
+.operator-checksheet-page .operator-checksheet-bottom-main {
+  display: grid !important;
+  grid-template-columns: 323px 405px 282px !important;
+  width: 1010px !important;
+  min-width: 1010px !important;
+  max-width: 1010px !important;
+  height: 87px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
 }
 
-.operator-checksheet-bottom-head {
-  height: 27px;
+/* Remarks - left 323px */
+.operator-checksheet-page .operator-checksheet-remarks {
+  display: block !important;
+  width: 323px !important;
+  height: 87px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-right: 1px solid #111111 !important;
+  border-bottom: 1px solid #111111 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
-.operator-checksheet-bottom-row {
-  height: 25px;
+.operator-checksheet-page .operator-checksheet-remarks-text {
+  display: block !important;
+  width: 323px !important;
+  height: 87px !important;
+  margin: 0 !important;
+  padding: 3px 4px !important;
+  box-sizing: border-box !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 10px !important;
+  line-height: 13px !important;
+  color: #111111 !important;
+  overflow: hidden !important;
+  outline: none !important;
 }
 
-.operator-checksheet-bottom-head > div,
-.operator-checksheet-bottom-row > div {
-  height: 100%;
-
-  border-right: 1px solid #111111;
-  border-bottom: 1px solid #111111;
-
-  padding: 4px;
-
-  font-size: 11px;
+/* Next level - middle 405px */
+.operator-checksheet-page .operator-checksheet-next-level {
+  display: block !important;
+  width: 405px !important;
+  height: 87px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-right: 1px solid #111111 !important;
+  border-bottom: 1px solid #111111 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
-.operator-checksheet-bottom-head > div {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.operator-checksheet-page .operator-checksheet-next-level-title {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 405px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  padding: 0 3px !important;
+  box-sizing: border-box !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  line-height: 18px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  outline: none !important;
 }
 
-.operator-checksheet-bottom-row > div:first-child {
-  font-size: 16px;
-  padding-top: 2px;
+.operator-checksheet-page .operator-checksheet-next-level-grid {
+  display: grid !important;
+  grid-template-columns: 202px 202px !important;
+  grid-template-rows: 34px 34px !important;
+  width: 404px !important;
+  height: 68px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.operator-checksheet-page .operator-checksheet-level-card {
+  display: grid !important;
+  grid-template-columns: 162px 40px !important;
+  width: 202px !important;
+  height: 34px !important;
+  min-width: 202px !important;
+  min-height: 34px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-top: 1px solid #111111 !important;
+  border-right: 1px solid #111111 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.operator-checksheet-page .operator-checksheet-level-card:nth-child(2),
+.operator-checksheet-page .operator-checksheet-level-card:nth-child(4) {
+  grid-template-columns: 40px 162px !important;
+}
+
+.operator-checksheet-page .operator-checksheet-level-question {
+  display: flex !important;
+  align-items: center !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 33px !important;
+  margin: 0 !important;
+  padding: 2px 3px !important;
+  box-sizing: border-box !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 8px !important;
+  line-height: 9px !important;
+  overflow: hidden !important;
+  outline: none !important;
+}
+
+.operator-checksheet-page .operator-checksheet-level-score {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  margin: -4px 0 0 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  border: 1px solid #111111 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+/* Judgement - right 282px */
+.operator-checksheet-page .operator-checksheet-bottom-judgement {
+  display: block !important;
+  width: 282px !important;
+  height: 87px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-bottom: 1px solid #111111 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.operator-checksheet-page .operator-checksheet-bottom-judgement-head,
+.operator-checksheet-page .operator-checksheet-bottom-judgement-row {
+  display: grid !important;
+  grid-template-columns: 95px 28px 79px 80px !important;
+  width: 282px !important;
+  min-width: 282px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.operator-checksheet-page .operator-checksheet-bottom-judgement-head {
+  height: 29px !important;
+}
+
+.operator-checksheet-page .operator-checksheet-bottom-judgement-row {
+  height: 19px !important;
+}
+
+.operator-checksheet-page .operator-checksheet-bottom-judgement-head > div,
+.operator-checksheet-page .operator-checksheet-bottom-judgement-row > div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 1px 2px !important;
+  box-sizing: border-box !important;
+  border-right: 1px solid #111111 !important;
+  border-bottom: 1px solid #111111 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 8px !important;
+  line-height: 9px !important;
+  text-align: center !important;
+  overflow: hidden !important;
+}
+
+.operator-checksheet-page .operator-checksheet-bottom-judgement-head > div:last-child,
+.operator-checksheet-page .operator-checksheet-bottom-judgement-row > div:last-child {
+  border-right: 0 !important;
+}
+
+/* Prepared / Checked / Approved */
+.operator-checksheet-page .operator-checksheet-signature-row {
+  display: grid !important;
+  grid-template-columns: 230px 395px 385px !important;
+  width: 1010px !important;
+  min-width: 1010px !important;
+  max-width: 1010px !important;
+  height: 22px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.operator-checksheet-page .operator-checksheet-signature-field {
+  display: flex !important;
+  align-items: center !important;
+  width: auto !important;
+  height: 22px !important;
+  margin: 0 !important;
+  padding: 0 4px !important;
+  box-sizing: border-box !important;
+  border-right: 1px solid #111111 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 10px !important;
+  line-height: 22px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+
+.operator-checksheet-page .operator-checksheet-signature-field > span:last-child {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 14px !important;
+  margin-left: 4px !important;
+  border-bottom: 1px solid #111111 !important;
+  outline: none !important;
+}
+
+.operator-checksheet-page .operator-checksheet-approved-field {
+  border-right: 0 !important;
+}
+
+.operator-checksheet-page .operator-checksheet-footer-code {
+  display: flex !important;
+  align-items: center !important;
+  width: 1010px !important;
+  height: 17px !important;
+  margin: 0 !important;
+  padding: 0 4px !important;
+  box-sizing: border-box !important;
+  border-top: 1px solid #111111 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 9px !important;
+  line-height: 17px !important;
+  white-space: nowrap !important;
 }
 
 /* =========================================================
@@ -876,4 +1167,17 @@
     margin-left: 0;
     margin-right: 0;
   }
+}
+
+/* Footer code shown below the Prepared / Checked / Approved row */
+.operator-checksheet-footer-code {
+  width: 1010px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  border-top: 1px solid #111111;
+  font-size: 9px;
+  line-height: 17px;
+  white-space: nowrap;
 }

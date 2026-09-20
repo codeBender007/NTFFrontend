@@ -24,6 +24,7 @@ import TrainingEffectivenessPage from "../features/lms/pages/TrainingEffectivene
 import OperatorObservancePage from "../features/lms/pages/OperatorObservancePage";
 import SavedPaperPreview from "../features/lms/pages/SavedPaperPreview";
 
+
 const App = () => {
   return (
     <BrowserRouter basename={BASE_URL}>
@@ -57,6 +58,7 @@ const App = () => {
         <Route path="/lms/paper/preview/:id" element={<SavedPaperPreview />} />
         <Route path="/lms/training" element={<TrainingEffectivenessPage />} />
         <Route path="/lms/operator-observance" element={<OperatorObservancePage />} />
+
       </Routes>
     </BrowserRouter>
   );

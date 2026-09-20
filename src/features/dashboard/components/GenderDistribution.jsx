@@ -40,6 +40,7 @@ const labels = [
 
 const chartData = {
   labels,
+
   datasets: [
     {
       label: "Female",
@@ -61,11 +62,25 @@ const chartData = {
         55,
         45,
       ],
-backgroundColor: "#ba58a5",
+
+      backgroundColor: "#ba58a5",
+
+      // Thin bar + visible gap between Female and Male
+      barThickness: 30,
+      maxBarThickness: 30,
+
+      // White side border keeps space between bars
+      borderColor: "#FFFFFF",
+      borderWidth: {
+        top: 0,
+        bottom: 0,
+        left: 3,
+        right: 3,
+      },
 
       borderRadius: {
-        topLeft: 5,
-        topRight: 5,
+        topLeft: 9,
+        topRight: 9,
         bottomLeft: 0,
         bottomRight: 0,
       },
@@ -93,11 +108,25 @@ backgroundColor: "#ba58a5",
         46,
         32,
       ],
+
       backgroundColor: "#2a62d9",
 
+      // Same thin width as Female
+      barThickness: 30,
+      maxBarThickness: 30,
+
+      // White side border keeps space between bars
+      borderColor: "#FFFFFF",
+      borderWidth: {
+        top: 0,
+        bottom: 0,
+        left: 3,
+        right: 3,
+      },
+
       borderRadius: {
-        topLeft: 5,
-        topRight: 5,
+        topLeft: 9,
+        topRight: 9,
         bottomLeft: 0,
         bottomRight: 0,
       },
@@ -121,24 +150,25 @@ const options = {
       display: false,
     },
 
-    // Tooltip completely disabled
     tooltip: {
       enabled: false,
       external: () => {},
     },
 
-    // Number displayed on top of every bar
     datalabels: {
       display: true,
       anchor: "end",
       align: "top",
       offset: 4,
+
       color: "#334155",
+
       font: {
         size: 10,
         weight: "600",
         family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       },
+
       formatter: (value) => value,
     },
   },
@@ -156,11 +186,17 @@ const options = {
         display: false,
       },
 
-      // Keep bars ~25px thick while adding a gap between the
-      // Female + Male bars in each group: bar = 0.83 * slot,
-      // slot = half of a 0.6-width category, so gap stays ~5px
-      barPercentage: 0.55,
-      categoryPercentage: 0.6,
+      /*
+        Fixed bar width = 22px
+
+        The white left/right borders create
+        a visible gap between Female and Male.
+
+        categoryPercentage controls the spacing
+        between date groups and is kept at 0.4
+        so the date-group spacing remains.
+      */
+      categoryPercentage: 0.4,
 
       ticks: {
         color: "#64748B",
@@ -177,7 +213,6 @@ const options = {
     y: {
       beginAtZero: true,
 
-      // Extra space above highest bars
       max: 80,
 
       ticks: {
@@ -192,7 +227,6 @@ const options = {
         padding: 8,
       },
 
-      // Horizontal lines removed
       grid: {
         display: false,
         drawTicks: false,
@@ -209,35 +243,34 @@ const GenderDistribution = () => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
       {/* Header */}
-     {/* Header */}
-<div className="px-5 pt-4">
-  <div className="flex items-center justify-between">
-    {/* Left side */}
-    <div className="flex items-center gap-3">
-      {/* Icon - same color as Female bar */}
-      <div className="w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center text-[#ba58a5]">
-        <PeopleAltIcon sx={{ fontSize: 20 }} />
-      </div>
+      <div className="px-5 pt-4">
+        <div className="flex items-center justify-between">
+          {/* Left side */}
+          <div className="flex items-center gap-3">
+            {/* Icon */}
+            <div className="w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center text-[#ba58a5]">
+              <PeopleAltIcon sx={{ fontSize: 20 }} />
+            </div>
 
-      <div>
-        <h2 className="text-sm font-bold text-slate-800">
-          Gender Distribution
-        </h2>
+            <div>
+              <h2 className="text-sm font-bold text-slate-800">
+                Gender Distribution
+              </h2>
 
-        <p className="text-[10px] text-slate-500 mt-0.5">
-          Deployed headcount with day-over-day movement
-        </p>
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                Deployed headcount with day-over-day movement
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</div>
 
       {/* Scrollable Chart */}
       <div className="px-4 pb-4 pt-2 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
         <div
           className="h-[230px]"
           style={{
-            minWidth: "1600px",
+            minWidth: "2016px",
           }}
         >
           <Bar data={chartData} options={options} />

@@ -70,14 +70,12 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import PersonIcon from "@mui/icons-material/Person";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-
 import loginBg from "../assets/images/ntf-login-bg.png";
 import ntfBlackLogo from "../assets/images/NTF_logo_black.png";
 
@@ -115,9 +113,7 @@ const Login = () => {
           <div className="hidden w-full max-w-[400px] lg:block">
 
             <div className="relative w-full overflow-hidden rounded-[20px] bg-white px-6 py-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] xl:max-w-[410px] xl:px-7 xl:py-5">
-
-              {/* Decorative Circle */}
-              <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-[#7a5af8]/10"></div>
+            
 
               <div className="relative z-10">
 

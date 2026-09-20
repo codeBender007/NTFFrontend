@@ -44,10 +44,12 @@ const chartData = {
         right: 4,
       },
 
-      // Rounded only at top
+      // Rounded only at top.
+      // Radius is 9 because chart.js subtracts the 4px side border
+      // width, leaving a visible 5px top corner like the other graphs.
       borderRadius: {
-        topLeft: 5,
-        topRight: 5,
+        topLeft: 9,
+        topRight: 9,
         bottomLeft: 0,
         bottomRight: 0,
       },
@@ -75,10 +77,12 @@ const chartData = {
         right: 4,
       },
 
-      // Rounded only at top
+      // Rounded only at top.
+      // Radius is 9 because chart.js subtracts the 4px side border
+      // width, leaving a visible 5px top corner like the other graphs.
       borderRadius: {
-        topLeft: 5,
-        topRight: 5,
+        topLeft: 9,
+        topRight: 9,
         bottomLeft: 0,
         bottomRight: 0,
       },
@@ -106,10 +110,12 @@ const chartData = {
         right: 4,
       },
 
-      // Rounded only at top
+      // Rounded only at top.
+      // Radius is 9 because chart.js subtracts the 4px side border
+      // width, leaving a visible 5px top corner like the other graphs.
       borderRadius: {
-        topLeft: 5,
-        topRight: 5,
+        topLeft: 9,
+        topRight: 9,
         bottomLeft: 0,
         bottomRight: 0,
       },

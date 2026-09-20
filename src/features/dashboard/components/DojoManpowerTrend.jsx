@@ -163,6 +163,10 @@ const options = {
     y: {
       beginAtZero: true,
 
+      // Room above the tallest bar (80) so the value labels
+      // on top of bars aren't cut off
+      max: 100,
+
       ticks: {
         stepSize: 20,
 

@@ -21,111 +21,44 @@ const OCS_LEFT_WIDTH =
 
 const OCS_SHEET_WIDTH = 1866;
 const OCS_OBS_WIDTH = OCS_SHEET_WIDTH - OCS_LEFT_WIDTH;
-const OCS_CELL_WIDTH = OCS_OBS_WIDTH / OCS_OBS_COLS;
+const OCS_DAY_WIDTH = OCS_OBS_WIDTH / OCS_DAYS;
+const OCS_CELL_WIDTH = OCS_DAY_WIDTH / OCS_CYCLES;
 
-const OCS_ROW_HEIGHTS = [
-  28, 25, 25, 25, 25,
-  25, 25, 28, 28, 28,
-  28, 28, 28, 28, 28,
-];
+const OCS_ROW_HEIGHTS = Array(19).fill(28);
 
 const OCS_SHEETS = ["L-4", "L-3", "L-2"];
 
 const OCS_DEFAULT_ROWS = [
-  {
-    sno: "1",
-    description: "Machine cleaning",
-    cycle: "",
-    method: "Working procedure",
-  },
-  {
-    sno: "2",
-    description:
-      "Working as per defined Work instruction of the individual process",
-    cycle: "",
-    method: "",
-  },
-  {
-    sno: "3",
-    description: "Part handling process as per WI",
-    cycle: "→ 10",
-    method: "",
-  },
-  {
-    sno: "4",
-    description:
-      "Part labeling part storing to define location for next process.",
-    cycle: "→ 10",
-    method: "",
-  },
-  {
-    sno: "5",
-    description:
-      "Everything should be available at defined place.",
-    cycle: "",
-    method: "Safety & 5S rule",
-  },
-  {
-    sno: "6",
-    description: "Use of PPEs as per PPE Matrix.",
-    cycle: "",
-    method: "",
-  },
-  {
-    sno: "7",
-    description: "Maintain 5S in his defined area.",
-    cycle: "",
-    method: "",
-  },
-  {
-    sno: "8",
-    description:
-      "Defects 100% checking visually as per W.I.",
-    cycle: "10",
-    method: "Quality checks procedure",
-  },
-  {
-    sno: "9",
-    description: "Packaging as per standard",
-    cycle: "10",
-    method: "",
-  },
-  {
-    sno: "10",
-    description: "Qty. actual/plan",
-    cycle: "10",
-    method: "Check 1 Hr Production",
-  },
-  {
-    sno: "11",
-    description: "Rej. Qty.",
-    cycle: "",
-    method: "Check 1 Hr Production",
-  },
-  {
-    sno: "12",
-    description: "Rej. %",
-    cycle: "",
-    method: "",
-  },
-  {
-    sno: "13",
-    description: "Total time",
-    cycle: "",
-    method: "Check 10 part",
-  },
-  {
-    sno: "14",
-    description: "Takt time",
-    cycle: "",
-    method: "Check 10 part",
-  },
-  {
-    sno: "15",
-    description: "Judgement",
-    cycle: "",
-    method: "",
-  },
+  { sno: "1", description: "Is process started after Job-set up approval?", cycle: "→", method: "Working procedure" },
+  { sno: "2", description: "Machine cleaning, filling start up check sheet and set the process parameter.", cycle: "→", method: "" },
+  { sno: "3", description: "Filling of hourly production report", cycle: "→", method: "" },
+  { sno: "4", description: "Working as per defined Work instruction of the individual process and imparts trainings", cycle: "→", method: "" },
+  { sno: "5", description: "Inspection as per WI / Check quality of input material", cycle: "10", method: "" },
+  { sno: "6", description: "Part Handling labeling part storing to define location for next process as per WI", cycle: "10", method: "" },
+  { sno: "7", description: "Awareness (if purpose of work/Impact to the Customer)", cycle: "", method: "CSR" },
+  { sno: "8", description: "Ensure training given to other operator.", cycle: "", method: "" },
+  { sno: "9", description: "Follow the material storage as per WI", cycle: "", method: "Safety & 5S rule" },
+  { sno: "10", description: "Use of PPEs as per PPE Matrix / Safety", cycle: "", method: "" },
+  { sno: "11", description: "Discipline (ID card, Uniform, Shoes)", cycle: "", method: "" },
+  { sno: "12", description: "Maintain 5S in his defined area.", cycle: "", method: "" },
+  { sno: "13", description: "Defects 100% checking visually", cycle: "10", method: "Quality checks procedure" },
+  { sno: "14", description: "Packaging as per standard", cycle: "10", method: "" },
+  { sno: "15", description: "Qty. actual/plan", cycle: "10", method: "Check 1 Hr Production" },
+  { sno: "16", description: "Rej. Qty.", cycle: "", method: "Rejection % will allow only 0.1% on part production. (if done by operator)" },
+  { sno: "17", description: "Rej. %", cycle: "", method: "" },
+  { sno: "18", description: "Total time", cycle: "", method: "Check 10 part" },
+  { sno: "19", description: "Takt time", cycle: "", method: "" },
+];
+
+const BOXED_ROWS = new Set([5, 6, 13, 14, 15, 16, 17, 18, 19]);
+
+const METHOD_GROUPS = [
+  { label: "Working procedure", start: 1, end: 4 },
+  { label: "CSR", start: 7, end: 8 },
+  { label: "Safety & 5S rule", start: 9, end: 12 },
+  { label: "Quality checks procedure", start: 13, end: 14 },
+  { label: "Check 1 Hr Production", start: 15, end: 17 },
+  { label: "Check 10 part", start: 18, end: 19 },
 ];
 
 function ocsCell(ws, row, col) {
@@ -156,8 +89,7 @@ function ocsGetRows(ws) {
         ocsText(ws, excelRow, 2) || item.description,
       cycle:
         ocsText(ws, excelRow, 6) || item.cycle,
-      method:
-        ocsText(ws, excelRow, 7) || item.method,
+      method: item.method,
     };
   });
 }
@@ -426,67 +358,68 @@ function OCSTableHeader() {
   return (
     <div className="operator-checksheet-grid-header">
       <div className="operator-checksheet-left-header">
-        <div className="operator-checksheet-header-sno">
-          S.No
-        </div>
-
-        <div className="operator-checksheet-header-description">
-          Description
-        </div>
-
-        <div className="operator-checksheet-header-cycle">
-          Cycle
-        </div>
-
-        <div className="operator-checksheet-header-method">
-          Method
-        </div>
-
+        <div className="operator-checksheet-header-sno">S.No</div>
+        <div className="operator-checksheet-header-description">Description</div>
+        <div className="operator-checksheet-header-cycle">Cycle</div>
+        <div className="operator-checksheet-header-method">Method</div>
       </div>
 
-      <div className="operator-checksheet-day-header">
-
-        {Array.from({
-          length: OCS_DAYS,
-        }).map((_, dayIndex) => (
-
-          <div
-            className="operator-checksheet-day"
-            key={dayIndex}
-          >
-
-            <div
-              className="operator-checksheet-day-title"
-              contentEditable
-              suppressContentEditableWarning
-              spellCheck={false}
-            >
-              Day {dayIndex + 1}- Date-
+      <div className="operator-checksheet-observation-header">
+        {Array.from({ length: OCS_DAYS }).map((_, dayIndex) => (
+          <div className="operator-checksheet-day-group" key={dayIndex}>
+            <div className="operator-checksheet-day-title">
+              <span>Day {dayIndex + 1} - Date:</span>
+              <span
+                className="operator-checksheet-day-date"
+                contentEditable
+                suppressContentEditableWarning
+                spellCheck={false}
+              />
             </div>
 
-            <div className="operator-checksheet-cycle-header">
-
-              {Array.from({
-                length: OCS_CYCLES,
-              }).map((_, cycleIndex) => (
-
+            <div className="operator-checksheet-cycle-row">
+              {Array.from({ length: OCS_CYCLES }).map((_, cycleIndex) => (
                 <div
-                  className="operator-checksheet-cycle-number"
+                  className={
+                    cycleIndex === OCS_CYCLES - 1
+                      ? "operator-checksheet-observation-header-cell operator-checksheet-day-end"
+                      : "operator-checksheet-observation-header-cell"
+                  }
                   key={cycleIndex}
                 >
                   {cycleIndex + 1}
                 </div>
-
               ))}
-
             </div>
-
           </div>
-
         ))}
-
       </div>
+    </div>
+  );
+}
 
+function OCSMethodGroups() {
+  return (
+    <div className="operator-checksheet-method-overlay">
+      {METHOD_GROUPS.map((group) => {
+        const rowCount = group.end - group.start + 1;
+        const top = OCS_ROW_HEIGHTS
+          .slice(0, group.start - 1)
+          .reduce((total, height) => total + height, 0);
+        const height = OCS_ROW_HEIGHTS
+          .slice(group.start - 1, group.end)
+          .reduce((total, rowHeight) => total + rowHeight, 0);
+
+        return (
+          <div
+            key={group.label}
+            className="operator-checksheet-method-group"
+            style={{ top, height }}
+          >
+            <span>{group.label}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -517,7 +450,6 @@ function OCSTableBody({ ws }) {
       <div className="operator-checksheet-left-body">
 
         {rows.map((row, index) => (
-
           <div
             className="operator-checksheet-left-row"
             style={{
@@ -525,7 +457,6 @@ function OCSTableBody({ ws }) {
             }}
             key={row.excelRow}
           >
-
             <div
               className="operator-checksheet-sno-cell"
               contentEditable
@@ -553,79 +484,63 @@ function OCSTableBody({ ws }) {
               {row.cycle}
             </div>
 
-            <div className="operator-checksheet-method-cell">
-              {row.method && (
-                <span
-                  contentEditable
-                  suppressContentEditableWarning
-                  spellCheck={false}
-                >
-                  {row.method}
-                </span>
-              )}
-            </div>
-
+            <div className="operator-checksheet-method-cell" />
           </div>
-
         ))}
 
+        <OCSMethodGroups />
       </div>
 
       <div className="operator-checksheet-observation">
+        {rows.map((row, rowIndex) => {
+          const isBoxed = BOXED_ROWS.has(Number(row.sno));
 
-        {rows.map((row, rowIndex) => (
+          return (
+            <div
+              className={
+                isBoxed
+                  ? "operator-checksheet-observation-row operator-checksheet-boxed-row"
+                  : "operator-checksheet-observation-row operator-checksheet-plain-row"
+              }
+              style={{
+                height: OCS_ROW_HEIGHTS[rowIndex],
+              }}
+              key={row.excelRow}
+            >
+              {Array.from({
+                length: OCS_OBS_COLS,
+              }).map((_, columnIndex) => {
+                const key = `${row.excelRow}:${columnIndex}`;
+                const cycleNumber = (columnIndex % OCS_CYCLES) + 1;
+                const dayNumber =
+                  Math.floor(columnIndex / OCS_CYCLES) + 1;
+                const isDayEnd =
+                  cycleNumber === OCS_CYCLES;
 
-          <div
-            className="operator-checksheet-observation-row"
-            style={{
-              height: OCS_ROW_HEIGHTS[rowIndex],
-            }}
-            key={row.excelRow}
-          >
-
-            {Array.from({
-              length: OCS_OBS_COLS,
-            }).map((_, columnIndex) => {
-
-              const key =
-                `${row.excelRow}:${columnIndex}`;
-
-              const isDayEnd =
-                (columnIndex + 1) % OCS_CYCLES === 0;
-
-              return (
-                <button
-                  type="button"
-                  key={columnIndex}
-                  className={
-                    isDayEnd
-                      ? "operator-checksheet-observation-cell operator-checksheet-day-end"
-                      : "operator-checksheet-observation-cell"
-                  }
-                  onClick={() =>
-                    toggleMark(
-                      row.excelRow,
-                      columnIndex
-                    )
-                  }
-                  aria-label={`Day ${
-                    Math.floor(
-                      columnIndex / OCS_CYCLES
-                    ) + 1
-                  }, Cycle ${
-                    (columnIndex %
-                      OCS_CYCLES) + 1
-                  }`}
-                >
-                  {marks[key] || ""}
-                </button>
-              );
-            })}
-
-          </div>
-
-        ))}
-
+                return (
+                  <button
+                    type="button"
+                    key={columnIndex}
+                    className={
+                      isDayEnd
+                        ? "operator-checksheet-observation-cell operator-checksheet-day-end"
+                        : "operator-checksheet-observation-cell"
+                    }
+                    onClick={() =>
+                      toggleMark(
+                        row.excelRow,
+                        columnIndex
+                      )
+                    }
+                    aria-label={`Day ${dayNumber}, Cycle ${cycleNumber}`}
+                  >
+                    {marks[key] || ""}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
     </div>
@@ -635,42 +550,102 @@ function OCSTableBody({ ws }) {
 function OCSBottomTable() {
   return (
     <div className="operator-checksheet-bottom">
-
-      <div className="operator-checksheet-bottom-head">
-        <div>Sr.no.</div>
-        <div>Date</div>
-        <div>Observation Point</div>
-        <div>Action Taken</div>
-      </div>
-
-      {Array.from({
-        length: 5,
-      }).map((_, index) => (
-
-        <div
-          className="operator-checksheet-bottom-row"
-          key={index}
-        >
-          <div>{index + 1}</div>
-          <div
-            contentEditable
-            suppressContentEditableWarning
-            spellCheck={false}
-          />
-          <div
-            contentEditable
-            suppressContentEditableWarning
-            spellCheck={false}
-          />
-          <div
-            contentEditable
-            suppressContentEditableWarning
-            spellCheck={false}
-          />
+      <div className="operator-checksheet-bottom-main">
+        <div className="operator-checksheet-remarks">
+          <div className="operator-checksheet-remarks-text" contentEditable suppressContentEditableWarning spellCheck={false}>
+            <strong>Remarks:</strong> Mention details of WI adherence wherever any NG point is observed.
+            <br />
+            7 Days observation-For New Operator, Rejoin After Some Time &amp; Transfer from other station.
+            <br />
+            1 Day observation-For Existing Operator
+          </div>
         </div>
 
-      ))}
+        <div className="operator-checksheet-next-level">
+          <div className="operator-checksheet-next-level-title" contentEditable suppressContentEditableWarning spellCheck={false}>
+            If Passed in therotical and Practical test upgraded to Next Level
+          </div>
 
+          <div className="operator-checksheet-next-level-grid">
+            <div className="operator-checksheet-level-card">
+              <div className="operator-checksheet-level-question" contentEditable suppressContentEditableWarning spellCheck={false}>
+                4. Know the process &amp; can do the process &amp; can set the process &amp; can teach others (If know, I can, I can set)
+              </div>
+              <div className="operator-checksheet-level-score">4</div>
+            </div>
+
+            <div className="operator-checksheet-level-card">
+              <div className="operator-checksheet-level-score">1</div>
+              <div className="operator-checksheet-level-question" contentEditable suppressContentEditableWarning spellCheck={false}>
+                1. Know the process (If know)
+              </div>
+            </div>
+
+            <div className="operator-checksheet-level-card">
+              <div className="operator-checksheet-level-question" contentEditable suppressContentEditableWarning spellCheck={false}>
+                3. Know the process &amp; can do the process &amp; can set the process (If know, I can do, I can set)
+              </div>
+              <div className="operator-checksheet-level-score">3</div>
+            </div>
+
+            <div className="operator-checksheet-level-card">
+              <div className="operator-checksheet-level-score">2</div>
+              <div className="operator-checksheet-level-question" contentEditable suppressContentEditableWarning spellCheck={false}>
+                2. Know the process &amp; can do the process (If know, I can do)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="operator-checksheet-bottom-judgement">
+          <div className="operator-checksheet-bottom-judgement-head">
+            <div>Judgement</div>
+            <div>Sy<br />m.<br />no.</div>
+            <div>Min Req. for 1day<br />observation</div>
+            <div>Min Req. for 7days<br />observation</div>
+          </div>
+
+          <div className="operator-checksheet-bottom-judgement-row">
+            <div>Ok condition</div>
+            <div>Δ</div>
+            <div>AR=0</div>
+            <div>AR=10</div>
+          </div>
+
+          <div className="operator-checksheet-bottom-judgement-row">
+            <div>Needs improvement</div>
+            <div>Δ</div>
+            <div>&lt;AR=0</div>
+            <div>&lt;AR=4</div>
+          </div>
+
+          <div className="operator-checksheet-bottom-judgement-row">
+            <div>Not ok</div>
+            <div>x</div>
+            <div>0</div>
+            <div>0</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="operator-checksheet-signature-row">
+        <div className="operator-checksheet-signature-field">
+          <span>Prepared by:</span>
+          <span contentEditable suppressContentEditableWarning spellCheck={false} />
+        </div>
+        <div className="operator-checksheet-signature-field">
+          <span>Checked by:</span>
+          <span contentEditable suppressContentEditableWarning spellCheck={false} />
+        </div>
+        <div className="operator-checksheet-signature-field operator-checksheet-approved-field">
+          <span>Approved by:</span>
+          <span contentEditable suppressContentEditableWarning spellCheck={false} />
+        </div>
+      </div>
+
+      <div className="operator-checksheet-footer-code">
+        F06 (PRD-02)
+      </div>
     </div>
   );
 }
