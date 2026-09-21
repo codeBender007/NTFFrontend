@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import logo from "../assets/images/NTF_logo_black.png";
 import sidebarBg from "../assets/images/sidebar_bg.png";
-import { ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, LayoutGrid, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const Sidebar = ({
@@ -107,8 +107,44 @@ const Sidebar = ({
             </button>
           </div>
 
+          {/* Portal Switch */}
+          <div className="px-3 pt-3">
+            <button
+              onClick={() => navigate("/home")}
+              className={`group relative flex w-full items-center rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 py-2.5 transition-all duration-200 hover:border-primary/30 hover:from-primary/15 hover:to-primary/10 ${
+                collapsed ? "justify-center" : "gap-3 px-3"
+              }`}
+              title="Back to Home"
+            >
+              {/* Portal Icon */}
+              <div
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary-light to-primary-dark text-white shadow-md shadow-primary/30 ${
+                  collapsed ? "mx-auto" : ""
+                }`}
+              >
+                <LayoutGrid size={18} />
+              </div>
+
+              {/* Portal Text */}
+              {!collapsed && (
+                <span className="whitespace-nowrap text-sm font-bold text-primary">
+                  PORTAL (Switch)
+                </span>
+              )}
+
+              {/* Tooltip when Collapsed */}
+              {collapsed && (
+                <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                  <div className="whitespace-nowrap rounded-lg bg-dark px-3 py-1.5 text-xs font-medium text-white shadow-lg">
+                    PORTAL (Switch)
+                  </div>
+                </div>
+              )}
+            </button>
+          </div>
+
           {/* Navigation */}
-          <nav className="mt-4 flex-1 space-y-1 overflow-y-auto px-3">
+          <nav className="mt-3 flex-1 space-y-1 overflow-y-auto px-3">
             {menuItems.map((item) => {
               const active =
                 activeMenu === item.name ||

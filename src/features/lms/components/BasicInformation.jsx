@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
 import KeyboardArrowUpOutlinedIcon from "@mui/icons-material/KeyboardArrowUpOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 
 const inputClass =
   "w-full h-10 rounded-xl border border-gray-200 px-3.5 text-sm outline-none bg-gray-50/50 text-gray-800 placeholder:text-gray-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 transition";
@@ -18,6 +19,7 @@ const hintClass = "mt-1 text-[11px] text-gray-400";
 
 const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     testTitle: initialData.testTitle || "SKILL EVALUATION TEST PAPER",
@@ -27,13 +29,14 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
     headerTitle:
       initialData.headerTitle || "NTF TECHNICAL EVALUATION TEST PAPER",
     subTitle: initialData.subTitle || "New Manpower Technical Assessment",
-    departments: initialData.departments || "Production",
-    sections: initialData.sections || "Section A",
-    lines: initialData.lines || "Line 1",
-    subSections: initialData.subSections || "Sub Section 1",
+    departments: initialData.departments || "",
+    sections: initialData.sections || "",
+    lines: initialData.lines || "",
+    subSections: initialData.subSections || "",
     machines: initialData.machines || "",
-    duration: initialData.duration || 30,
-    passPercentage: initialData.passPercentage || 80,
+    levels: initialData.levels || "",
+    duration: initialData.duration || "",
+    passPercentage: initialData.passPercentage || "",
   });
 
   const handleChange = (e) => {
@@ -46,6 +49,32 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (onNext) onNext(formData);
+  };
+
+  const requiredFields = [
+    "departments",
+    "sections",
+    "lines",
+    "machines",
+    "levels",
+    "duration",
+    "passPercentage",
+  ];
+
+  const isComplete = requiredFields.every(
+    (field) => formData[field] !== "" && formData[field] != null,
+  );
+
+  const handleUploadClick = () => {
+    if (isComplete) fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      console.log("Uploading paper config file:", file.name);
+    }
+    e.target.value = "";
   };
 
   return (
@@ -205,7 +234,6 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
                   <option value="">Select Line</option>
                   <option value="Line 1">Line 1</option>
                   <option value="Line 2">Line 2</option>
-                  <option value="Line 3">Line 3</option>
                 </select>
                 <KeyboardArrowDownOutlinedIcon
                   className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -224,6 +252,28 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
                   className={selectClass}
                 >
                   <option value="">Select Machine</option>
+                  <option value="Machine 1">Machine 1</option>
+                  <option value="Machine 2">Machine 2</option>
+                </select>
+                <KeyboardArrowDownOutlinedIcon
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  sx={{ fontSize: 18 }}
+                />
+              </div>
+            </div>
+
+             <div>
+              <label className={labelClass}>Levels</label>
+              <div className="relative">
+                <select
+                  name="levels"
+                  value={formData.levels}
+                  onChange={handleChange}
+                  className={selectClass}
+                >
+                  <option value="">Select Level</option>
+                  <option value="Level 1">Level 1</option>
+                  <option value="Level 2">Level 2</option>
                 </select>
                 <KeyboardArrowDownOutlinedIcon
                   className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -255,6 +305,26 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
                 className={inputClass}
               />
             </div>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <button
+              type="button"
+              onClick={handleUploadClick}
+              disabled={!isComplete}
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#6F4AE7] to-[#7A5AF8] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#6F4AE7]/20 transition-all hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
+            >
+              <CloudUploadOutlinedIcon sx={{ fontSize: 16 }} />
+              Upload
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={handleFileChange}
+            />
           </div>
         </form>
       )}

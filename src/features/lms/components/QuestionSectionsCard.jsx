@@ -1,6 +1,8 @@
+import { useEffect, useRef, useState } from "react";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import DragIndicatorOutlinedIcon from "@mui/icons-material/DragIndicatorOutlined";
-import MoreVertOutlinedIcon from "@mui/icons-material/MoreVertOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 
 const QuestionSectionsCard = ({
@@ -9,7 +11,36 @@ const QuestionSectionsCard = ({
   onSelectSection,
   onAddSection,
   onDeleteSection,
+  onRenameSection,
 }) => {
+  const [editingId, setEditingId] = useState(null);
+  const [draft, setDraft] = useState("");
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (editingId) inputRef.current?.focus();
+  }, [editingId]);
+
+  const startEdit = (e, section) => {
+    e.stopPropagation();
+    setEditingId(section.id);
+    setDraft(section.name || "");
+  };
+
+  const cancelEdit = (e) => {
+    e.stopPropagation();
+    setEditingId(null);
+    setDraft("");
+  };
+
+  const saveEdit = (e) => {
+    e.stopPropagation();
+    const trimmed = draft.trim();
+    if (trimmed && onRenameSection) onRenameSection(editingId, trimmed);
+    setEditingId(null);
+    setDraft("");
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden p-4 space-y-3">
       {/* Header Bar */}
@@ -52,17 +83,55 @@ const QuestionSectionsCard = ({
 
               {/* Title & Subtitle */}
               <div className="flex-1 min-w-0">
-                <h3
-                  className={`text-xs font-bold truncate leading-tight ${
-                    active ? "text-primary" : "text-gray-900"
-                  }`}
-                >
-                  {section.name || `Section ${String.fromCharCode(65 + idx)}`}
-                </h3>
-                <p className="text-[11px] text-gray-400 truncate mt-0.5">
-                  {section.subtitle || (idx === 0 ? "Multiple Choice Questions" : idx === 1 ? "Short Answer Questions" : "Long Answer Questions")}
-                </p>
+                {editingId === section.id ? (
+                  <input
+                    ref={inputRef}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") saveEdit(e);
+                      if (e.key === "Escape") cancelEdit(e);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full h-8 rounded-lg border border-primary/40 bg-white px-2.5 text-xs font-bold text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  />
+                ) : (
+                  <>
+                    <h3
+                      className={`text-xs font-bold truncate leading-tight ${
+                        active ? "text-primary" : "text-gray-900"
+                      }`}
+                    >
+                      {section.name || `Section ${String.fromCharCode(65 + idx)}`}
+                    </h3>
+                  </>
+                )}
               </div>
+
+              {/* Inline Save / Cancel */}
+              {editingId === section.id && (
+                <button
+                  type="button"
+                  onClick={saveEdit}
+                  className="h-7 w-7 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 flex items-center justify-center shrink-0 transition"
+                  title="Save section name"
+                >
+                  <CheckOutlinedIcon sx={{ fontSize: 16 }} />
+                </button>
+              )}
+
+              {/* Edit Section Name */}
+              {editingId !== section.id && (
+                <button
+                  type="button"
+                  onClick={(e) => startEdit(e, section)}
+                  className="h-7 w-7 rounded-lg text-gray-300 hover:text-primary hover:bg-primary/10 flex items-center justify-center shrink-0 transition opacity-60 group-hover:opacity-100"
+                  title="Edit section name"
+                >
+                  <EditOutlinedIcon sx={{ fontSize: 15 }} />
+                </button>
+              )}
 
               {/* Questions Count Badge */}
               <span

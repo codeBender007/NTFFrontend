@@ -1,6 +1,5 @@
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
-import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
-import ChevronRightOutlinedIcon from "@mui/icons-material/ChevronRightOutlined";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import { useNavigate } from "react-router-dom";
 
 const Navbar = ({ activeMenu }) => {
@@ -9,15 +8,14 @@ const Navbar = ({ activeMenu }) => {
   return (
     <nav className="bg-white h-14 sm:h-16 shadow-sm flex items-center justify-between px-3 sm:px-6">
       <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
           <button
-            onClick={() => navigate("/home")}
-            className="p-1.5 rounded-lg bg-primary/10 text-primary transition"
-            title="Home"
+            onClick={() => navigate(-1)}
+            className="p-1.5 rounded-lg bg-primary/10 text-primary transition hover:bg-primary/20"
+            title="Go Back"
           >
-            <HomeOutlinedIcon sx={{ fontSize: 20 }} />
+            <ArrowBackOutlinedIcon sx={{ fontSize: 20 }} />
           </button>
-          <ChevronRightOutlinedIcon sx={{ fontSize: 18, color: "#9CA3AF" }} />
           <h1 className="text-base sm:text-xl font-bold text-gray-800 truncate">
             {activeMenu}
           </h1>

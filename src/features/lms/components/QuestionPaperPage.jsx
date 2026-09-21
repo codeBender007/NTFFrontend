@@ -8,7 +8,7 @@ import BasicInformation from "./BasicInformation";
 import QuestionSectionsCard from "./QuestionSectionsCard";
 import QuestionListCard from "./QuestionListCard";
 import QuestionForm from "./QuestionForm";
-import QuestionFooterStats from "./QuestionFooterStats";
+// import QuestionFooterStats from "./QuestionFooterStats";
 import { savePaperToStore } from "../utils/testPapers";
 import { lmsMenus } from "../data/LMSMenu";
 
@@ -239,6 +239,13 @@ const QuestionPaperPage = ({ level = "L0" }) => {
     showToast("Section deleted");
   };
 
+  const renameSection = (id, name) => {
+    setSections((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, name } : s))
+    );
+    showToast("Section name updated");
+  };
+
   const addQuestion = () => {
     if (!activeSection) return;
 
@@ -313,7 +320,6 @@ const QuestionPaperPage = ({ level = "L0" }) => {
         )}
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#F4F5F9] space-y-5">
-          {/* Top Actions Sticky Header Bar */}
           <TopActions
             title="Question Paper Editor"
             level={level}
@@ -324,19 +330,17 @@ const QuestionPaperPage = ({ level = "L0" }) => {
             onSave={saveAll}
           />
 
-          {/* Collapsible Paper Details & Header Config */}
           <BasicInformation onChange={handleMetaChange} />
 
-          {/* Main 2-Column Grid matching reference mockup */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            {/* Left Column: Sections & Questions Selector Panels */}
-            <div className="lg:col-span-4 space-y-5">
+            <div className="lg:col-span-4 space-y-5 ">
               <QuestionSectionsCard
                 sections={sections}
                 selectedSection={selectedSection}
                 onSelectSection={selectSection}
                 onAddSection={addSection}
                 onDeleteSection={deleteSection}
+                onRenameSection={renameSection}
               />
 
               <QuestionListCard
@@ -349,7 +353,6 @@ const QuestionPaperPage = ({ level = "L0" }) => {
               />
             </div>
 
-            {/* Right Column: Main Edit Question Sheet */}
             <div className="lg:col-span-8 flex flex-col h-full">
               <QuestionForm
                 activeSection={activeSection}
@@ -363,14 +366,13 @@ const QuestionPaperPage = ({ level = "L0" }) => {
             </div>
           </div>
 
-          {/* Bottom Footer 5 KPI Metric Cards */}
-          <QuestionFooterStats
+          {/* <QuestionFooterStats
             totalSections={sections.length}
             totalQuestions={totalQuestions}
             totalMarks={totalMarks}
             duration="60 min"
             lastUpdated="2 mins ago"
-          />
+          /> */}
         </main>
       </div>
     </div>

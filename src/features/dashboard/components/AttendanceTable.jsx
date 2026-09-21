@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import { Upload } from "lucide-react";
 
 const preColumns = [
   "SNo.",
@@ -168,6 +169,19 @@ const AttendanceTable = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search] = useState("");
+  const fileInputRef = useRef(null);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      console.log("Uploading attendance file:", file.name);
+    }
+    e.target.value = "";
+  };
 
   const handleChangePage = (_, newPage) => {
     setPage(newPage);
@@ -213,6 +227,23 @@ const AttendanceTable = () => {
             <p className="text-xs text-gray-500">Employee attendance details</p>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={handleUploadClick}
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#6F4AE7] to-[#7A5AF8] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#6F4AE7]/20 transition-all hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <Upload size={15} strokeWidth={2.5} />
+          Upload
+        </button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          className="hidden"
+          onChange={handleFileChange}
+        />
       </div>
 
       <div className="overflow-x-auto">

@@ -1,5 +1,6 @@
 
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import { useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -35,121 +36,141 @@ const labels = [
   "Dec",
 ];
 
-const chartData = {
+const levels = ["levels", "Level 1", "Level 2"];
+
+const level1Data = [
+  45, 55, 40, 60, 50, 34,
+  60, 45, 55, 40, 60, 50,
+];
+const level2Data = [
+  30, 42, 36, 48, 41, 38,
+  52, 39, 44, 46, 38, 33,
+];
+
+const dataByLevel = {
+  "Level 1": level1Data,
+  "Level 2": level2Data,
+  levels: level1Data.map((v, i) => v + level2Data[i]),
+};
+
+const buildChartData = (level) => ({
   labels,
   datasets: [
     {
       label: "Requirement",
-      data: [
-        45, 55, 40, 60, 50, 34,
-        60, 45, 55, 40, 60, 50,
-      ],
+      data: dataByLevel[level],
       backgroundColor: "#1D4ED8",
-
       barThickness: 25,
-
       borderRadius: {
         topLeft: 5,
         topRight: 5,
         bottomLeft: 0,
         bottomRight: 0,
       },
-
       borderSkipped: "bottom",
     },
   ],
-};
+});
 
-const options = {
-  responsive: true,
-  maintainAspectRatio: false,
+const buildOptions = (level) => {
+  const yMax = Math.ceil(Math.max(...dataByLevel[level]) / 20) * 20 + 20;
 
-  interaction: {
-    mode: "index",
-    intersect: false,
-  },
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
 
-  plugins: {
-    legend: {
-      display: false,
+    interaction: {
+      mode: "index",
+      intersect: false,
     },
 
-    datalabels: {
-      display: true,
-      anchor: "end",
-      align: "top",
-      offset: 4,
-      color: "#334155",
-      font: {
-        size: 10,
-        weight: "600",
-        family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-      },
-      formatter: (value) => value,
-    },
-
-    tooltip: {
-      enabled: false,
-      external: () => {},
-    },
-  },
-
-  scales: {
-    x: {
-      offset: true,
-
-      grid: {
-        display: false,
-        drawBorder: false,
-      },
-
-      border: {
+    plugins: {
+      legend: {
         display: false,
       },
 
-      barPercentage: 0.35,
-      categoryPercentage: 0.5,
-
-      ticks: {
-        color: "#64748B",
-
+      datalabels: {
+        display: true,
+        anchor: "end",
+        align: "top",
+        offset: 4,
+        color: "#334155",
         font: {
           size: 10,
-          weight: "500",
+          weight: "600",
+          family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         },
+        formatter: (value) => value,
+      },
 
-        padding: 5,
+      tooltip: {
+        enabled: false,
+        external: () => {},
       },
     },
 
-    y: {
-      beginAtZero: true,
-      max: 80,
+    scales: {
+      x: {
+        offset: true,
 
-      ticks: {
-        stepSize: 20,
-        color: "#64748B",
-
-        font: {
-          size: 9,
+        grid: {
+          display: false,
+          drawBorder: false,
         },
 
-        padding: 8,
+        border: {
+          display: false,
+        },
+
+        barPercentage: 0.35,
+        categoryPercentage: 0.5,
+
+        ticks: {
+          color: "#64748B",
+
+          font: {
+            size: 10,
+            weight: "500",
+          },
+
+          padding: 5,
+        },
       },
 
-      grid: {
-        display: false,
-        drawTicks: false,
-      },
+      y: {
+        beginAtZero: true,
+        max: yMax,
 
-      border: {
-        display: false,
+        ticks: {
+          stepSize: 20,
+          color: "#64748B",
+
+          font: {
+            size: 9,
+          },
+
+          padding: 8,
+        },
+
+        grid: {
+          display: false,
+          drawTicks: false,
+        },
+
+        border: {
+          display: false,
+        },
       },
     },
-  },
+  };
 };
 
 const Attrition = () => {
+  const [level, setLevel] = useState("levels");
+
+  const chartData = buildChartData(level);
+  const options = buildOptions(level);
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
       {/* Header */}
@@ -163,7 +184,7 @@ const Attrition = () => {
 
             <div>
               <h2 className="text-sm font-bold text-slate-800">
-                Monthly Attrition Rate
+                Monthly Attrition
               </h2>
 
               <p className="text-[10px] text-slate-500 mt-0.5">
@@ -171,6 +192,20 @@ const Attrition = () => {
               </p>
             </div>
           </div>
+
+          {/* Level Filter */}
+
+          <select
+            value={level}
+            onChange={(e) => setLevel(e.target.value)}
+            className="h-8 cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-600 outline-none focus:border-[#6F4AE7]"
+          >
+            {levels.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

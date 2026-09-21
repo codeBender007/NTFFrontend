@@ -149,7 +149,7 @@ const TrainingEffectivenessForm = () => {
           .training-header {
             position: relative;
             width: 100%;
-            height: 70px;
+            height: 60px;
             border-bottom: 1px solid #000000;
             margin-bottom: 20px;
           }
@@ -375,10 +375,36 @@ const TrainingEffectivenessForm = () => {
           }
 
           .formula {
-            font-size: 9px;
+            font-size: 10px;
             color: #333333;
-            margin-left: 0;
             margin-bottom: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+
+          .formula-fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            text-align: center;
+            padding: 0 4px;
+          }
+
+          .formula-numerator {
+            display: block;
+            border-bottom: 1px solid #333333;
+            padding: 0 5px;
+            line-height: 1.5;
+            font-size: 10px;
+          }
+
+          .formula-denominator {
+            display: block;
+            padding: 0 5px;
+            line-height: 1.5;
+            font-size: 10px;
           }
 
           .effectiveness-title {
@@ -442,6 +468,31 @@ const TrainingEffectivenessForm = () => {
             align-items: center;
             gap: 30px;
             margin-top: 5px;
+            font-size: 11px;
+          }
+
+          .if-yes-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px 14px;
+            margin-top: 7px;
+            font-size: 11px;
+          }
+
+          .training-area-inline {
+            font-size: 10px;
+            line-height: 13px;
+          }
+
+          .area-line-inline {
+            flex: 1;
+            min-width: 140px;
+            height: 21px;
+            border: none;
+            border-bottom: 1px solid #777777;
+            outline: none;
+            background: transparent;
             font-size: 11px;
           }
 
@@ -1218,15 +1269,14 @@ const TrainingEffectivenessForm = () => {
               <span>
                 Effectiveness Index =
               </span>
-              <span style={{ marginLeft: "5px" }}>
-                Total Rating
-              </span>
-              <span style={{ margin: "0 4px" }}>
-                × 100
-              </span>
-              <br />
-              <span style={{ marginLeft: "107px" }}>
-                No. of Objectives Rated × 4
+
+              <span className="formula-fraction">
+                <span className="formula-numerator">
+                  Total Rating × 100
+                </span>
+                <span className="formula-denominator">
+                  No. of Objectives Rated × 4
+                </span>
               </span>
             </div>
 
@@ -1338,11 +1388,8 @@ const TrainingEffectivenessForm = () => {
 
             </div>
 
-            <div className="if-yes">
-              - If Yes:
-            </div>
-
-            <div className="further-row">
+            <div className="if-yes-row">
+              <span>- If Yes:</span>
 
               <label className="checkbox-item">
 
@@ -1379,28 +1426,24 @@ const TrainingEffectivenessForm = () => {
 
               </label>
 
+              <span className="training-area-inline">
+                Further Training Required on subject
+                (Specify the area or competency need to be addressed)
+              </span>
+
+              <input
+                type="text"
+                value={formData.furtherTrainingArea}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    furtherTrainingArea:
+                      e.target.value,
+                  }))
+                }
+                className="area-line-inline"
+              />
             </div>
-
-            <div className="training-area">
-              Further Training Required on subject
-              (Specify the area or competency need to be addressed)
-            </div>
-
-            <input
-              type="text"
-              value={formData.furtherTrainingArea}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  furtherTrainingArea:
-                    e.target.value,
-                }))
-              }
-              className="area-line"
-            />
-
-            <div className="area-line"></div>
-            <div className="area-line"></div>
 
           </div>
 
@@ -1452,10 +1495,6 @@ const TrainingEffectivenessForm = () => {
           <div className="training-title">
             Training Effectiveness Evaluation Form
           </div>
-        </div>
-
-        <div className="criteria-title">
-          Effectiveness Scoring Criteria (for HOD Ratings)
         </div>
 
         <table className="criteria-table">
@@ -1567,7 +1606,6 @@ const TrainingEffectivenessForm = () => {
             </tr>
 
             <tr>
-
               <td className="score-cell" contentEditable suppressContentEditableWarning spellCheck={false}>
                 4
               </td>
@@ -1590,6 +1628,10 @@ const TrainingEffectivenessForm = () => {
           </tbody>
 
         </table>
+
+        <div className="criteria-title mt-5">
+          Effectiveness Scoring Criteria (for HOD Ratings)
+        </div>
 
         <div className="footer">
           <span>

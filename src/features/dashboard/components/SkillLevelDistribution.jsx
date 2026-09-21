@@ -91,38 +91,32 @@ const chartData = {
       borderSkipped: "bottom",
     },
 
-    {
-      label: "Actual Present",
-      data: [48, 40, 55, 42],
-      backgroundColor: "#26B7A0",
+    // {
+    //   label: "Actual Present",
+    //   data: [48, 40, 55, 42],
+    //   backgroundColor: "#26B7A0",
 
-      // Bar width
-      barThickness: 32,
-      maxBarThickness: 32,
+    //   barThickness: 32,
+    //   maxBarThickness: 32,
 
-      // Space between bars
-      borderColor: "#FFFFFF",
+    //   borderColor: "#FFFFFF",
 
-      borderWidth: {
-        top: 0,
-        bottom: 0,
-        left: 4,
-        right: 4,
-      },
+    //   borderWidth: {
+    //     top: 0,
+    //     bottom: 0,
+    //     left: 4,
+    //     right: 4,
+    //   },
 
-      // Rounded only at top.
-      // Radius is 9 because chart.js subtracts the 4px side border
-      // width, leaving a visible 5px top corner like the other graphs.
-      borderRadius: {
-        topLeft: 9,
-        topRight: 9,
-        bottomLeft: 0,
-        bottomRight: 0,
-      },
+    //   borderRadius: {
+    //     topLeft: 9,
+    //     topRight: 9,
+    //     bottomLeft: 0,
+    //     bottomRight: 0,
+    //   },
 
-      // Bottom remains straight
-      borderSkipped: "bottom",
-    },
+    //   borderSkipped: "bottom",
+    // },
   ],
 };
 
@@ -145,7 +139,6 @@ const options = {
       external: () => {},
     },
 
-    // Number displayed on top of every bar
     datalabels: {
       display: true,
 
@@ -263,27 +256,25 @@ const SkillLevelDistribution = () => {
         {/* Required */}
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-[#EF4444]"></span>
-
           <span className="text-xs font-medium text-slate-500">
-            Required
+             Actual 
           </span>
         </div>
 
         {/* Allocation */}
-        <div className="flex items-center gap-1.5">
+        {/* <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
 
           <span className="text-xs font-medium text-slate-500">
             Allocation
           </span>
-        </div>
+        </div> */}
 
         {/* Actual Present */}
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-[#26B7A0]"></span>
-
           <span className="text-xs font-medium text-slate-500">
-            Actual Present
+           Present
           </span>
         </div>
       </div>

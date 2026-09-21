@@ -1,4 +1,4 @@
-import { useState } from "react";
+// import { useState } from "react";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import FormatBoldOutlinedIcon from "@mui/icons-material/FormatBoldOutlined";
@@ -12,7 +12,7 @@ import RedoOutlinedIcon from "@mui/icons-material/RedoOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
-import RemoveOutlinedIcon from "@mui/icons-material/RemoveOutlined";
+// import RemoveOutlinedIcon from "@mui/icons-material/RemoveOutlined";
 
 const QuestionForm = ({
   activeSection,
@@ -81,7 +81,6 @@ const QuestionForm = ({
   return (
     <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden p-5 sm:p-6 space-y-6 flex flex-col justify-between">
       <div className="space-y-6">
-        {/* Header Bar: Title on left, Question Type dropdown on right */}
         <div className="flex items-center justify-between gap-4 flex-wrap border-b border-gray-100 pb-4">
           <h2 className="text-base font-bold text-gray-900">Edit Question</h2>
 
@@ -279,7 +278,7 @@ const QuestionForm = ({
         </div>
 
         {/* Question Parameters Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 border-t border-gray-100 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100 items-end">
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">
               Marks <span className="text-red-500">*</span>
@@ -322,39 +321,6 @@ const QuestionForm = ({
               onChange={(e) => onChange({ negativeMarks: Number(e.target.value) || 0 })}
               className="w-full h-9 border border-gray-200 rounded-xl px-3 text-xs font-semibold bg-gray-50/50 outline-none text-gray-900 focus:bg-white focus:border-primary transition"
             />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Difficulty Level
-            </label>
-            <div className="relative">
-              <select
-                value={difficulty}
-                onChange={(e) => onChange({ difficulty: e.target.value })}
-                className="w-full h-9 rounded-xl border border-gray-200 bg-gray-50/50 pl-3 pr-7 text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-primary transition appearance-none cursor-pointer"
-              >
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-              </select>
-              <KeyboardArrowDownOutlinedIcon
-                className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
-                sx={{ fontSize: 16 }}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center h-9">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-800">
-              <input
-                type="checkbox"
-                checked={required}
-                onChange={(e) => onChange({ required: e.target.checked })}
-                className="h-4 w-4 rounded text-primary focus:ring-primary accent-[#6F4AE7] cursor-pointer"
-              />
-              Required Question
-            </label>
           </div>
         </div>
       </div>

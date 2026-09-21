@@ -6,7 +6,6 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import RequirementPopup from "./RequirementPopup";
 
-// Requirement Data
 const requirementData = [
   {
     id: 1,
@@ -172,7 +171,7 @@ const RequirementTable = () => {
               {/* Department */}
               <th
                 rowSpan={2}
-                className="border-b border-r border-gray-200 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-600"
+                className="sticky left-0 z-20 w-[170px] border-b border-r border-gray-200 bg-gray-100 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-600"
               >
                 Department Name
               </th>
@@ -180,7 +179,7 @@ const RequirementTable = () => {
               {/* Sub Department */}
               <th
                 rowSpan={2}
-                className="border-b border-r border-gray-200 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-600"
+                className="sticky left-[170px] z-20 w-[200px] border-b border-r border-gray-200 bg-gray-100 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-600"
               >
                 Sub-Department Name
               </th>
@@ -229,12 +228,12 @@ const RequirementTable = () => {
             {displayedData.map((row) => (
               <tr key={row.id} className="transition-colors hover:bg-gray-50">
                 {/* Department */}
-                <td className="border-b border-r border-gray-100 px-4 py-3 text-sm font-medium text-gray-700">
+                <td className="sticky left-0 z-10 w-[170px] border-b border-r border-gray-100 bg-white px-4 py-3 text-sm font-medium text-gray-700">
                   {row.code}
                 </td>
 
                 {/* Sub Department */}
-                <td className="border-b border-r border-gray-100 px-4 py-3 text-sm text-gray-700">
+                <td className="sticky left-[170px] z-10 w-[200px] border-b border-r border-gray-100 bg-white px-4 py-3 text-sm text-gray-700">
                   {row.sectionName}
                 </td>
 
