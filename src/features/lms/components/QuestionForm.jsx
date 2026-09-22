@@ -105,7 +105,6 @@ const QuestionForm = ({
           </div>
         </div>
 
-        {/* Question Text Box with Rich Text Toolbar */}
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-gray-700">
             Question Text <span className="text-red-500">*</span>

@@ -94,17 +94,12 @@
 
   left: 11px;
   top: 4px;
+}
 
-  color: #174d7c;
-
-  font-family: Georgia, "Times New Roman", serif;
-
-  font-size: 30px;
-  line-height: 32px;
-
-  font-weight: 700;
-
-  text-decoration: underline;
+.operator-checksheet-logo img {
+  width: 60px;
+  height: auto;
+  object-fit: contain;
 }
 
 /* Main title */
@@ -208,17 +203,35 @@
 }
 
 /* =========================================================
+   EMPTY COLUMN
+========================================================= */
+
+.operator-checksheet-gap {
+  position: absolute;
+
+  left: 329px;
+  top: 39px;
+
+  width: 20px;
+  height: 124px;
+
+  border: 1px solid #111111;
+
+  background: #ffffff;
+}
+
+/* =========================================================
    OPERATOR DETAILS
 ========================================================= */
 
 .operator-checksheet-details {
   position: absolute;
 
-  left: 329px;
+  left: 349px;
   top: 39px;
 
-  width: 259px;
-  height: 100px;
+  width: 216px;
+  height: 124px;
 
   border: 1px solid #111111;
 
@@ -227,7 +240,7 @@
 
 .operator-checksheet-detail-row {
   width: 100%;
-  height: 20px;
+  height: 24px;
 
   display: flex;
   align-items: center;
@@ -256,17 +269,31 @@
   border-bottom: 1px solid #111111;
 }
 
+/* Shorter line used when a row carries an extra field (e.g. Date of Joining) */
+.operator-checksheet-detail-line-short {
+  flex: 0 0 70px;
+}
+
+.operator-checksheet-detail-extra-label {
+  flex: 0 0 auto;
+
+  margin-left: 4px;
+
+  font-size: 10px;
+  white-space: nowrap;
+}
+
 /* =========================================================
-   JUDGEMENT
+   DATE OF JOINING
 ========================================================= */
 
-.operator-checksheet-judgement {
+.operator-checksheet-doj {
   position: absolute;
 
-  left: 588px;
+  left: 565px;
   top: 39px;
 
-  width: 367px;
+  width: 186px;
   height: 100px;
 
   border: 1px solid #111111;
@@ -274,26 +301,14 @@
   background: #ffffff;
 }
 
-.operator-checksheet-judgement-title {
+.operator-checksheet-doj-row {
   width: 100%;
-  height: 25px;
+  height: 20px;
 
   display: flex;
   align-items: center;
-  justify-content: center;
 
-  border-bottom: 1px solid #111111;
-
-  font-size: 11px;
-}
-
-.operator-checksheet-judgement-row {
-  width: 100%;
-  height: 37px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
+  padding-left: 6px;
 
   border-bottom: 1px solid #111111;
 
@@ -302,8 +317,177 @@
   white-space: nowrap;
 }
 
-.operator-checksheet-judgement-row:last-child {
+.operator-checksheet-doj-row:last-child {
   border-bottom: 0;
+}
+
+.operator-checksheet-doj-label {
+  font-size: 11px;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   DAY NAMES ROW (header bottom strip)
+========================================================= */
+
+.operator-checksheet-day-row {
+  position: absolute;
+
+  left: 565px;
+  top: 139px;
+
+  width: 1301px;
+  height: 24px;
+
+  display: flex;
+
+  background: #ffffff;
+}
+
+.operator-checksheet-day-cell {
+  flex: 1;
+
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  padding: 0 4px;
+
+  border-right: 2px solid #111111;
+
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 24px;
+
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.operator-checksheet-day-cell:last-child {
+  border-right: 0;
+}
+
+.operator-checksheet-day-date-band {
+  width: 34px;
+  min-width: 10px;
+  max-width: 34px;
+  height: 14px;
+
+  outline: none;
+
+  border-bottom: 1px solid #111111;
+
+  font-weight: 400;
+  line-height: 13px;
+
+  cursor: text;
+}
+
+/* =========================================================
+   JUDGEMENT
+========================================================= */
+
+.operator-checksheet-judgement {
+  position: absolute;
+
+  left: 751px;
+  top: 39px;
+
+  width: 372px;
+  height: 100px;
+
+  display: grid;
+  grid-template-columns: 155px 72px 30px 115px;
+
+  border: 1px solid #111111;
+
+  background: #ffffff;
+}
+
+.operator-checksheet-judgement-labels {
+  display: flex;
+  flex-direction: column;
+
+  border-right: 1px solid #111111;
+}
+
+.operator-checksheet-judgement-label-cell {
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 6px;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-judgement-label-cell:first-child {
+  border-bottom: 1px solid #111111;
+}
+
+.operator-checksheet-judgement-yes-col,
+.operator-checksheet-judgement-no-col {
+  display: flex;
+  flex-direction: column;
+
+  border-right: 1px solid #111111;
+}
+
+.operator-checksheet-judgement-choice {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 3px;
+}
+
+.operator-checksheet-judgement-choice:first-child {
+  border-bottom: 1px solid #111111;
+}
+
+.operator-checksheet-judgement-choice-label {
+  font-size: 10px;
+  font-weight: 700;
+
+  line-height: 12px;
+  text-align: center;
+
+  white-space: nowrap;
+}
+
+.operator-checksheet-judgement-or-col {
+  display: flex;
+  flex-direction: column;
+
+  border-right: 1px solid #111111;
+}
+
+.operator-checksheet-judgement-or {
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.operator-checksheet-judgement-or:first-child {
+  border-bottom: 1px solid #111111;
 }
 
 .operator-checksheet-small-box {
@@ -335,7 +519,7 @@
 .operator-checksheet-theory-label {
   position: absolute;
 
-  left: 955px;
+  left: 1123px;
   top: 0;
 
   width: 114px;
@@ -349,6 +533,7 @@
 
   border-left: 1px solid #111111;
   border-right: 1px solid #111111;
+  border-bottom: 1px solid #111111;
 
   font-size: 11px;
   line-height: 15px;
@@ -357,17 +542,18 @@
 .operator-checksheet-questions {
   position: absolute;
 
-  left: 1069px;
+  left: 1237px;
   top: 0;
 
-  width: 505px;
+  width: 337px;
   height: 139px;
 
   border-right: 1px solid #111111;
+  border-bottom: 1px solid #111111;
 }
 
 .operator-checksheet-question {
-  width: 505px;
+  width: 337px;
   height: 27.8px;
 
   display: grid;
@@ -409,15 +595,35 @@
 .operator-checksheet-qoptions {
   height: 100%;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   border-left: 1px solid #111111;
 
   font-size: 10px;
 
   white-space: nowrap;
+}
+
+.operator-checksheet-answer,
+.operator-checksheet-answer-selected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-right: 1px solid #111111;
+
+  cursor: pointer;
+}
+
+.operator-checksheet-answer:last-child,
+.operator-checksheet-answer-selected:last-child {
+  border-right: 0;
+}
+
+.operator-checksheet-answer-selected {
+  background: #111111;
+  color: #ffffff;
 }
 
 /* =========================================================
@@ -433,60 +639,75 @@
   width: 292px;
   height: 139px;
 
+  padding: 10px 8px 0;
+
+  border-bottom: 1px solid #111111;
+
   font-size: 10px;
 }
 
-.operator-checksheet-score-field {
-  width: 292px;
-  height: 27px;
-
+.operator-checksheet-score-row {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
 
-  padding: 0 5px;
+  gap: 8px;
 
-  border: 1px solid #111111;
-
-  white-space: nowrap;
+  margin-bottom: 16px;
 }
 
-.operator-checksheet-score-field:first-child {
-  justify-content: space-between;
-}
-
-.operator-checksheet-score-field:nth-child(2) {
-  margin-top: -1px;
-}
-
-.operator-checksheet-score-label {
-  position: absolute;
-
-  left: 0;
-  top: 70px;
-
-  width: 145px;
-  height: 42px;
-
-  padding: 4px 5px;
+.operator-checksheet-score-title {
+  flex: 0 0 auto;
 
   font-size: 10px;
-  line-height: 15px;
+  line-height: 12px;
+  text-align: left;
+
+  white-space: nowrap;
+
+  outline: none;
+}
+
+.operator-checksheet-score-equals {
+  flex: 0 0 auto;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.operator-checksheet-score-fraction {
+  flex: 1 1 auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.operator-checksheet-score-numerator {
+  padding: 0 4px 3px;
+
+  border-bottom: 1px solid #111111;
+
+  white-space: nowrap;
+
+  outline: none;
+}
+
+.operator-checksheet-score-denominator {
+  padding: 3px 4px 0;
+
+  white-space: nowrap;
+
+  outline: none;
 }
 
 .operator-checksheet-passing {
-  position: absolute;
-
-  left: 0;
-  top: 112px;
-
-  width: 235px;
-  height: 27px;
-
   display: flex;
   align-items: center;
 
-  gap: 30px;
+  gap: 20px;
+
+  width: 100%;
+  height: 27px;
 
   padding: 0 5px;
 
@@ -503,7 +724,7 @@
 
 .operator-checksheet-grid-header {
   width: 1866px;
-  height: 50px;
+  height: 30px;
 
   display: flex;
 
@@ -521,7 +742,7 @@
 
 .operator-checksheet-left-header {
   width: 565px;
-  height: 50px;
+  height: 30px;
 
   flex: 0 0 565px;
 
@@ -538,7 +759,7 @@
 .operator-checksheet-header-description,
 .operator-checksheet-header-cycle,
 .operator-checksheet-header-method {
-  height: 50px;
+  height: 30px;
 
   display: flex;
   align-items: center;
@@ -566,63 +787,17 @@
 
 .operator-checksheet-observation-header {
   width: 1301px;
-  height: 50px;
+  height: 30px;
   flex: 0 0 1301px;
   display: flex;
   flex-direction: row;
   overflow: hidden;
 }
 
-.operator-checksheet-day-group {
-  width: calc(1301px / 7);
-  height: 50px;
-  flex: 0 0 calc(1301px / 7);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.operator-checksheet-day-group:last-child {
-  border-right: 0;
-}
-
-.operator-checksheet-day-title {
-  width: 100%;
-  height: 20px;
-  flex: 0 0 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  border-bottom: 1px solid #111111;
-  border-right: 2px solid #111111;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 20px;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.operator-checksheet-day-group:last-child .operator-checksheet-day-title {
-  border-right: 0;
-}
-
-.operator-checksheet-day-date {
-  width: 34px;
-  min-width: 10px;
-  max-width: 34px;
-  height: 14px;
-  outline: none;
-  border-bottom: 1px solid #111111;
-  font-weight: 400;
-  line-height: 13px;
-  cursor: text;
-}
-
 .operator-checksheet-cycle-row {
-  width: 100%;
+  width: calc(1301px / 7);
+  flex: 0 0 calc(1301px / 7);
   height: 30px;
-  flex: 0 0 30px;
   display: grid;
   grid-template-columns: repeat(10, minmax(0, 1fr));
 }
@@ -645,7 +820,7 @@
   border-right: 2px solid #111111 !important;
 }
 
-.operator-checksheet-day-group:last-child .operator-checksheet-day-end {
+.operator-checksheet-cycle-row:last-child .operator-checksheet-observation-header-cell:last-child {
   border-right: 0 !important;
 }
 
@@ -778,6 +953,43 @@
   display: block;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
+
+  text-align: center;
+  font-size: 9px;
+  line-height: 10px;
+  white-space: normal;
+}
+
+/* =========================================================
+   HORIZONTAL CYCLE + METHOD MERGED CELLS
+========================================================= */
+
+.operator-checksheet-merged-overlay {
+  position: absolute;
+  top: 0;
+  left: 453px;
+  width: 112px;
+  pointer-events: none;
+}
+
+.operator-checksheet-merged-group {
+  position: absolute;
+  left: 0;
+  width: 112px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-right: 1px solid #111111;
+  border-bottom: 1px solid #111111;
+  background: #ffffff;
+
+  overflow: hidden;
+}
+
+.operator-checksheet-merged-group span {
+  display: block;
 
   text-align: center;
   font-size: 9px;

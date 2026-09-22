@@ -196,8 +196,6 @@ const Filters = ({
   ],
 
   lineOptions = [],
-  machineOptions = [],
-  shiftOptions = [],
 
   showDates = true,
 }) => {
@@ -206,8 +204,6 @@ const Filters = ({
     department: "",
     subDepartment: "",
     line: "",
-    machine: "",
-    shift: "",
     fromDate: "",
     toDate: "",
   });
@@ -437,64 +433,6 @@ const Filters = ({
               }}
             >
               {lineOptions.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </div>
-
-        {/* Machine */}
-        <div className="w-full sm:w-[120px] lg:flex-[0.8]">
-          <FormControl fullWidth size="small" sx={selectSx}>
-            <Select
-              value={values.machine}
-              displayEmpty
-              onChange={updateValue("machine")}
-              MenuProps={menuProps}
-              renderValue={(selected) => {
-                if (!selected) {
-                  return (
-                    <span className="text-[#475569]">
-                      Machine
-                    </span>
-                  );
-                }
-
-                return selected;
-              }}
-            >
-              {machineOptions.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </div>
-
-        {/* Shift */}
-        <div className="w-full sm:w-[120px] lg:flex-[0.8]">
-          <FormControl fullWidth size="small" sx={selectSx}>
-            <Select
-              value={values.shift}
-              displayEmpty
-              onChange={updateValue("shift")}
-              MenuProps={menuProps}
-              renderValue={(selected) => {
-                if (!selected) {
-                  return (
-                    <span className="text-[#475569]">
-                      Shift
-                    </span>
-                  );
-                }
-
-                return selected;
-              }}
-            >
-              {shiftOptions.map((option) => (
                 <MenuItem key={option} value={option}>
                   {option}
                 </MenuItem>

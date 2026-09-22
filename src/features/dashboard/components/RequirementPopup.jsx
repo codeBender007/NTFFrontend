@@ -52,7 +52,6 @@ const RequirementPopup = ({ open, onClose }) => {
             <div className="grid grid-cols-4 gap-2.5">
               <div>
                 <label className="text-xs text-gray-600">Department</label>
-
                 <select className="mt-1.5 w-full border border-gray-200 rounded-lg h-8 px-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none">
                   <option>Select Department</option>
                 </select>

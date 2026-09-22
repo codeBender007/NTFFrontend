@@ -5,7 +5,7 @@ import Navbar from "../../../components/Navbar";
 import OperatorProfileDetails from "../components/OperatorProfileDetails";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
 import { lmsMenus } from "../data/LMSMenu";
-import { OPERATORS_STORAGE_KEY, SEED_OPERATORS } from "../utils/operatorUtils";
+import { OPERATORS_STORAGE_KEY, SEED_OPERATORS, formatDate } from "../utils/operatorUtils";
 
 const OperatorProfile = () => {
   const { id } = useParams();
@@ -17,12 +17,35 @@ const OperatorProfile = () => {
 
   const operator = found
     ? {
-        name: found.name,
-        employeeId: found.empCode,
+        sno: found.sno,
+        name: found.empName,
+        employeeId: found.payCode,
+        cardNo: found.cardNo,
         department: found.department,
-        status: found.status,
-        level: found.level,
-        phone: found.contact,
+        status: found.leavingDate ? "Left" : "Active",
+        level: found.skillLevel || found.grade,
+        designation: found.designation,
+        category: found.category,
+        grade: found.grade,
+        companyName: found.companyName,
+        subDepartment: found.subDepartment,
+        line: found.line,
+        machine: found.machine,
+        shift: found.shift,
+        plant: found.plant,
+        plantLocation: found.plantLocation,
+        isDojo: found.isDojo,
+        fatherHusband: found.fatherName,
+        gender: found.gender,
+        dob: formatDate(found.dob),
+        bloodGroup: found.bloodGroup,
+        maritalState: found.maritalState,
+        email: found.email,
+        phone: found.number,
+        joiningDate: formatDate(found.joiningDate),
+        leavingDate: formatDate(found.leavingDate),
+        firstOfDate: formatDate(found.firstOfDate),
+        salary: found.salary,
       }
     : undefined;
 

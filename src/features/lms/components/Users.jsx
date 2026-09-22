@@ -1,41 +1,41 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CirclePlus,
   Pencil,
   Search,
   Trash2,
+  UploadCloud,
   Users as UsersIcon,
   X,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import Filters from "../../../components/Filters";
 import {
-  SEED_USERS,
   USERS_STORAGE_KEY,
   createId,
   filterUsers,
   getUserDepartmentOptions,
   EMPTY_USER_FORM,
-  ROLE_OPTIONS,
-  USER_STATUS_OPTIONS,
+  USER_FORM_FIELDS,
+  USER_COLUMNS,
+  USER_DATE_KEYS,
+  loadUsers,
 } from "../utils/userUtils";
+import { formatDate } from "../utils/operatorUtils";
 
 const inputClass =
   "h-11 w-full rounded-lg border border-[#d5d9df] px-3 text-sm outline-none transition focus:border-[#6F4AE7]";
 
-const loadUsers = () => {
-  try {
-    const stored = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY));
+const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
+  const navigate = useNavigate();
 
-    if (Array.isArray(stored)) return stored;
-    return SEED_USERS;
-  } catch {
-    return SEED_USERS;
-  }
-};
+  const [localUsers, setLocalUsers] = useState(loadUsers);
 
-const Users = () => {
-  const [users, setUsers] = useState(loadUsers);
+  const users = propUsers ?? localUsers;
+  const setUsers = propSetUsers ?? setLocalUsers;
+
   const [filterValues, setFilterValues] = useState({});
   const [search, setSearch] = useState("");
 
@@ -47,6 +47,7 @@ const Users = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const [toast, setToast] = useState("");
+  const fileInputRef = useRef(null);
 
   const showToast = (message) => {
     setToast(message);
@@ -54,6 +55,77 @@ const Users = () => {
     setTimeout(() => {
       setToast("");
     }, 2500);
+  };
+
+  /* ===================== UPLOAD EXCEL ===================== */
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { raw: false, defval: "" });
+
+      if (!rows.length) {
+        showToast("No data rows found in the Excel file.");
+        return;
+      }
+
+      const normalizeHeader = (value) =>
+        String(value)
+          .toLowerCase()
+          .replace(/\s+/g, "");
+
+      const headerAliases = new Map(
+        USER_COLUMNS.map((column) => [
+          normalizeHeader(column.label),
+          column.key,
+        ]),
+      );
+
+      const parsedUsers = rows
+        .map((row) => {
+          const user = { ...EMPTY_USER_FORM };
+
+          Object.keys(row).forEach((header) => {
+            const key = headerAliases.get(normalizeHeader(header));
+
+            if (key) user[key] = row[header] ?? "";
+          });
+
+          return user;
+        })
+        .filter((user) => String(user.empName || "").trim());
+
+      if (!parsedUsers.length) {
+        showToast("No valid employee rows found in the Excel file.");
+        return;
+      }
+
+      const baseSno = users.length;
+      const next = [
+        ...users,
+        ...parsedUsers.map((user, index) => ({
+          ...user,
+          id: createId("user"),
+          sno: baseSno + index + 1,
+        })),
+      ];
+
+      setUsers(next);
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next));
+      showToast(`${parsedUsers.length} user(s) imported successfully.`);
+    } catch {
+      showToast(
+        "Failed to read the Excel file. Please upload a valid .xlsx or .xls file.",
+      );
+    } finally {
+      event.target.value = "";
+    }
   };
 
   /* ===================== TABLE DATA ===================== */
@@ -76,7 +148,15 @@ const Users = () => {
 
   const openAddModal = () => {
     setEditingUser(null);
-    setForm(EMPTY_USER_FORM);
+
+    const formWithSno = {
+      ...EMPTY_USER_FORM,
+      sno: users.length + 1,
+      empName: "",
+      email: "",
+    };
+
+    setForm(formWithSno);
     setFormModalOpen(true);
   };
 
@@ -86,35 +166,23 @@ const Users = () => {
     setFormModalOpen(true);
   };
 
+  const handleViewUser = (user) => {
+    navigate(`/lms/user/${user.id}`);
+  };
+
   const handleSubmit = () => {
-    const name = form.name?.trim();
+    const empName = form.empName?.trim();
     const email = form.email?.trim();
 
-    if (!name) {
-      showToast("Please enter user name.");
-      return;
-    }
-
-    if (!email) {
-      showToast("Please enter email address.");
-      return;
-    }
-
-    const duplicate = users.some(
-      (user) =>
-        user.email.toLowerCase() === email.toLowerCase() &&
-        user.id !== editingUser?.id,
-    );
-
-    if (duplicate) {
-      showToast("Email already exists.");
+    if (!empName) {
+      showToast("Please enter employee name.");
       return;
     }
 
     if (editingUser) {
       const next = users.map((user) =>
         user.id === editingUser.id
-          ? { ...user, ...form, name, email }
+          ? { ...user, ...form, empName, email }
           : user,
       );
 
@@ -124,7 +192,7 @@ const Users = () => {
     } else {
       const next = [
         ...users,
-        { id: createId("user"), ...form, name, email },
+        { id: createId("user"), ...form, sno: users.length + 1, empName, email },
       ];
 
       setUsers(next);
@@ -155,6 +223,40 @@ const Users = () => {
     setDeleteTarget(null);
   };
 
+  const renderFormField = (field) => {
+    const value = form[field.key] || "";
+
+    if (field.type === "select") {
+      const options = field.department ? departmentOptions : field.options;
+
+      return (
+        <select
+          value={value}
+          onChange={setFormField(field.key)}
+          className={inputClass}
+        >
+          <option value="">Select {field.label.toLowerCase()}</option>
+
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <input
+        type={field.type || "text"}
+        value={value}
+        onChange={setFormField(field.key)}
+        placeholder={field.placeholder}
+        className={inputClass}
+      />
+    );
+  };
+
   /* ===================== RENDER ===================== */
 
   return (
@@ -178,13 +280,31 @@ const Users = () => {
               </div>
             </div>
 
-            <button
-              onClick={openAddModal}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#6F4AE7] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#5A38D6] sm:w-auto"
-            >
-              <CirclePlus size={16} />
-              Add User
-            </button>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#D5D9DF] bg-white px-4 py-2.5 text-xs font-semibold text-[#344054] transition hover:bg-[#F9FAFB] sm:w-auto"
+              >
+                <UploadCloud size={16} />
+                Upload Excel
+              </button>
+
+              <button
+                onClick={openAddModal}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#6F4AE7] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#5A38D6] sm:w-auto"
+              >
+                <CirclePlus size={16} />
+                Add User
+              </button>
+            </div>
           </div>
 
           {/* FILTERS */}
@@ -229,15 +349,11 @@ const Users = () => {
             {/* TABLE BODY */}
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px] border-collapse">
+              <table className="w-full min-w-[3200px] border-collapse">
                 <thead>
                   <tr className="bg-[#f5f6f8]">
                     {[
-                      "User Name",
-                      "Email",
-                      "Role",
-                      "Department",
-                      "Status",
+                      ...USER_COLUMNS.map((column) => column.label),
                       "Actions",
                     ].map((column) => (
                       <th
@@ -253,7 +369,7 @@ const Users = () => {
                 <tbody>
                   {tableRows.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-0">
+                      <td colSpan={USER_COLUMNS.length + 1} className="p-0">
                         <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                           <UsersIcon size={42} className="mb-3 opacity-40" />
 
@@ -270,88 +386,55 @@ const Users = () => {
                       </td>
                     </tr>
                   ) : (
-                    tableRows.map((user) => {
-                      const statusClasses =
-                        user.status === "Active"
-                          ? "bg-[#e6f7ef] text-[#0f9d58]"
-                          : user.status === "Inactive"
-                            ? "bg-[#eef0f3] text-[#6b7280]"
-                            : user.status === "Pending"
-                              ? "bg-[#fff4e0] text-[#e6920b]"
-                              : user.status === "Locked"
-                                ? "bg-[#fff0ee] text-[#e74c3c]"
-                                : "bg-gray-100 text-gray-600";
+                    tableRows.map((user, index) => (
+                      <tr
+                        key={user.id}
+                        className="group border-b border-[#edf0f2] last:border-0 hover:bg-[#fafaff]"
+                      >
+                        {USER_COLUMNS.map((column) => (
+                          <td
+                            key={column.key}
+                            className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4"
+                          >
+                            {column.key === "sno" ? (
+                              index + 1
+                            ) : column.key === "empName" ? (
+                              <button
+                                type="button"
+                                onClick={() => handleViewUser(user)}
+                                className="font-semibold text-[#344760] transition hover:text-[#6F4AE7] hover:underline"
+                              >
+                                {user[column.key]}
+                              </button>
+                            ) : USER_DATE_KEYS.includes(column.key) ? (
+                              formatDate(user[column.key])
+                            ) : (
+                              user[column.key] || "-"
+                            )}
+                          </td>
+                        ))}
 
-                      const dotClasses =
-                        user.status === "Active"
-                          ? "bg-[#0f9d58]"
-                          : user.status === "Inactive"
-                            ? "bg-[#6b7280]"
-                            : user.status === "Pending"
-                              ? "bg-[#e6920b]"
-                              : user.status === "Locked"
-                                ? "bg-[#e74c3c]"
-                                : "bg-gray-400";
-
-                      return (
-                        <tr
-                          key={user.id}
-                          className="group border-b border-[#edf0f2] last:border-0 hover:bg-[#fafaff]"
-                        >
-                          <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] font-semibold text-[#344760] last:border-r-0 sm:px-4">
+                        <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
+                          <div className="flex gap-2">
                             <button
-                              type="button"
-                              className="font-semibold text-[#344760] transition hover:text-[#6F4AE7] hover:underline"
+                              title="Edit user"
+                              onClick={() => openEditModal(user)}
+                              className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#f0ecff] text-[#6F4AE7] transition hover:bg-[#e6dfff]"
                             >
-                              {user.name}
+                              <Pencil size={15} />
                             </button>
-                          </td>
 
-                          <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                            {user.email}
-                          </td>
-
-                          <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                            {user.role}
-                          </td>
-
-                          <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                            {user.department}
-                          </td>
-
-                          <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClasses}`}
+                            <button
+                              title="Delete user"
+                              onClick={() => openDeleteModal(user)}
+                              className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#fff0ee] text-[#e74c3c] transition hover:bg-[#ffe3df]"
                             >
-                              <span
-                                className={`h-1.5 w-1.5 rounded-full ${dotClasses}`}
-                              />
-                              {user.status || "-"}
-                            </span>
-                          </td>
-
-                          <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                            <div className="flex gap-2">
-                              <button
-                                title="Edit user"
-                                onClick={() => openEditModal(user)}
-                                className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#f0ecff] text-[#6F4AE7] transition hover:bg-[#e6dfff]"
-                              >
-                                <Pencil size={15} />
-                              </button>
-
-                              <button
-                                title="Delete user"
-                                onClick={() => openDeleteModal(user)}
-                                className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#fff0ee] text-[#e74c3c] transition hover:bg-[#ffe3df]"
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
@@ -371,7 +454,7 @@ const Users = () => {
             }
           }}
         >
-          <div className="max-h-full w-full max-w-[520px] overflow-hidden rounded-[17px] bg-white shadow-2xl">
+          <div className="max-h-full w-full max-w-[720px] overflow-hidden rounded-[17px] bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#e3e6eb] px-5 py-[18px]">
               <h2 className="text-base font-bold">
                 {editingUser ? "Edit User" : "Add User"}
@@ -387,94 +470,28 @@ const Users = () => {
 
             <div className="max-h-[65vh] overflow-y-auto p-5">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    User Name
-                    <span className="ml-0.5 text-[#e74c3c]">*</span>
-                  </label>
+                {USER_FORM_FIELDS.map((field) => (
+                  <div key={field.key}>
+                    <label className="mb-2 block text-xs font-semibold">
+                      {field.label}
+                      {field.key === "empName" && (
+                        <span className="ml-0.5 text-[#e74c3c]">*</span>
+                      )}
+                    </label>
 
-                  <input
-                    autoFocus
-                    value={form.name || ""}
-                    onChange={setFormField("name")}
-                    placeholder="Enter user name"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Email
-                    <span className="ml-0.5 text-[#e74c3c]">*</span>
-                  </label>
-
-                  <input
-                    type="email"
-                    value={form.email || ""}
-                    onChange={setFormField("email")}
-                    placeholder="Enter email address"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Role
-                    <span className="ml-0.5 text-[#e74c3c]">*</span>
-                  </label>
-
-                  <select
-                    value={form.role || ""}
-                    onChange={setFormField("role")}
-                    className={inputClass}
-                  >
-                    <option value="">Select role</option>
-
-                    {ROLE_OPTIONS.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Department
-                  </label>
-
-                  <select
-                    value={form.department || ""}
-                    onChange={setFormField("department")}
-                    className={inputClass}
-                  >
-                    <option value="">Select department</option>
-
-                    {departmentOptions.map((department) => (
-                      <option key={department} value={department}>
-                        {department}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Status
-                  </label>
-
-                  <select
-                    value={form.status || "Active"}
-                    onChange={setFormField("status")}
-                    className={inputClass}
-                  >
-                    {USER_STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    {field.key === "empName" ? (
+                      <input
+                        autoFocus
+                        value={form.empName || ""}
+                        onChange={setFormField("empName")}
+                        placeholder="Enter employee name"
+                        className={inputClass}
+                      />
+                    ) : (
+                      renderFormField(field)
+                    )}
+                  </div>
+                ))}
               </div>
 
               <div className="mt-6 flex flex-col-reverse gap-2 border-t border-[#e3e6eb] pt-4 sm:flex-row sm:justify-end">
@@ -523,7 +540,9 @@ const Users = () => {
             <div className="max-h-[65vh] overflow-y-auto p-5">
               <div className="text-sm leading-6 text-gray-600">
                 Are you sure you want to delete{" "}
-                <strong className="text-gray-900">"{deleteTarget?.name}"</strong>
+                <strong className="text-gray-900">
+                  "{deleteTarget?.empName}"
+                </strong>
                 ?
               </div>
 

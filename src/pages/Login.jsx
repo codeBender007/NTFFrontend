@@ -131,7 +131,6 @@ const Login = () => {
                   <h2 className="text-[22px] font-bold leading-tight text-[#111827]">
                     Login to Your Account
                   </h2>
-
                   <p className="mt-1 text-xs text-gray-500">
                     Enter your credentials to continue.
                   </p>
@@ -142,7 +141,7 @@ const Login = () => {
                   {/* Username */}
                   <div className="mb-3">
                     <label className="mb-1.5 block text-xs font-semibold text-gray-700">
-                      Username
+                      Emp Id
                     </label>
 
                     <div className="flex h-[48px] items-center rounded-xl border border-gray-200 bg-gray-50 px-3 transition-all focus-within:border-[#7A5AF8] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#7A5AF8]/10">
@@ -156,7 +155,7 @@ const Login = () => {
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Enter username"
+                        placeholder="Enter emp id"
                         className="h-full w-full bg-transparent text-sm text-gray-800 outline-none placeholder:text-gray-400"
                       />
                     </div>
@@ -266,7 +265,7 @@ const Login = () => {
                 {/* Username */}
                 <div className="mb-4">
                   <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Username
+                    Emp Id
                   </label>
 
                   <div className="flex h-14 items-center rounded-xl border border-gray-200 bg-gray-50 px-4 focus-within:border-[#7A5AF8] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#7A5AF8]/10">
@@ -280,7 +279,7 @@ const Login = () => {
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Enter username"
+                      placeholder="Enter emp id"
                       className="h-full w-full bg-transparent text-sm text-gray-800 outline-none placeholder:text-gray-400"
                     />
                   </div>

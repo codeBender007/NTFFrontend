@@ -1,48 +1,50 @@
 import { useState } from "react";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
-import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
+import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
+import PersonOffOutlinedIcon from "@mui/icons-material/PersonOffOutlined";
+import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import SignalCellularAltRoundedIcon from "@mui/icons-material/SignalCellularAltRounded";
 import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
 import KPICards from "../../../components/KPICards";
-import LMSTabs from "../components/LMSTabs";
 import { lmsMenus } from "../data/LMSMenu";
+import { loadOperators } from "../utils/operatorUtils";
 import Operators from "../components/Operators";
-import OperatorLevels from "../components/OperatorLevels";
-
-const kpiData = [
-  {
-    title: "Total Operators",
-    value: 250,
-    color: "blue",
-    icon: <PeopleAltOutlinedIcon sx={{ fontSize: 24 }} />,
-  },
-  {
-    title: "Present Operators",
-    value: 210,
-    color: "green",
-    icon: <PersonOutlinedIcon sx={{ fontSize: 24 }} />,
-  },
-  {
-    title: "On Leave",
-    value: 40,
-    color: "orange",
-    icon: <SchoolOutlinedIcon sx={{ fontSize: 24 }} />,
-  },
-  {
-    title: "Left Operators",
-    value: "88",
-    color: "purple",
-    icon: <SignalCellularAltRoundedIcon sx={{ fontSize: 24 }} />,
-  },
-];
 
 const OperatorsPage = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Operators");
-  const [activeTab, setActiveTab] = useState("Operators");
+  const [operators, setOperators] = useState(loadOperators);
+
+  const kpiData = [
+    {
+      title: "Total Operators",
+      value: operators.length,
+      color: "blue",
+      icon: <PeopleAltOutlinedIcon sx={{ fontSize: 24 }} />,
+    },
+    {
+      title: "Active Operators",
+      value: operators.filter((operator) => !operator.leavingDate).length,
+      color: "green",
+      icon: <VerifiedUserOutlinedIcon sx={{ fontSize: 24 }} />,
+    },
+    {
+      title: "Left Operators",
+      value: operators.filter((operator) => operator.leavingDate).length,
+      color: "orange",
+      icon: <PersonOffOutlinedIcon sx={{ fontSize: 24 }} />,
+    },
+    {
+      title: "Departments",
+      value: new Set(
+        operators.map((operator) => operator.department).filter(Boolean),
+      ).size,
+      color: "red",
+      icon: <ApartmentOutlinedIcon sx={{ fontSize: 24 }} />,
+    },
+  ];
 
   return (
     <div className="flex h-screen bg-[#F5F7FB] overflow-hidden">
@@ -61,23 +63,9 @@ const OperatorsPage = () => {
           <Navbar setMobileOpen={setMobileOpen} activeMenu={activeMenu} />
         </div>
 
-        <div className="sticky top-[64px] z-20">
-          <LMSTabs
-            tabs={["Operators", "Operator Levels"]}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-        </div>
-
         <main className="flex-1 overflow-y-auto px-6 pt-4 pb-6">
-          {activeTab === "Operators" && (
-            <>
-              <KPICards data={kpiData} />
-              <Operators />
-            </>
-          )}
-
-          {activeTab === "Operator Levels" && <OperatorLevels />}
+          <KPICards data={kpiData} />
+          <Operators operators={operators} setOperators={setOperators} />
         </main>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import  { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import "../../../OperatorCheckSheet.css";
+import logo from "../../../assets/images/NTF_logo_black.png";
 
 const OCS_DAYS = 7;
 const OCS_CYCLES = 10;
@@ -24,7 +25,7 @@ const OCS_OBS_WIDTH = OCS_SHEET_WIDTH - OCS_LEFT_WIDTH;
 const OCS_DAY_WIDTH = OCS_OBS_WIDTH / OCS_DAYS;
 const OCS_CELL_WIDTH = OCS_DAY_WIDTH / OCS_CYCLES;
 
-const OCS_ROW_HEIGHTS = Array(19).fill(28);
+const OCS_ROW_HEIGHTS = Array(20).fill(28);
 
 const OCS_SHEETS = ["L-4", "L-3", "L-2"];
 
@@ -48,16 +49,20 @@ const OCS_DEFAULT_ROWS = [
   { sno: "17", description: "Rej. %", cycle: "", method: "" },
   { sno: "18", description: "Total time", cycle: "", method: "Check 10 part" },
   { sno: "19", description: "Takt time", cycle: "", method: "" },
+  { sno: "", description: "Judgement", cycle: "", method: "" },
 ];
 
-const BOXED_ROWS = new Set([5, 6, 13, 14, 15, 16, 17, 18, 19]);
+const BOXED_ROWS = new Set([4, 5, 12, 13, 14, 15, 16, 17, 18, 19]);
 
 const METHOD_GROUPS = [
   { label: "Working procedure", start: 1, end: 4 },
   { label: "CSR", start: 7, end: 8 },
   { label: "Safety & 5S rule", start: 9, end: 12 },
   { label: "Quality checks procedure", start: 13, end: 14 },
-  { label: "Check 1 Hr Production", start: 15, end: 17 },
+];
+
+const CYCLE_METHOD_MERGES = [
+  { label: "Check 1 Hr Production", start: 16, end: 17 },
   { label: "Check 10 part", start: 18, end: 19 },
 ];
 
@@ -114,6 +119,14 @@ function OCSHeader({ ws }) {
     "Existing Operator",
   ];
 
+  const detailRows = [
+    { label: "Name of Operator:" },
+    { label: "Name of Observer:" },
+    { label: "Process Name:" },
+    { label: "Name of Trainer:" },
+    { label: "Date:" },
+  ];
+
   const [category, setCategory] = useState("");
 
   const [judgement, setJudgement] = useState({
@@ -130,7 +143,10 @@ function OCSHeader({ ws }) {
   }
 
   function toggleJudgement(key) {
-    setJudgement((prev) => ({ ...prev, [key]: !prev[key] }));
+    setJudgement((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   }
 
   function selectAnswer(index, value) {
@@ -143,10 +159,14 @@ function OCSHeader({ ws }) {
   return (
     <section className="operator-checksheet-top">
 
+      {/* =====================================================
+          LOGO
+      ===================================================== */}
       <div className="operator-checksheet-logo">
-        NTF
+        <img className ="-mt-3" src={logo} alt="NTF Logo" />
       </div>
 
+      {/*TITLE*/}
       <div
         className="operator-checksheet-title"
         contentEditable
@@ -156,6 +176,9 @@ function OCSHeader({ ws }) {
         {title}
       </div>
 
+      {/* =====================================================
+          OPERATOR CATEGORY
+      ===================================================== */}
       <div className="operator-checksheet-category">
 
         <div className="operator-checksheet-category-title">
@@ -171,26 +194,31 @@ function OCSHeader({ ws }) {
             <span className="operator-checksheet-checkbox">
               {category === item ? "✓" : ""}
             </span>
+
             <span>{item}</span>
           </div>
         ))}
-
       </div>
 
+      {/* =====================================================
+          EMPTY COLUMN
+      ===================================================== */}
+      <div className="operator-checksheet-gap" />
+
+      {/* =====================================================
+          OPERATOR DETAILS
+      ===================================================== */}
       <div className="operator-checksheet-details">
 
-        {[
-          "Name of Operator:",
-          "Name of Observer:",
-          "Process Name:",
-          "Name of Trainer:",
-          "Date:",
-        ].map((item) => (
+        {detailRows.map((item) => (
           <div
             className="operator-checksheet-detail-row"
-            key={item}
+            key={item.label}
           >
-            <span>{item}</span>
+            <span className="operator-checksheet-detail-label">
+              {item.label}
+            </span>
+
             <span
               className="operator-checksheet-detail-line"
               contentEditable
@@ -202,52 +230,130 @@ function OCSHeader({ ws }) {
 
       </div>
 
+      {/* =====================================================
+          DATE OF JOINING
+      ===================================================== */}
+      <div className="operator-checksheet-doj">
+
+        {[1, 2, 3, 4, 5].map((row) => (
+          <div
+            className="operator-checksheet-doj-row"
+            key={row}
+          >
+            {row === 2 ? (
+              <span className="operator-checksheet-doj-label">
+                Date of Joining:
+              </span>
+            ) : null}
+          </div>
+        ))}
+
+      </div>
+
+      {/* =====================================================
+          JUDGEMENT
+      ===================================================== */}
       <div className="operator-checksheet-judgement">
 
-        <div className="operator-checksheet-judgement-title">
-          Judgement (Pls tick√)
+        {/* COL 1: labels */}
+        <div className="operator-checksheet-judgement-labels">
+
+          <span className="operator-checksheet-judgement-label-cell">
+            Judgement (Pls tick √)
+          </span>
+
+          <span className="operator-checksheet-judgement-label-cell">
+            Re-education (Pls tick√)
+          </span>
+
         </div>
 
-        <div className="operator-checksheet-judgement-row">
-          <span>OK</span>
-          <span
-            className="operator-checksheet-small-box"
-            onClick={() => toggleJudgement("ok")}
-          >
-            {judgement.ok ? "✓" : ""}
-          </span>
-          <span>OR</span>
-          <span>Not OK</span>
-          <span
-            className="operator-checksheet-small-box"
-            onClick={() => toggleJudgement("notOk")}
-          >
-            {judgement.notOk ? "✓" : ""}
-          </span>
+        {/* COL 2: OK + checkbox, Required + checkbox */}
+        <div className="operator-checksheet-judgement-yes-col">
+
+          <div className="operator-checksheet-judgement-choice">
+
+            <span className="operator-checksheet-judgement-choice-label">
+              OK
+            </span>
+
+            <span
+              className="operator-checksheet-small-box"
+              onClick={() => toggleJudgement("ok")}
+            >
+              {judgement.ok ? "✓" : ""}
+            </span>
+
+          </div>
+
+          <div className="operator-checksheet-judgement-choice">
+
+            <span className="operator-checksheet-judgement-choice-label">
+              Required
+            </span>
+
+            <span
+              className="operator-checksheet-small-box"
+              onClick={() => toggleJudgement("reEducation")}
+            >
+              {judgement.reEducation ? "✓" : ""}
+            </span>
+
+          </div>
+
         </div>
 
-        <div className="operator-checksheet-judgement-row">
-          <span>Re-education (Pls tick√)</span>
-          <span
-            className="operator-checksheet-small-box"
-            onClick={() => toggleJudgement("reEducation")}
-          >
-            {judgement.reEducation ? "✓" : ""}
-          </span>
-          <span>OR</span>
-          <span>Not Required</span>
-          <span
-            className="operator-checksheet-small-box"
-            onClick={() => toggleJudgement("notRequired")}
-          >
-            {judgement.notRequired ? "✓" : ""}
-          </span>
+        {/* COL 3: OR */}
+        <div className="operator-checksheet-judgement-or-col">
+
+          <span className="operator-checksheet-judgement-or">OR</span>
+          <span className="operator-checksheet-judgement-or">OR</span>
+
+        </div>
+
+        {/* COL 4: Not OK + checkbox, Not Required + checkbox */}
+        <div className="operator-checksheet-judgement-no-col">
+
+          <div className="operator-checksheet-judgement-choice">
+
+            <span className="operator-checksheet-judgement-choice-label">
+              Not OK
+            </span>
+
+            <span
+              className="operator-checksheet-small-box"
+              onClick={() => toggleJudgement("notOk")}
+            >
+              {judgement.notOk ? "✓" : ""}
+            </span>
+
+          </div>
+
+          <div className="operator-checksheet-judgement-choice">
+
+            <span className="operator-checksheet-judgement-choice-label">
+              Not Required
+            </span>
+
+            <span
+              className="operator-checksheet-small-box"
+              onClick={() => toggleJudgement("notRequired")}
+            >
+              {judgement.notRequired ? "✓" : ""}
+            </span>
+
+          </div>
+
         </div>
 
       </div>
 
+      {/* =====================================================
+          THEORETICAL QUESTIONS
+          This is kept here for your existing functionality.
+      ===================================================== */}
       <div className="operator-checksheet-theory-label">
-        Theoretical
+        Therotical
         <br />
         Questions
       </div>
@@ -273,80 +379,112 @@ function OCSHeader({ ws }) {
               {question}
             </div>
 
-            <div
-              className="operator-checksheet-qoptions"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "16px",
-              }}
-            >
+            <div className="operator-checksheet-qoptions">
+
               {["Y", "N", "NA"].map((value) => (
                 <span
                   key={value}
                   onClick={() => selectAnswer(index, value)}
-                  style={{
-                    cursor: "pointer",
-                    fontWeight: answers[index] === value ? 700 : 400,
-                    color: answers[index] === value ? "#174d7c" : "#111111",
-                  }}
+                  className={
+                    answers[index] === value
+                      ? "operator-checksheet-answer-selected"
+                      : "operator-checksheet-answer"
+                  }
                 >
-                  {answers[index] === value ? "☑" : "☐"}&nbsp;{value}
+                  {value}
                 </span>
               ))}
+
             </div>
+
           </div>
         ))}
+
       </div>
 
+      {/* =====================================================
+          SCORE
+      ===================================================== */}
       <div className="operator-checksheet-score">
 
-        <div className="operator-checksheet-score-field">
-          <span>Total Marks Obtained</span>
+        <div className="operator-checksheet-score-row">
+
           <span
+            className="operator-checksheet-score-title"
             contentEditable
             suppressContentEditableWarning
             spellCheck={false}
-            style={{ outline: "none" }}
           >
-            *&nbsp;&nbsp;100
+            Score for therotical
+            <br />
+            Exam %
           </span>
-        </div>
 
-        <div
-          className="operator-checksheet-score-field"
-          contentEditable
-          suppressContentEditableWarning
-          spellCheck={false}
-          style={{ outline: "none" }}
-        >
-          <span>Total Questions</span>
-        </div>
+          <span className="operator-checksheet-score-equals">
+            =
+          </span>
 
-        <div
-          className="operator-checksheet-score-label"
-          contentEditable
-          suppressContentEditableWarning
-          spellCheck={false}
-          style={{ outline: "none" }}
-        >
-          Score for theoretical
-          <br />
-          Exam %
+          <span className="operator-checksheet-score-fraction">
+
+            <span
+              className="operator-checksheet-score-numerator"
+              contentEditable
+              suppressContentEditableWarning
+              spellCheck={false}
+            >
+              Total Marks Obtained&nbsp;&nbsp;*&nbsp;&nbsp;100
+            </span>
+
+            <span
+              className="operator-checksheet-score-denominator"
+              contentEditable
+              suppressContentEditableWarning
+              spellCheck={false}
+            >
+              Total Questions
+            </span>
+
+          </span>
+
         </div>
 
         <div className="operator-checksheet-passing">
-          <span>Passing Criteria</span>
+
+          <span>
+            Passing Criteria
+          </span>
+
           <span
             contentEditable
             suppressContentEditableWarning
             spellCheck={false}
-            style={{ outline: "none" }}
           >
             Minimum 80%
           </span>
+
         </div>
+
+      </div>
+
+      {/* =====================================================
+          DAY NAMES
+      ===================================================== */}
+      <div className="operator-checksheet-day-row">
+
+        {Array.from({ length: OCS_DAYS }).map((_, dayIndex) => (
+          <div
+            className="operator-checksheet-day-cell"
+            key={dayIndex}
+          >
+            <span>Day {dayIndex + 1}- Date-</span>
+            <span
+              className="operator-checksheet-day-date-band"
+              contentEditable
+              suppressContentEditableWarning
+              spellCheck={false}
+            />
+          </div>
+        ))}
 
       </div>
 
@@ -366,31 +504,19 @@ function OCSTableHeader() {
 
       <div className="operator-checksheet-observation-header">
         {Array.from({ length: OCS_DAYS }).map((_, dayIndex) => (
-          <div className="operator-checksheet-day-group" key={dayIndex}>
-            <div className="operator-checksheet-day-title">
-              <span>Day {dayIndex + 1} - Date:</span>
-              <span
-                className="operator-checksheet-day-date"
-                contentEditable
-                suppressContentEditableWarning
-                spellCheck={false}
-              />
-            </div>
-
-            <div className="operator-checksheet-cycle-row">
-              {Array.from({ length: OCS_CYCLES }).map((_, cycleIndex) => (
-                <div
-                  className={
-                    cycleIndex === OCS_CYCLES - 1
-                      ? "operator-checksheet-observation-header-cell operator-checksheet-day-end"
-                      : "operator-checksheet-observation-header-cell"
-                  }
-                  key={cycleIndex}
-                >
-                  {cycleIndex + 1}
-                </div>
-              ))}
-            </div>
+          <div className="operator-checksheet-cycle-row" key={dayIndex}>
+            {Array.from({ length: OCS_CYCLES }).map((_, cycleIndex) => (
+              <div
+                className={
+                  cycleIndex === OCS_CYCLES - 1
+                    ? "operator-checksheet-observation-header-cell operator-checksheet-day-end"
+                    : "operator-checksheet-observation-header-cell"
+                }
+                key={cycleIndex}
+              >
+                {cycleIndex + 1}
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -414,6 +540,31 @@ function OCSMethodGroups() {
           <div
             key={group.label}
             className="operator-checksheet-method-group"
+            style={{ top, height }}
+          >
+            <span>{group.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function OCSCycleMethodMerges() {
+  return (
+    <div className="operator-checksheet-merged-overlay">
+      {CYCLE_METHOD_MERGES.map((group) => {
+        const top = OCS_ROW_HEIGHTS
+          .slice(0, group.start - 1)
+          .reduce((total, height) => total + height, 0);
+        const height = OCS_ROW_HEIGHTS
+          .slice(group.start - 1, group.end)
+          .reduce((total, rowHeight) => total + rowHeight, 0);
+
+        return (
+          <div
+            key={group.label}
+            className="operator-checksheet-merged-group"
             style={{ top, height }}
           >
             <span>{group.label}</span>
@@ -489,11 +640,12 @@ function OCSTableBody({ ws }) {
         ))}
 
         <OCSMethodGroups />
+        <OCSCycleMethodMerges />
       </div>
 
       <div className="operator-checksheet-observation">
         {rows.map((row, rowIndex) => {
-          const isBoxed = BOXED_ROWS.has(Number(row.sno));
+          const isBoxed = BOXED_ROWS.has(rowIndex);
 
           return (
             <div

@@ -163,9 +163,7 @@ const TrainingFeedback = () => {
 
               <div className="text-center text-[13px] font-semibold leading-6 sm:text-right">
                 <p>Doc. No.- TF06(AMD-02)</p>
-
                 <p>Issue Date- 18/04/2025</p>
-
                 <p>Rev. No.- 01</p>
               </div>
             </div>

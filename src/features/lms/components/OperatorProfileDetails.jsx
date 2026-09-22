@@ -1,3 +1,9 @@
+/* ============================================================
+   OLD DESIGN - KEPT COMMENTED
+   Refer to this block before reverting the UI.
+   ============================================================ */
+
+/*
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
@@ -101,23 +107,23 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
     <div className="space-y-4 p-3 md:p-4 lg:p-5">
       {/* =========================================================
           TOP PROFILE HEADER
-      ========================================================= */}
+      ========================================================= * /}
       <section className="relative overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-        {/* Background image */}
+        {/* Background image * /}
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${profileBg})` }}
         />
 
         <div className="relative z-10 flex flex-col gap-5 p-6 md:p-7 xl:flex-row xl:items-center xl:justify-between">
-          {/* LEFT PROFILE */}
+          {/* LEFT PROFILE * /}
           <div className="flex items-center gap-4 md:gap-5">
-            {/* Avatar */}
+            {/* Avatar * /}
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] text-xl font-bold text-[#6F4AE7] md:h-20 md:w-20 md:text-2xl">
               {getInitials(data.name)}
             </div>
 
-            {/* Identity */}
+            {/* Identity * /}
             <div className="min-w-0">
               <h1 className="text-2xl font-bold tracking-tight text-[#101828] md:text-3xl">
                 {data.name}
@@ -149,7 +155,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
             </div>
           </div>
 
-          {/* RIGHT ACTIONS */}
+          {/* RIGHT ACTIONS * /}
           <div className="flex items-center gap-2 self-start xl:self-center">
             <button
               type="button"
@@ -171,11 +177,11 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
 
       {/* =========================================================
           MAIN PROFILE AREA
-      ========================================================= */}
+      ========================================================= * /}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
         {/* =====================================================
             PRIMARY DETAILS
-        ===================================================== */}
+        ===================================================== * /}
         <section className="overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
           <div className="flex items-center gap-3 bg-gradient-to-r from-[#6F4AE7] to-[#9A7CF5] px-4 py-3.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white">
@@ -227,9 +233,9 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
 
         {/* =====================================================
             DETAILED PROFILE
-        ===================================================== */}
+        ===================================================== * /}
         <section className="min-w-0 overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-          {/* Header */}
+          {/* Header * /}
           <div className="flex items-center gap-3 bg-gradient-to-r from-[#6F4AE7] to-[#9A7CF5] px-4 py-3.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white">
               <BusinessOutlinedIcon sx={{ fontSize: 20 }} />
@@ -245,10 +251,10 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
             </div>
           </div>
 
-          {/* THREE COLUMNS */}
+          {/* THREE COLUMNS * /}
           <div className="p-5">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              {/* PERSONAL */}
+              {/* PERSONAL * /}
               <div className="rounded-2xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF]">
                 <div className="mb-2 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
@@ -321,7 +327,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
                 </div>
               </div>
 
-              {/* PROFESSIONAL */}
+              {/* PROFESSIONAL * /}
               <div className="rounded-2xl border border-[#EEF0F5] bg-white p-4 transition hover:border-[#DDD5FF]">
                 <div className="mb-3 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
@@ -338,7 +344,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
                 </p>
 
                 <div className="flex flex-col items-center">
-                  {/* Department */}
+                  {/* Department * /}
                   <div className="flex w-full items-center justify-center gap-2">
                     <div className="w-[115px]">
                       <div className="rounded-lg border border-[#DDD5FF] bg-[#F5F2FF] px-2.5 py-2">
@@ -389,10 +395,10 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
                     </div>
                   </div>
 
-                  {/* Connector */}
+                  {/* Connector * /}
                   <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
 
-                  {/* Line */}
+                  {/* Line * /}
                   <div className="flex w-full justify-center">
                     <div className="rounded-lg border border-[#D6E1FF] bg-[#F2F6FF] px-2.5 py-2">
                       <div className="flex items-center gap-1.5">
@@ -415,7 +421,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
 
                   <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
 
-                  {/* Sub section */}
+                  {/* Sub section * /}
                   <div className="flex w-full justify-center">
                     <div className="rounded-lg border border-[#DDD5FF] bg-[#F5F2FF] px-2.5 py-2">
                       <div className="flex items-center gap-1.5">
@@ -438,7 +444,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
 
                   <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
 
-                  {/* Station + Level */}
+                  {/* Station + Level * /}
                   <div className="grid w-full grid-cols-2 gap-2">
                     <div className="rounded-lg border border-[#FFD3D3] bg-[#FFF4F4] px-2.5 py-2">
                       <div className="flex items-center gap-1.5">
@@ -479,7 +485,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
 
                   <div className="h-3 w-px border-l border-dashed border-[#A5ACBA]" />
 
-                  {/* Efficiency */}
+                  {/* Efficiency * /}
                   <div className="w-1/2 min-w-[100px]">
                     <div className="rounded-lg border border-[#C7EED8] bg-[#EEFBF4] px-2.5 py-2">
                       <div className="flex items-center gap-1.5">
@@ -502,7 +508,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
                 </div>
               </div>
 
-              {/* LOCATION & TRANSIT */}
+              {/* LOCATION & TRANSIT * /}
               <div className="rounded-2xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF]">
                 <div className="mb-2 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
@@ -551,7 +557,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
 
       {/* =========================================================
           SHIFT SCHEDULE
-      ========================================================= */}
+      ========================================================= * /}
       <section className="overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
         <div className="flex items-center gap-3 bg-gradient-to-r from-[#6F4AE7] to-[#9A7CF5] px-4 py-3.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white">
@@ -567,7 +573,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
         </div>
 
         <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
-          {/* DEFAULT SHIFT */}
+          {/* DEFAULT SHIFT * /}
           <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF] hover:bg-white">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
               <CalendarMonthOutlinedIcon sx={{ fontSize: 22 }} />
@@ -583,7 +589,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
             </div>
           </div>
 
-          {/* TODAY'S SHIFT */}
+          {/* TODAY'S SHIFT * /}
           <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF] hover:bg-white">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
               <TodayOutlinedIcon sx={{ fontSize: 22 }} />
@@ -601,7 +607,7 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
         </div>
       </section>
 
-      {/* LEARNING / TRAINING CARD */}
+      {/* LEARNING / TRAINING CARD * /}
       <KPICards
         data={[
           {
@@ -630,6 +636,329 @@ const OperatorProfileDetails = ({ operator = defaultOperator }) => {
           },
         ]}
       />
+    </div>
+  );
+};
+
+export default OperatorProfileDetails;
+*/
+
+import {
+  Award,
+  BadgeCheck,
+  BookOpen,
+  Briefcase,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  Droplets,
+  Hash,
+HeartPulse,
+  Layers,
+  Mail,
+  MapPin,
+  MoreVertical,
+  Phone,
+  RefreshCw,
+  TrendingUp,
+  User,
+  Users,
+Wallet,
+} from "lucide-react";
+import profileBg from "../../../assets/images/profile-bg.png";
+
+const defaultOperator = {
+  sno: "—",
+  name: "—",
+  employeeId: "—",
+  cardNo: "—",
+  designation: "—",
+  department: "—",
+  status: "",
+  level: "—",
+  companyName: "—",
+  subDepartment: "—",
+  category: "—",
+  grade: "—",
+  line: "—",
+  machine: "—",
+  shift: "—",
+  plant: "—",
+  plantLocation: "—",
+  isDojo: "—",
+  fatherHusband: "—",
+  gender: "—",
+  dob: "—",
+  bloodGroup: "—",
+  maritalState: "—",
+  email: "—",
+  phone: "—",
+  joiningDate: "—",
+  leavingDate: "—",
+  firstOfDate: "—",
+  salary: "—",
+  courses: "—",
+  progress: "—",
+  submission: "—",
+  testAvg: "—",
+};
+
+const getInitials = (name = "") => {
+  const parts = String(name).trim().split(/\s+/);
+  const initials = parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase();
+
+return initials || "OP";
+};
+
+const InfoCard = ({ title, subtitle, icon: Icon, children }) => (
+  <section className="overflow-hidden rounded-2xl border border-[#e6e8ef] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
+    <div className="border-b border-[#F0F2F7] px-4 py-3.5">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7]">
+          <Icon size={18} />
+        </div>
+
+        <div>
+          <h2 className="text-sm font-bold text-[#101828]">{title}</h2>
+
+          {subtitle && (
+            <p className="text-[11px] font-medium text-[#8B93A7]">{subtitle}</p>
+          )}
+        </div>
+      </div>
+    </div>
+
+    <div className="grid gap-2.5 p-4 sm:grid-cols-2 xl:grid-cols-1">
+      {children}
+    </div>
+  </section>
+);
+
+const Field = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] px-3 py-3 transition hover:border-[#DDD5FF] hover:bg-white">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
+      <Icon size={17} />
+    </div>
+
+    <div className="min-w-0">
+      <p className="text-[11px] font-medium text-[#8B93A7]">{label}</p>
+      <p className="mt-0.5 truncate text-[13px] font-semibold text-[#252B3A]">
+        {value || "—"}
+      </p>
+    </div>
+  </div>
+);
+
+const StatCard = ({ icon: Icon, label, value, accent }) => (
+  <div className="flex items-center gap-3 rounded-2xl border border-[#e6e8ef] bg-white p-4 shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
+    <div
+      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${accent}`}
+    >
+      <Icon size={20} />
+    </div>
+
+    <div className="min-w-0">
+      <p className="text-[11px] font-medium text-[#8B93A7]">{label}</p>
+      <p className="truncate text-lg font-extrabold text-[#101828]">{value}</p>
+    </div>
+  </div>
+);
+
+const OperatorProfileDetails = ({ operator = defaultOperator }) => {
+  const data = { ...defaultOperator, ...operator };
+  const initials = getInitials(data.name);
+  const normalizedStatus = String(data.status || "").toUpperCase();
+
+const statusClasses =
+    normalizedStatus === "ACTIVE"
+      ? "border-[#BFEBD4] bg-[#EEFBF4] text-[#16864A]"
+      : normalizedStatus === "ON LEAVE"
+        ? "border-[#FFD9A8] bg-[#FFF4E5] text-[#E6920B]"
+        : normalizedStatus === "LEFT"
+          ? "border-[#FFD3D3] bg-[#FFF0EE] text-[#E74C3C]"
+          : "border-[#E4E7EC] bg-[#F9FAFB] text-[#344054]";
+
+  const statusDotClasses =
+    normalizedStatus === "ACTIVE"
+      ? "bg-[#16864A]"
+      : normalizedStatus === "ON LEAVE"
+        ? "bg-[#E6920B]"
+        : normalizedStatus === "LEFT"
+          ? "bg-[#E74C3C]"
+          : "bg-[#9AA3AF]";
+
+  const stats = [
+    {
+      label: "Courses",
+      value: data.courses,
+      icon: BookOpen,
+      accent: "bg-[#F4F1FF] text-[#6F4AE7]",
+    },
+    {
+      label: "Progress",
+      value: data.progress,
+      icon: TrendingUp,
+      accent: "bg-[#EEFBF4] text-[#16864A]",
+    },
+    {
+      label: "Submission",
+      value: data.submission,
+      icon: CheckCircle2,
+      accent: "bg-[#EFF6FF] text-[#2563EB]",
+    },
+    {
+      label: "Test Avg",
+      value: data.testAvg,
+      icon: Award,
+      accent: "bg-[#FFF4E5] text-[#E6920B]",
+    },
+  ];
+
+  return (
+    <div className="mx-auto max-w-[1320px] space-y-5 p-4 md:p-6 lg:p-7">
+      {/* =========================================================
+          PROFILE HEADER
+      ========================================================= */}
+<section className="relative overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${profileBg})` }}
+        />
+
+        <div className="relative z-10 flex flex-col gap-5 p-6 md:p-7 xl:flex-row xl:items-center xl:justify-between">
+          {/* LEFT PROFILE */}
+          <div className="flex items-center gap-4 md:gap-5">
+            {/* Avatar */}
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] text-xl font-bold text-[#6F4AE7] md:h-20 md:w-20 md:text-2xl">
+              {initials}
+            </div>
+
+            {/* Identity */}
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight text-[#101828] md:text-3xl">
+                {data.name}
+              </h1>
+
+              <p className="mt-1 flex items-center gap-2 text-sm font-medium text-[#667085]">
+                <span className="text-[#8B93A7]">Employee ID</span>
+                {data.employeeId}
+              </p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] px-3 py-1 text-xs font-semibold text-[#5B3BE6]">
+                  {data.level}
+                </span>
+
+                <span className="inline-flex items-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] px-3 py-1 text-xs font-semibold text-[#5B3BE6]">
+                  {data.department}
+                </span>
+
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses}`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${statusDotClasses}`}
+                  />
+                  {data.status || "—"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT ACTIONS */}
+          <div className="flex items-center gap-2 self-start xl:self-center">
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-xs font-semibold text-[#344054] transition hover:bg-[#F9FAFB]"
+            >
+              <RefreshCw size={16} />
+              Refresh Data
+            </button>
+
+            <button
+              type="button"
+              className="flex h-10 w-9 items-center justify-center rounded-lg border border-[#E4E7EC] bg-white text-[#667085] transition hover:bg-[#F9FAFB]"
+            >
+              <MoreVertical size={19} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          QUICK STATS
+      ========================================================= */}
+      {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <StatCard
+            key={stat.label}
+            label={stat.label}
+            value={stat.value}
+            icon={stat.icon}
+            accent={stat.accent}
+          />
+        ))}
+      </div> */}
+
+      {/* =========================================================
+          DETAILED INFORMATION
+      ========================================================= */}
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        {/* PERSONAL */}
+        <InfoCard title="Personal Information" subtitle="Personal details" icon={User}>
+          <Field icon={Users} label="Father / Husband" value={data.fatherHusband} />
+          <Field icon={HeartPulse} label="Gender" value={data.gender} />
+          <Field icon={CalendarDays} label="Date of Birth" value={data.dob} />
+          <Field icon={Droplets} label="Blood Group" value={data.bloodGroup} />
+          <Field icon={BadgeCheck} label="Marital State" value={data.maritalState} />
+        </InfoCard>
+
+        {/* JOB & ORGANIZATION */}
+        <InfoCard title="Job & Organization" subtitle="Company and role" icon={Briefcase}>
+          <Field icon={Building2} label="Company" value={data.companyName} />
+          <Field icon={Layers} label="Department" value={data.department} />
+          <Field icon={Hash} label="Sub Department" value={data.subDepartment} />
+          <Field icon={BadgeCheck} label="Designation" value={data.designation} />
+          <Field icon={Award} label="Grade" value={data.grade} />
+          <Field icon={TrendingUp} label="Skill Level" value={data.level} />
+        </InfoCard>
+
+        {/* WORKSPACE & SHIFT */}
+        <InfoCard title="Workspace & Shift" subtitle="Line, machine and shift" icon={MapPin}>
+          <Field icon={Building2} label="Plant" value={data.plant} />
+          <Field icon={MapPin} label="Plant Location" value={data.plantLocation} />
+          <Field icon={Hash} label="Line / Machine" value={[data.line, data.machine].filter(Boolean).join(" / ")} />
+          <Field icon={Clock} label="Shift" value={data.shift} />
+          <Field icon={BadgeCheck} label="Is Dojo" value={data.isDojo} />
+          <Field icon={Users} label="Category" value={data.category} />
+        </InfoCard>
+      </div>
+
+      {/* =========================================================
+          CONTACT & TIMELINE
+      ========================================================= */}
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <InfoCard title="Contact Details" subtitle="How to reach" icon={Phone}>
+          <Field icon={Mail} label="Email Address" value={data.email} />
+          <Field icon={Phone} label="Mobile Number" value={data.phone} />
+          <Field icon={Layers} label="Pay Code" value={data.employeeId} />
+          <Field icon={CreditCard} label="Card No" value={data.cardNo} />
+        </InfoCard>
+
+        <InfoCard title="Employment Timeline" subtitle="Dates and compensation" icon={CalendarDays}>
+          <Field icon={CalendarDays} label="Joining Date" value={data.joiningDate} />
+          <Field icon={CalendarDays} label="Leaving Date" value={data.leavingDate} />
+          <Field icon={CalendarDays} label="First Of Date" value={data.firstOfDate} />
+          <Field icon={Wallet} label="Salary" value={data.salary} />
+        </InfoCard>
+      </div>
     </div>
   );
 };

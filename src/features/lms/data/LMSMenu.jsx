@@ -9,7 +9,7 @@ import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 
 export const lmsMenus = [
   {
-    name: "Dashboard",
+    name: "Overview",
     icon: <DashboardOutlinedIcon />,
     path: "/lms/dashboard",
   },

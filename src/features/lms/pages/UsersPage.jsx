@@ -4,48 +4,51 @@ import Navbar from "../../../components/Navbar";
 import KPICards from "../../../components/KPICards";
 import Users from "../components/Users";
 import { lmsMenus } from "../data/LMSMenu";
+import { loadUsers } from "../utils/userUtils";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
-import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-
-const kpiData = [
-  {
-    title: "Total Users",
-    value: 120,
-    color: "blue",
-    icon: <GroupOutlinedIcon sx={{ fontSize: 24 }} />,
-  },
-  {
-    title: "Active Users",
-    value: 98,
-    color: "green",
-    icon: <VerifiedUserOutlinedIcon sx={{ fontSize: 24 }} />,
-  },
-  {
-    title: "Pending Verification",
-    value: 8,
-    color: "orange",
-    icon: <PersonOutlineOutlinedIcon sx={{ fontSize: 24 }} />,
-  },
-  {
-    title: "Locked",
-    value: 6,
-    color: "red",
-    icon: <LockOutlinedIcon sx={{ fontSize: 24 }} />,
-  },
-  {
-    title: "Admin",
-    value: 7,
-    color: "blue",
-    icon: <LockOutlinedIcon sx={{ fontSize: 24 }} />,
-  },
-];
+import PersonOffOutlinedIcon from "@mui/icons-material/PersonOffOutlined";
+import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 
 const UsersPage = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Users");
+  const [users, setUsers] = useState(loadUsers);
+
+  const kpiData = [
+    {
+      title: "Total Users",
+      value: users.length,
+      color: "blue",
+      icon: <GroupOutlinedIcon sx={{ fontSize: 24 }} />,
+    },
+    {
+      title: "Active Users",
+      value: users.filter((user) => !user.leavingDate).length,
+      color: "green",
+      icon: <VerifiedUserOutlinedIcon sx={{ fontSize: 24 }} />,
+    },
+    {
+      title: "Left Users",
+      value: users.filter((user) => user.leavingDate).length,
+      color: "orange",
+      icon: <PersonOffOutlinedIcon sx={{ fontSize: 24 }} />,
+    },
+    {
+      title: "Departments",
+      value: new Set(users.map((user) => user.department).filter(Boolean)).size,
+      color: "red",
+      icon: <ApartmentOutlinedIcon sx={{ fontSize: 24 }} />,
+    },
+    {
+      title: "Dojo Users",
+      value: users.filter((user) => user.isDojo === "Yes").length,
+      color: "purple",
+      icon: <SchoolOutlinedIcon sx={{ fontSize: 24 }} />,
+    },
+  ];
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F5F7FB]">
@@ -76,7 +79,7 @@ const UsersPage = () => {
           />
 
           {/* TABLE */}
-          <Users />
+          <Users users={users} setUsers={setUsers} />
         </main>
       </div>
     </div>

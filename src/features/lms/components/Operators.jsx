@@ -4,51 +4,34 @@ import { Building2, CirclePlus, Pencil, Search, Trash2, X } from "lucide-react";
 import Filters from "../../../components/Filters";
 import {
   OPERATORS_STORAGE_KEY,
-  SEED_OPERATORS,
   createId,
   filterOperators,
-  getDepartmentOptions,
+  getOperatorDepartmentOptions,
+  EMPTY_USER_FORM,
+  USER_FORM_FIELDS,
+  USER_COLUMNS,
+  USER_DATE_KEYS,
+  loadOperators,
   formatDate,
-  EMPTY_OPERATOR_FORM,
-  LEVEL_OPTIONS,
-  STATUS_OPTIONS,
-  JOINING_LEAVING_OPTIONS,
 } from "../utils/operatorUtils";
-
-const EMPTY_FILTERS = {
-  department: "",
-  subDepartment: "",
-  line: "",
-  machine: "",
-  fromDate: "",
-  toDate: "",
-};
 
 const inputClass =
   "h-11 w-full rounded-lg border border-[#d5d9df] px-3 text-sm outline-none transition focus:border-[#6F4AE7]";
 
-const loadOperators = () => {
-  try {
-    const stored = JSON.parse(localStorage.getItem(OPERATORS_STORAGE_KEY));
-
-    if (Array.isArray(stored)) return stored;
-
-    return SEED_OPERATORS;
-  } catch {
-    return SEED_OPERATORS;
-  }
-};
-
-export default function Operators() {
+const Operators = ({ operators: propOperators, setOperators: propSetOperators }) => {
   const navigate = useNavigate();
 
-  const [operators, setOperators] = useState(loadOperators);
+  const [localOperators, setLocalOperators] = useState(loadOperators);
+
+  const operators = propOperators ?? localOperators;
+  const setOperators = propSetOperators ?? setLocalOperators;
+
+  const [filterValues, setFilterValues] = useState({});
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
 
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingOperator, setEditingOperator] = useState(null);
-  const [form, setForm] = useState(EMPTY_OPERATOR_FORM);
+  const [form, setForm] = useState(EMPTY_USER_FORM);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -65,8 +48,12 @@ export default function Operators() {
 
   /* ===================== TABLE DATA ===================== */
 
-  const departmentOptions = getDepartmentOptions(operators);
-  const tableRows = filterOperators(operators, { search, ...filters });
+  const departmentOptions = getOperatorDepartmentOptions(operators);
+
+  const tableRows = filterOperators(operators, {
+    search,
+    department: filterValues.department,
+  });
 
   /* ===================== FORM MODAL ===================== */
 
@@ -79,7 +66,15 @@ export default function Operators() {
 
   const openAddModal = () => {
     setEditingOperator(null);
-    setForm(EMPTY_OPERATOR_FORM);
+
+    const formWithSno = {
+      ...EMPTY_USER_FORM,
+      sno: operators.length + 1,
+      empName: "",
+      email: "",
+    };
+
+    setForm(formWithSno);
     setFormModalOpen(true);
   };
 
@@ -94,34 +89,18 @@ export default function Operators() {
   };
 
   const handleSubmit = () => {
-    const name = form.name?.trim();
-    const empCode = form.empCode?.trim();
+    const empName = form.empName?.trim();
+    const email = form.email?.trim();
 
-    if (!name) {
-      showToast("Please enter operator name.");
-      return;
-    }
-
-    if (!empCode) {
-      showToast("Please enter employee code.");
-      return;
-    }
-
-    const duplicate = operators.some(
-      (operator) =>
-        operator.empCode.toLowerCase() === empCode.toLowerCase() &&
-        operator.id !== editingOperator?.id,
-    );
-
-    if (duplicate) {
-      showToast("Employee code already exists.");
+    if (!empName) {
+      showToast("Please enter employee name.");
       return;
     }
 
     if (editingOperator) {
       const next = operators.map((operator) =>
         operator.id === editingOperator.id
-          ? { ...operator, ...form, name, empCode }
+          ? { ...operator, ...form, empName, email }
           : operator,
       );
 
@@ -131,7 +110,13 @@ export default function Operators() {
     } else {
       const next = [
         ...operators,
-        { id: createId("operator"), ...form, name, empCode },
+        {
+          id: createId("operator"),
+          ...form,
+          sno: operators.length + 1,
+          empName,
+          email,
+        },
       ];
 
       setOperators(next);
@@ -152,9 +137,7 @@ export default function Operators() {
   const handleDelete = () => {
     if (!deleteTarget) return;
 
-    const next = operators.filter(
-      (operator) => operator.id !== deleteTarget.id,
-    );
+    const next = operators.filter((operator) => operator.id !== deleteTarget.id);
 
     setOperators(next);
     localStorage.setItem(OPERATORS_STORAGE_KEY, JSON.stringify(next));
@@ -162,6 +145,40 @@ export default function Operators() {
 
     setDeleteModalOpen(false);
     setDeleteTarget(null);
+  };
+
+  const renderFormField = (field) => {
+    const value = form[field.key] || "";
+
+    if (field.type === "select") {
+      const options = field.department ? departmentOptions : field.options;
+
+      return (
+        <select
+          value={value}
+          onChange={setFormField(field.key)}
+          className={inputClass}
+        >
+          <option value="">Select {field.label.toLowerCase()}</option>
+
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <input
+        type={field.type || "text"}
+        value={value}
+        onChange={setFormField(field.key)}
+        placeholder={field.placeholder}
+        className={inputClass}
+      />
+    );
   };
 
   /* ===================== RENDER ===================== */
@@ -200,14 +217,13 @@ export default function Operators() {
 
           <div className="m-4 sm:m-5">
             <Filters
-              values={filters}
-              onChange={setFilters}
+              values={filterValues}
+              onChange={setFilterValues}
               departmentOptions={departmentOptions}
-              subDepartmentOptions={[]}
-              lineOptions={[]}
-              machineOptions={[]}
-              machineLabel="Machine"
-              showDates
+              subDepartmentOptions={["Sub 1", "Sub 2", "Sub 3"]}
+              lineOptions={["Line 1", "Line 2", "Line 3"]}
+              machineOptions={["Morning", "Evening", "Night"]}
+              machineLabel="Shift"
             />
           </div>
 
@@ -241,43 +257,27 @@ export default function Operators() {
             {/* TABLE BODY */}
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1050px] border-collapse">
+              <table className="w-full min-w-[3200px] border-collapse">
                 <thead>
                   <tr className="bg-[#f5f6f8]">
-                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
-                      Operator Name
-                    </th>
-                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
-                      Emp Code
-                    </th>
-                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
-                      Primary Level
-                    </th>
-                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
-                      Date
-                    </th>
-                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
-                      Contact
-                    </th>
-                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
-                      Status
-                    </th>
-                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
-                      Department
-                    </th>
-                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
-                      Joining/Leaving
-                    </th>
-                    <th className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4">
-                      Actions
-                    </th>
+                    {[
+                      ...USER_COLUMNS.map((column) => column.label),
+                      "Actions",
+                    ].map((column) => (
+                      <th
+                        key={column}
+                        className="border-r border-[#e1e4e8] px-3 py-3 text-left text-[12px] font-bold uppercase text-[#3b4b62] last:border-r-0 sm:px-4"
+                      >
+                        {column}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
 
                 <tbody>
                   {tableRows.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="p-0">
+                      <td colSpan={USER_COLUMNS.length + 1} className="p-0">
                         <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                           <Building2 size={42} className="mb-3 opacity-40" />
 
@@ -294,75 +294,33 @@ export default function Operators() {
                       </td>
                     </tr>
                   ) : (
-                    tableRows.map((operator) => (
+                    tableRows.map((operator, index) => (
                       <tr
                         key={operator.id}
                         className="group border-b border-[#edf0f2] last:border-0 hover:bg-[#fafaff]"
                       >
-                        <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] font-semibold text-[#344760] last:border-r-0 sm:px-4">
-                          <button
-                            type="button"
-                            onClick={() => handleViewOperator(operator)}
-                            className="font-semibold text-[#344760] transition hover:text-[#6F4AE7] hover:underline"
+                        {USER_COLUMNS.map((column) => (
+                          <td
+                            key={column.key}
+                            className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4"
                           >
-                            {operator.name}
-                          </button>
-                        </td>
-
-                        <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                          {operator.empCode}
-                        </td>
-
-                        <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                          {operator.level}
-                        </td>
-
-                        <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                          {formatDate(operator.date)}
-                        </td>
-
-                        <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                          {operator.contact}
-                        </td>
-
-                        <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                              operator.status === "Active"
-                                ? "bg-[#e6f7ef] text-[#0f9d58]"
-                                : operator.status === "On Leave"
-                                  ? "bg-[#fff4e0] text-[#e6920b]"
-                                  : operator.status === "Left"
-                                    ? "bg-[#fff0ee] text-[#e74c3c]"
-                                    : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {operator.status || "-"}
-                          </span>
-                        </td>
-
-                        <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                          {operator.department}
-                        </td>
-
-                        <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                          <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                              operator.joiningLeaving === "Joined"
-                                ? "bg-[#e6f7ef] text-[#0f9d58]"
-                                : "bg-[#fff0ee] text-[#e74c3c]"
-                            }`}
-                          >
-                            <span
-                              className={`h-1.5 w-1.5 rounded-full ${
-                                operator.joiningLeaving === "Joined"
-                                  ? "bg-[#0f9d58]"
-                                  : "bg-[#e74c3c]"
-                              }`}
-                            />
-                            {operator.joiningLeaving || "-"}
-                          </span>
-                        </td>
+                            {column.key === "sno" ? (
+                              index + 1
+                            ) : column.key === "empName" ? (
+                              <button
+                                type="button"
+                                onClick={() => handleViewOperator(operator)}
+                                className="font-semibold text-[#344760] transition hover:text-[#6F4AE7] hover:underline"
+                              >
+                                {operator[column.key]}
+                              </button>
+                            ) : USER_DATE_KEYS.includes(column.key) ? (
+                              formatDate(operator[column.key])
+                            ) : (
+                              operator[column.key] || "-"
+                            )}
+                          </td>
+                        ))}
 
                         <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
                           <div className="flex gap-2">
@@ -404,7 +362,7 @@ export default function Operators() {
             }
           }}
         >
-          <div className="max-h-full w-full max-w-[520px] overflow-hidden rounded-[17px] bg-white shadow-2xl">
+          <div className="max-h-full w-full max-w-[720px] overflow-hidden rounded-[17px] bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#e3e6eb] px-5 py-[18px]">
               <h2 className="text-base font-bold">
                 {editingOperator ? "Edit Operator" : "Add Operator"}
@@ -420,136 +378,28 @@ export default function Operators() {
 
             <div className="max-h-[65vh] overflow-y-auto p-5">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Operator Name
-                    <span className="ml-0.5 text-[#e74c3c]">*</span>
-                  </label>
+                {USER_FORM_FIELDS.map((field) => (
+                  <div key={field.key}>
+                    <label className="mb-2 block text-xs font-semibold">
+                      {field.label}
+                      {field.key === "empName" && (
+                        <span className="ml-0.5 text-[#e74c3c]">*</span>
+                      )}
+                    </label>
 
-                  <input
-                    autoFocus
-                    value={form.name || ""}
-                    onChange={setFormField("name")}
-                    placeholder="Enter operator name"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Emp Code
-                    <span className="ml-0.5 text-[#e74c3c]">*</span>
-                  </label>
-
-                  <input
-                    value={form.empCode || ""}
-                    onChange={setFormField("empCode")}
-                    placeholder="Enter employee code"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Primary Level
-                  </label>
-
-                  <select
-                    value={form.level || ""}
-                    onChange={setFormField("level")}
-                    className={inputClass}
-                  >
-                    <option value="">Select level</option>
-
-                    {LEVEL_OPTIONS.map((level) => (
-                      <option key={level} value={level}>
-                        {level}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Date
-                  </label>
-
-                  <input
-                    type="date"
-                    value={form.date || ""}
-                    onChange={setFormField("date")}
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Contact
-                  </label>
-
-                  <input
-                    value={form.contact || ""}
-                    onChange={setFormField("contact")}
-                    placeholder="Enter contact number"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Status
-                  </label>
-
-                  <select
-                    value={form.status || "Active"}
-                    onChange={setFormField("status")}
-                    className={inputClass}
-                  >
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Department
-                  </label>
-
-                  <select
-                    value={form.department || ""}
-                    onChange={setFormField("department")}
-                    className={inputClass}
-                  >
-                    <option value="">Select department</option>
-
-                    {departmentOptions.map((department) => (
-                      <option key={department} value={department}>
-                        {department}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold">
-                    Joining/Leaving
-                  </label>
-
-                  <select
-                    value={form.joiningLeaving || "Joined"}
-                    onChange={setFormField("joiningLeaving")}
-                    className={inputClass}
-                  >
-                    {JOINING_LEAVING_OPTIONS.map((value) => (
-                      <option key={value} value={value}>
-                        {value}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    {field.key === "empName" ? (
+                      <input
+                        autoFocus
+                        value={form.empName || ""}
+                        onChange={setFormField("empName")}
+                        placeholder="Enter employee name"
+                        className={inputClass}
+                      />
+                    ) : (
+                      renderFormField(field)
+                    )}
+                  </div>
+                ))}
               </div>
 
               <div className="mt-6 flex flex-col-reverse gap-2 border-t border-[#e3e6eb] pt-4 sm:flex-row sm:justify-end">
@@ -598,7 +448,9 @@ export default function Operators() {
             <div className="max-h-[65vh] overflow-y-auto p-5">
               <div className="text-sm leading-6 text-gray-600">
                 Are you sure you want to delete{" "}
-                <strong className="text-gray-900">"{deleteTarget?.name}"</strong>
+                <strong className="text-gray-900">
+                  "{deleteTarget?.empName}"
+                </strong>
                 ?
               </div>
 
@@ -631,4 +483,6 @@ export default function Operators() {
       )}
     </div>
   );
-}
+};
+
+export default Operators;
