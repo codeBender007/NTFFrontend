@@ -41,7 +41,7 @@ const chartData = {
     createBarDataset({
       label: "Absenteeism",
       data: [30, 46, 24, 50, 40, 20, 45, 30, 46, 24, 50, 40, 20, 45, 46, 32],
-      color: CHART_COLORS.danger,
+      color: CHART_COLORS.pink,
     }),
   ],
 };
@@ -52,26 +52,26 @@ const options = getBarChartOptions({
 
 const LMSAbsentism = () => {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 transition-all duration-300 hover:shadow-md h-full flex flex-col justify-between">
+    <div className="bg-white/85 backdrop-blur-md rounded-2xl md:rounded-3xl border border-[#e2edf2] shadow-[0_4px_24px_rgba(15,23,42,0.03)] p-5 transition-all duration-300 hover:shadow-md h-full flex flex-col justify-between">
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3.5">
-            <div className="h-11 w-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shadow-xs">
-              <PeopleAltIcon sx={{ fontSize: 22 }} />
+            <div className="h-10 w-10 rounded-xl bg-[#fff1f2] border border-[#fb7185]/20 text-[#fb7185] flex items-center justify-center shadow-xs">
+              <PeopleAltIcon sx={{ fontSize: 20 }} />
             </div>
 
             <div>
-              <h2 className="text-base font-bold text-slate-800 tracking-tight">
+              <h2 className="text-base font-bold text-[#0f172a] tracking-tight">
                 Absenteeism Rate Trend
               </h2>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-[#64748b] font-medium">
                 Deployed headcount with day-over-day movement
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-100">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#fff1f2] text-[#e11d48] border border-[#fb7185]/20">
               Avg: 4.1%
             </span>
           </div>

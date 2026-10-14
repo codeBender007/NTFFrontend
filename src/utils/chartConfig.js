@@ -18,23 +18,23 @@ ChartJS.register(
 );
 
 export const CHART_COLORS = {
-  primary: "#6F4AE7",
-  primaryLight: "#7A5AF8",
-  primaryDark: "#5A38D6",
-  success: "#10B981",
-  successLight: "#34D399",
-  warning: "#F59E0B",
-  warningLight: "#FBBF24",
-  danger: "#EF4444",
-  dangerLight: "#F87171",
-  blue: "#3B82F6",
-  indigo: "#6366F1",
-  pink: "#EC4899",
-  teal: "#06B6D4",
-  slate: "#64748B",
-  requirement: "#6C4DF6",
-  present: "#16B8A6",
-  total: "#4F7DF3",
+  primary: "#0d9488",
+  primaryLight: "#14b8a6",
+  primaryDark: "#0f766e",
+  success: "#10b981",
+  successLight: "#34d399",
+  warning: "#f59e0b",
+  warningLight: "#fbbf24",
+  danger: "#fb7185",
+  dangerLight: "#fda4af",
+  blue: "#38bdf8",
+  indigo: "#6366f1",
+  pink: "#fb7185",
+  teal: "#0d9488",
+  slate: "#64748b",
+  requirement: "#0d9488",
+  present: "#14b8a6",
+  total: "#64748b",
 };
 
 export const getBarChartOptions = ({
@@ -69,51 +69,51 @@ export const getBarChartOptions = ({
       mode: "index",
       intersect: false,
     },
-  plugins: {
-    legend: {
-      position: legendPosition,
-      align: legendAlign,
-      labels: {
-        usePointStyle: true,
-        pointStyle: "circle",
-        padding: 20,
-        boxWidth: 8,
-        boxHeight: 8,
-        color: "#475569",
+    plugins: {
+      legend: {
+        position: legendPosition,
+        align: legendAlign,
+        labels: {
+          usePointStyle: true,
+          pointStyle: "circle",
+          padding: 20,
+          boxWidth: 8,
+          boxHeight: 8,
+          color: "#0f172a",
+          font: {
+            size: 12,
+            weight: "600",
+            family:
+              "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          },
+        },
+      },
+      tooltip: {
+        enabled: false,
+        external: () => { },
+      },
+      datalabels: {
+        display: true,
+        anchor: "end",
+        align: "top",
+        offset: 4,
+        color: "#0f172a",
         font: {
-          size: 12,
+          size: 10,
           weight: "600",
-          family:
-            "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        },
+        formatter: (value, ctx) => {
+          if (yAxisFormatter) {
+            return yAxisFormatter(value);
+          }
+          return ctx.chart.data.datasets[ctx.datasetIndex]?.label
+            ? value
+            : value;
         },
       },
     },
-    tooltip: {
-      enabled: false,
-      external: () => {},
-    },
-    datalabels: {
-      display: true,
-      anchor: "end",
-      align: "top",
-      offset: 4,
-      color: "#334155",
-      font: {
-        size: 10,
-        weight: "600",
-        family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-      },
-      formatter: (value, ctx) => {
-        if (yAxisFormatter) {
-          return yAxisFormatter(value);
-        }
-        return ctx.chart.data.datasets[ctx.datasetIndex]?.label
-          ? value
-          : value;
-      },
-    },
-  },
-  scales: {
+    scales: {
       x: {
         stacked: stacked,
         offset: true,
@@ -128,7 +128,7 @@ export const getBarChartOptions = ({
           display: false,
         },
         ticks: {
-          color: "#64748B",
+          color: "#64748b",
           font: {
             size: 11,
             weight: "500",
@@ -145,7 +145,7 @@ export const getBarChartOptions = ({
         max: yMax,
         grid: {
           display: showGridLines,
-          color: "#E8EDF5",
+          color: "#e8f1f5",
           drawBorder: false,
           drawTicks: false,
           borderDash: [],
@@ -157,7 +157,7 @@ export const getBarChartOptions = ({
         },
         ticks: {
           stepSize: yStepSize,
-          color: "#64748B",
+          color: "#64748b",
           font: {
             size: 11,
             weight: "500",

@@ -48,7 +48,7 @@ const chartData = {
         45, 55, 40, 60, 50, 34, 60, 45,
         55, 40, 60, 50, 34, 60, 55, 45,
       ],
-      backgroundColor: "#feb532",
+      backgroundColor: "#f59e0b",
 
       // Fixed thin bar width
       barThickness: 25,
@@ -81,7 +81,7 @@ const options = {
 
     tooltip: {
       enabled: false,
-      external: () => {},
+      external: () => { },
     },
 
     // Data number on top of every bar
@@ -145,6 +145,7 @@ const options = {
 
       grid: {
         display: false,
+        color: "#e8f1f5",
         drawTicks: false,
       },
 
@@ -157,23 +158,23 @@ const options = {
 
 const Absentism = () => {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="bg-white/85 backdrop-blur-md rounded-2xl md:rounded-3xl border border-[#e2edf2] shadow-[0_4px_24px_rgba(15,23,42,0.03)] overflow-hidden">
       {/* Header */}
       <div className="px-5 pt-4">
         <div className="flex items-center justify-between">
           {/* Left side */}
           <div className="flex items-center gap-3">
             {/* Icon - same color as graph */}
-            <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-[#feb532]">
+            <div className="w-10 h-10 rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 flex items-center justify-center text-[#0d9488] shadow-xs">
               <EventBusyIcon sx={{ fontSize: 20 }} />
             </div>
 
             <div>
-              <h2 className="text-sm font-bold text-slate-800">
+              <h2 className="text-sm font-bold text-[#0f172a]">
                 Daily Absenteeism
               </h2>
 
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-xs text-[#64748b] mt-0.5">
                 Tracking planned vs unplanned absenteeism movement
               </p>
             </div>
@@ -197,8 +198,7 @@ const Absentism = () => {
       <div className="flex justify-center items-center gap-4 pb-4">
         {/* Absent Employees */}
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#feb532]"></span>
-
+          <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span>
           <span className="text-xs font-medium text-slate-500">
             Absent Employees
           </span>

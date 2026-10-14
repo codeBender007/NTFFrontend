@@ -33,9 +33,7 @@ const loadMeta = (storageKey) => {
 const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
   const navigate = useNavigate();
   const storageKey = `${level.toLowerCase()}_question_paper`;
-  const editorPath = paper
-    ? `/lms/${level.toLowerCase()}/editor`
-    : `/lms/${level.toLowerCase()}`;
+  const editorPath = `/lms/${level.toLowerCase()}/editor`;
   const [sections] = useState(() =>
     paper
       ? paper.sections?.length
@@ -72,9 +70,8 @@ const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
               return (
                 <div
                   key={option.id}
-                  className={`flex items-start text-[11px] leading-[1.4] ${
-                    isCorrect ? "font-bold text-emerald-700" : "text-black"
-                  }`}
+                  className={`flex items-start text-[11px] leading-[1.4] ${isCorrect ? "font-bold text-emerald-700" : "text-black"
+                    }`}
                 >
                   <span className="mr-1">({ALPHABET[index]})</span>
                   <span>{option.value || `Option ${option.label}`}</span>
@@ -121,7 +118,7 @@ const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
             <button
               type="button"
               onClick={() => navigate("/lms")}
-              className="h-9 w-9 rounded-xl bg-gray-100 text-gray-600 hover:bg-primary/10 hover:text-primary transition flex items-center justify-center shrink-0"
+              className="h-9 w-9 rounded-xl bg-gray-100 text-gray-600 hover:bg-[#e6f7f5] hover:text-[#0d9488] transition flex items-center justify-center shrink-0"
               title="Back to Dojo Hiring"
             >
               <ArrowBackOutlinedIcon sx={{ fontSize: 18 }} />
@@ -138,11 +135,10 @@ const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
             <button
               type="button"
               onClick={() => setShowAnswerKey(!showAnswerKey)}
-              className={`h-9 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border ${
-                showAnswerKey
+              className={`h-9 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border ${showAnswerKey
                   ? "bg-emerald-50 text-emerald-700 border-emerald-300"
                   : "bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200"
-              }`}
+                }`}
             >
               <VisibilityOutlinedIcon sx={{ fontSize: 15 }} />
               <span className="hidden sm:inline">{showAnswerKey ? "Hide Answer Key" : "Answer Key"}</span>
@@ -151,7 +147,7 @@ const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
             <button
               type="button"
               onClick={() => navigate(editorPath)}
-              className="h-9 rounded-xl border border-gray-200 bg-white px-3.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition flex items-center gap-1.5"
+              className="h-9 rounded-xl border border-[#e2edf2] bg-white px-3.5 text-xs font-semibold text-[#0f172a] hover:bg-[#f0f9f8] hover:border-[#0d9488] hover:text-[#0d9488] transition flex items-center gap-1.5 shadow-xs"
             >
               <EditOutlinedIcon sx={{ fontSize: 15 }} />
               <span className="hidden sm:inline">Edit</span>
@@ -160,7 +156,7 @@ const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
             <button
               type="button"
               onClick={() => window.print()}
-              className="h-9 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-4 text-xs font-semibold text-white shadow-md shadow-primary/20 hover:opacity-95 transition flex items-center gap-1.5"
+              className="h-9 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition flex items-center gap-1.5"
             >
               <PrintOutlinedIcon sx={{ fontSize: 15 }} />
               Print
@@ -173,12 +169,12 @@ const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
           PAPER SHEET (Day-1 style)
       ====================================================== */}
       {compiledSections.length === 0 || totalQuestions === 0 ? (
-        <div className="mx-auto mt-10 max-w-[760px] border-2 border-dashed border-gray-200 rounded-xl py-14 text-center bg-white">
-          <p className="text-sm font-semibold text-gray-500">No questions added yet.</p>
+        <div className="mx-auto mt-10 max-w-[760px] border-2 border-dashed border-[#e2edf2] rounded-2xl py-14 text-center bg-white/85 backdrop-blur-md">
+          <p className="text-sm font-semibold text-[#64748b]">No questions added yet.</p>
           <button
             type="button"
             onClick={() => navigate(editorPath)}
-            className="mt-4 inline-flex h-10 items-center rounded-xl bg-primary px-5 text-xs font-semibold text-white shadow-sm"
+            className="mt-4 inline-flex h-10 items-center rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25"
           >
             Go to Editor &amp; Add Questions
           </button>

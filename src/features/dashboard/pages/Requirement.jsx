@@ -11,7 +11,7 @@ const Requirement = () => {
   const [activeMenu, setActiveMenu] = useState("Requirement");
 
   return (
-    <div className="flex h-screen bg-[#F5F7FB] overflow-hidden">
+    <div className="flex h-screen bg-[#F7F7F5] overflow-hidden">
       <Sidebar
         menuItems={dashboardMenus}
         mobileOpen={mobileOpen}

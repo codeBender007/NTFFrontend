@@ -48,7 +48,7 @@ const chartData = {
         121.5, 134.2, 118.6, 142.8, 129.4, 96.3, 155.1, 127.7,
         138.5, 122.9, 146.2, 131.8, 108.4, 152.6, 125.3, 141.9,
       ],
-      backgroundColor: "#002a3d",
+      backgroundColor: "#38bdf8",
       barThickness: 25,
 
       borderRadius: {
@@ -81,7 +81,7 @@ const options = {
 
     tooltip: {
       enabled: false,
-      external: () => {},
+      external: () => { },
     },
 
     // Number displayed on top of every bar
@@ -148,6 +148,7 @@ const options = {
       // Horizontal lines removed
       grid: {
         display: false,
+        color: "#e8f1f5",
         drawTicks: false,
       },
 
@@ -160,23 +161,23 @@ const options = {
 
 const DailySalary = () => {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="bg-white/85 backdrop-blur-md rounded-2xl md:rounded-3xl border border-[#e2edf2] shadow-[0_4px_24px_rgba(15,23,42,0.03)] overflow-hidden">
       {/* Header */}
       <div className="px-5 pt-4">
         <div className="flex items-center justify-between">
           {/* Left side */}
           <div className="flex items-center gap-3">
             {/* Icon - same color as graph */}
-            <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-[#002a3d]">
+            <div className="w-10 h-10 rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 flex items-center justify-center text-[#0d9488] shadow-xs">
               <PaymentsIcon sx={{ fontSize: 20 }} />
             </div>
 
             <div>
-              <h2 className="text-sm font-bold text-slate-800">
+              <h2 className="text-sm font-bold text-[#0f172a]">
                 Daily Salary Distribution
               </h2>
 
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-xs text-[#64748b] mt-0.5">
                 Daily wage expenses and overtime payout tracking
               </p>
             </div>
@@ -200,10 +201,10 @@ const DailySalary = () => {
       <div className="flex justify-center items-center gap-4 pb-4">
         {/* Regular Wages */}
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#002a3d]"></span>
+          <span className="w-2.5 h-2.5 rounded-full bg-[#38bdf8]"></span>
 
-          <span className="text-xs font-medium text-slate-500">
-            Average Daily Salary
+          <span className="text-xs font-medium text-[#666666]">
+            Daily Salary Distribution
           </span>
         </div>
       </div>

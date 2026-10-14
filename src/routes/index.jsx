@@ -10,7 +10,9 @@ import L0 from "../features/lms/pages/L0";
 import L0Editor from "../features/lms/pages/L0Editor";
 import L0Preview from "../features/lms/pages/L0Preview";
 import L1 from "../features/lms/pages/L1";
+import L1Editor from "../features/lms/pages/L1Editor";
 import L1Preview from "../features/lms/pages/L1Preview";
+import PlantPage from "../features/lms/pages/PlantPage";
 import DepartmentPage from "../features/lms/pages/Department";
 import SectionPage from "../features/lms/pages/SectionPage";
 import LinesPage from "../features/lms/pages/LinesPage";
@@ -37,12 +39,30 @@ const App = () => {
         <Route path="/dashboard/requirement" element={<Requirement />} />
         <Route path="/lms" element={<LMS />} />
         <Route path="/lms/dashboard" element={<LMSDashboard />} />
+        {/* Plant & LMS Hierarchy */}
+        <Route path="/lms/plant" element={<PlantPage />} />
+        <Route
+          path="/lms/plant/:plantId/department"
+          element={<DepartmentPage />}
+        />
         <Route path="/lms/department" element={<DepartmentPage />} />
         {/* Sub-Departments */}
+        <Route
+          path="/lms/plant/:plantId/department/:deptId/subdepartment"
+          element={<SectionPage />}
+        />
         <Route path="/lms/subdepartment/:deptId" element={<SectionPage />} />
         {/* Lines */}
+        <Route
+          path="/lms/plant/:plantId/department/:deptId/subdepartment/:subDeptId/line"
+          element={<LinesPage />}
+        />
         <Route path="/lms/line/:deptId/:subDeptId" element={<LinesPage />} />
         {/* Machines */}
+        <Route
+          path="/lms/plant/:plantId/department/:deptId/subdepartment/:subDeptId/line/:lineId/machine"
+          element={<MachinePage />}
+        />
         <Route
           path="/lms/machine/:deptId/:subDeptId/:lineId"
           element={<MachinePage />}
@@ -56,6 +76,7 @@ const App = () => {
         <Route path="/lms/l0/editor" element={<L0Editor />} />
         <Route path="/lms/l0/preview" element={<L0Preview />} />
         <Route path="/lms/l1" element={<L1 />} />
+        <Route path="/lms/l1/editor" element={<L1Editor />} />
         <Route path="/lms/l1/preview" element={<L1Preview />} />
         <Route path="/lms/paper/preview/:id" element={<SavedPaperPreview />} />
         <Route path="/lms/training" element={<TrainingEffectivenessPage />} />

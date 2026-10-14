@@ -4,7 +4,6 @@ import Navbar from "../../../components/Navbar";
 import KPICards from "../../../components/KPICards";
 import Users from "../components/Users";
 import { lmsMenus } from "../data/LMSMenu";
-import { loadUsers } from "../utils/userUtils";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
 import PersonOffOutlinedIcon from "@mui/icons-material/PersonOffOutlined";
@@ -15,7 +14,7 @@ const UsersPage = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Users");
-  const [users, setUsers] = useState(loadUsers);
+  const [users, setUsers] = useState([]);
 
   const kpiData = [
     {
@@ -51,7 +50,7 @@ const UsersPage = () => {
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F5F7FB]">
+    <div className="flex h-screen overflow-hidden bg-[#F7F7F5]">
       {/* SIDEBAR */}
       <Sidebar
         menuItems={lmsMenus}

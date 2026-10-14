@@ -213,25 +213,25 @@ const AttendanceTable = () => {
   );
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-5 py-4 border-b border-gray-100">
+    <div className="bg-white/85 backdrop-blur-md rounded-2xl md:rounded-3xl border border-[#e2edf2] shadow-[0_4px_24px_rgba(15,23,42,0.03)] overflow-hidden">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-5 py-4 border-b border-[#e2edf2]">
         <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary-light to-primary-dark flex items-center justify-center shadow-sm">
-            <PeopleAltIcon sx={{ color: "#fff", fontSize: 22 }} />
+          <div className="h-10 w-10 rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 flex items-center justify-center text-[#0d9488] shadow-xs">
+            <PeopleAltIcon sx={{ color: "#0d9488", fontSize: 20 }} />
           </div>
 
           <div>
-            <h2 className="text-base font-bold text-gray-900 leading-tight">
+            <h2 className="text-base font-bold text-[#0f172a] leading-tight">
               Attendance Records
             </h2>
-            <p className="text-xs text-gray-500">Employee attendance details</p>
+            <p className="text-xs text-[#64748b]">Employee attendance details and records</p>
           </div>
         </div>
 
         <button
           type="button"
           onClick={handleUploadClick}
-          className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#6F4AE7] to-[#7A5AF8] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#6F4AE7]/20 transition-all hover:-translate-y-0.5 hover:shadow-md"
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all duration-200 hover:from-[#0f766e] hover:to-[#0d9488] active:scale-[0.99]"
         >
           <Upload size={15} strokeWidth={2.5} />
           Upload
@@ -295,9 +295,8 @@ const AttendanceTable = () => {
             {displayedRows.map((row, rowIdx) => (
               <tr
                 key={row.id}
-                className={`whitespace-nowrap transition hover:bg-primary/5 ${
-                  rowIdx % 2 === 1 ? "bg-gray-50/50" : "bg-white"
-                }`}
+                className={`whitespace-nowrap transition hover:bg-[#F7F7F5] ${rowIdx % 2 === 1 ? "bg-gray-50/50" : "bg-white"
+                  }`}
               >
                 <td className="px-3 py-3 text-[11px] font-medium text-gray-500 border-b border-r border-gray-100 text-center">
                   {row.sno}
@@ -376,14 +375,14 @@ const AttendanceTable = () => {
         </table>
 
         {/* Pagination */}
-        <div className="flex min-h-[48px] items-center justify-between gap-2 border-t border-[#E5E7EB] px-2">
-          <div className="flex items-center gap-2 text-[11px] text-[#6B7280]">
+        <div className="flex min-h-[48px] items-center justify-between gap-2 border-t border-[#e2edf2] px-4">
+          <div className="flex items-center gap-2 text-[11px] text-[#64748b]">
             <span>Rows per page</span>
 
             <select
               value={rowsPerPage}
               onChange={handleChangeRowsPerPage}
-              className="cursor-pointer rounded-md border border-[#E5E7EB] bg-white py-1 pl-2 pr-6 text-[11px] text-[#6B7280] outline-none focus:border-[#6F4AE7]"
+              className="cursor-pointer rounded-lg border border-[#e2edf2] bg-white py-1 pl-2 pr-6 text-[11px] text-[#0f172a] outline-none focus:border-[#0d9488]"
             >
               {[10, 25, 50].map((option) => (
                 <option key={option} value={option}>

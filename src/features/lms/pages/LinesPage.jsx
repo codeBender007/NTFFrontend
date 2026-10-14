@@ -7,10 +7,10 @@ import { lmsMenus } from "../data/LMSMenu";
 const LinesPage = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("Department");
+  const [activeMenu, setActiveMenu] = useState("Plant");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F5F7FB]">
+    <div className="flex h-screen overflow-hidden bg-[#F7F7F5]">
       {/* SIDEBAR */}
 
       <Sidebar

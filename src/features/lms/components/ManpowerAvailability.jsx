@@ -54,7 +54,7 @@ const chartData = {
     createBarDataset({
       label: "Available",
       data: [30, 46, 24, 50, 40, 20, 45, 30, 46, 24, 50, 40, 20, 45, 46, 32],
-      color: CHART_COLORS.success,
+      color: CHART_COLORS.sky,
     }),
   ],
 };
@@ -65,26 +65,26 @@ const options = getBarChartOptions({
 
 const ManpowerAvailability = () => {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 transition-all duration-300 hover:shadow-md h-full flex flex-col justify-between">
+    <div className="bg-white/85 backdrop-blur-md rounded-2xl md:rounded-3xl border border-[#e2edf2] shadow-[0_4px_24px_rgba(15,23,42,0.03)] p-5 transition-all duration-300 hover:shadow-md h-full flex flex-col justify-between">
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3.5">
-            <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs">
-              <PeopleAltIcon sx={{ fontSize: 22 }} />
+            <div className="h-10 w-10 rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 text-[#0d9488] flex items-center justify-center shadow-xs">
+              <PeopleAltIcon sx={{ fontSize: 20 }} />
             </div>
 
             <div>
-              <h2 className="text-base font-bold text-slate-800 tracking-tight">
+              <h2 className="text-base font-bold text-[#0f172a] tracking-tight">
                 Manpower Availability Trend
               </h2>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-[#64748b] font-medium">
                 Deployed headcount with day-over-day movement
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e6f7f5] text-[#0f766e] border border-[#0d9488]/20">
               Availability: 92.5%
             </span>
           </div>

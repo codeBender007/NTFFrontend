@@ -41,12 +41,12 @@ const chartData = {
     createBarDataset({
       label: "Overall Defects",
       data: [45, 55, 40, 60, 50, 34, 60, 45, 55, 40, 60, 50, 34, 60, 55, 45],
-      color: CHART_COLORS.danger,
+      color: CHART_COLORS.primary,
     }),
     createBarDataset({
       label: "Defects from CTQ Stations",
       data: [30, 46, 24, 50, 40, 20, 45, 30, 46, 24, 50, 40, 20, 45, 46, 32],
-      color: CHART_COLORS.warning,
+      color: CHART_COLORS.sky,
     }),
   ],
 };
@@ -57,26 +57,26 @@ const options = getBarChartOptions({
 
 const ManTrend = () => {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 transition-all duration-300 hover:shadow-md h-full flex flex-col justify-between">
+    <div className="bg-white/85 backdrop-blur-md rounded-2xl md:rounded-3xl border border-[#e2edf2] shadow-[0_4px_24px_rgba(15,23,42,0.03)] p-5 transition-all duration-300 hover:shadow-md h-full flex flex-col justify-between">
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3.5">
-            <div className="h-11 w-11 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shadow-xs">
-              <PeopleAltIcon sx={{ fontSize: 22 }} />
+            <div className="h-10 w-10 rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 text-[#0d9488] flex items-center justify-center shadow-xs">
+              <PeopleAltIcon sx={{ fontSize: 20 }} />
             </div>
 
             <div>
-              <h2 className="text-base font-bold text-slate-800 tracking-tight">
+              <h2 className="text-base font-bold text-[#0f172a] tracking-tight">
                 Man Related Defects Trend at MSIL
               </h2>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-[#64748b] font-medium">
                 Deployed headcount with day-over-day movement
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-100">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e6f7f5] text-[#0f766e] border border-[#0d9488]/20">
               CTQ Defects: 38%
             </span>
           </div>

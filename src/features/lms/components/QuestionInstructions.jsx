@@ -82,8 +82,8 @@ const QuestionInstructions = ({
 
       {/* Instructions Box */}
       <div className="bg-gray-50/70 border border-gray-200/90 rounded-2xl p-5 text-xs text-gray-800 space-y-2.5 print:bg-white print:border-gray-300">
-        <div className="font-bold text-primary flex items-center gap-2 uppercase tracking-wide print:text-gray-900">
-          <div className="h-6 w-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 print:hidden">
+        <div className="font-bold text-[#0f172a] flex items-center gap-2 uppercase tracking-wide print:text-gray-900">
+          <div className="h-6 w-6 rounded-lg bg-[#e6f7f5] border border-[#0d9488]/20 text-[#0d9488] flex items-center justify-center shrink-0 print:hidden">
             <AssignmentOutlinedIcon sx={{ fontSize: 16 }} />
           </div>
           <span>INSTRUCTIONS</span>

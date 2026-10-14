@@ -296,7 +296,7 @@ const QuestionPaperPage = ({ level = "L0" }) => {
   };
 
   return (
-    <div className="flex h-screen bg-[#F4F5F9]">
+    <div className="flex h-screen bg-[#F7F7F5]">
       <Sidebar
         menuItems={lmsMenus}
         mobileOpen={mobileOpen}
@@ -308,7 +308,7 @@ const QuestionPaperPage = ({ level = "L0" }) => {
       />
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <div className="sticky top-0 z-30 bg-white shadow-xs">
+        <div className="sticky top-0 z-30 bg-white border-b border-[#E5E5E5]">
           <Navbar activeMenu="LMS / DOJO Hiring" setMobileOpen={setMobileOpen} />
         </div>
 
@@ -319,7 +319,7 @@ const QuestionPaperPage = ({ level = "L0" }) => {
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#F4F5F9] space-y-5">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#F7F7F5] space-y-5">
           <TopActions
             title="Question Paper Editor"
             level={level}

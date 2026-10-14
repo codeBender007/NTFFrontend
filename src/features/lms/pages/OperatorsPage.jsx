@@ -47,7 +47,7 @@ const OperatorsPage = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-[#F5F7FB] overflow-hidden">
+    <div className="flex h-screen bg-[#F7F7F5] overflow-hidden">
       <Sidebar
         menuItems={lmsMenus}
         mobileOpen={mobileOpen}

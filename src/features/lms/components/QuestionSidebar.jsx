@@ -99,15 +99,15 @@ const QuestionSidebar = ({
               px-3
               rounded-lg
               border
-              border-[#ddd5ff]
+              border-[#e2edf2]
               bg-white
-              text-[#6F4AE7]
+              text-[#0d9488]
               text-[11px]
               font-semibold
               flex
               items-center
               gap-1
-              hover:bg-[#f6f3ff]
+              hover:bg-[#e6f7f5]
               transition
             "
           >
@@ -139,13 +139,13 @@ const QuestionSidebar = ({
                   transition
                   ${
                     sectionActive
-                      ? "border-[#d9d0ff] bg-[#faf8ff]"
-                      : "border-gray-200"
+                      ? "border-[#0d9488] bg-[#e6f7f5]/40"
+                      : "border-[#e2edf2]"
                   }
                 `}
               >
                 {sectionActive && (
-                  <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-lg bg-[#6F4AE7]" />
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-lg bg-[#0d9488]" />
                 )}
 
                 <div className="flex items-center gap-2">
@@ -166,7 +166,7 @@ const QuestionSidebar = ({
                     </p>
                   </div>
 
-                  <span className="px-2 py-1 rounded-md bg-[#f0ecff] text-[#6F4AE7] text-[9px] font-semibold whitespace-nowrap">
+                  <span className="px-2 py-1 rounded-md bg-[#e6f7f5] border border-[#0d9488]/20 text-[#0f766e] text-[9px] font-semibold whitespace-nowrap">
                     {section.questions.length} Qs
                   </span>
 
@@ -256,9 +256,9 @@ const QuestionSidebar = ({
           className="
             w-full
             h-8
-            rounded-lg
-            bg-[#6F4AE7]
-            hover:bg-[#5B3BE6]
+            rounded-xl
+            bg-gradient-to-r from-[#0d9488] to-[#14b8a6]
+            hover:from-[#0f766e] hover:to-[#0d9488]
             text-white
             text-[10px]
             font-semibold
@@ -267,7 +267,7 @@ const QuestionSidebar = ({
             justify-center
             gap-1.5
             mb-3
-            shadow-sm
+            shadow-xs
           "
         >
           <AddOutlinedIcon sx={{ fontSize: 15 }} />
@@ -341,7 +341,7 @@ const QuestionSidebar = ({
                             transition
                             ${
                               active
-                                ? "border-[#d9d0ff] bg-[#f5f1ff]"
+                                ? "border-[#0d9488] bg-[#e6f7f5]/40"
                                 : "border-transparent bg-white hover:border-gray-200"
                             }
                           `}
@@ -351,7 +351,7 @@ const QuestionSidebar = ({
                               text-[9px]
                               font-semibold
                               w-4
-                              ${active ? "text-[#6F4AE7]" : "text-gray-400"}
+                              ${active ? "text-[#0d9488]" : "text-[#8A8A8A]"}
                             `}
                         >
                           {number}.

@@ -36,7 +36,7 @@ const LMS = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-[#F7F7F5]">
       <Sidebar
         menuItems={lmsMenus}
         mobileOpen={mobileOpen}

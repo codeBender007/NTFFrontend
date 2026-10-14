@@ -10,7 +10,7 @@ const OperatorObservancePage = () => {
   const [activeMenu, setActiveMenu] = useState("10 Cycle Operator");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F5F7FB]">
+    <div className="flex h-screen overflow-hidden bg-[#F7F7F5]">
       {/* SIDEBAR */}
       <Sidebar
         menuItems={lmsMenus}

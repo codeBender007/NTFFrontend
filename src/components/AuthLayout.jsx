@@ -3,13 +3,13 @@ import bgImage from "../assets/images/bg_image.png";
 
 const AuthLayout = ({ welcomeTitle, welcomeText, title, subtitle, children }) => {
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="min-h-screen flex bg-[#F7F7F5]">
       {/* Left Side */}
       <div
         className="hidden lg:flex w-1/2 relative bg-cover bg-center rounded-r-3xl overflow-hidden"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        <div className="absolute inset-0 bg-primary/20"></div>
+        <div className="absolute inset-0 bg-black/40"></div>
         <div className="relative z-10 flex flex-col justify-center px-14 text-white">
           <h1 className="text-3xl font-bold mb-4">{welcomeTitle}</h1>
           <p className="text-base leading-7 max-w-md text-white/90">{welcomeText}</p>
@@ -23,8 +23,8 @@ const AuthLayout = ({ welcomeTitle, welcomeText, title, subtitle, children }) =>
             <img src={logo} alt="logo" className="h-20" />
           </div>
 
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">{title}</h2>
-          <p className="text-sm text-gray-500 mb-6">{subtitle}</p>
+          <h2 className="text-3xl font-bold text-[#171717] mb-2">{title}</h2>
+          <p className="text-sm text-[#666666] mb-6">{subtitle}</p>
 
           {children}
         </div>

@@ -121,7 +121,7 @@ const QuestionEditor = ({
 
         <div>
 
-          <p className="text-[10px] font-bold uppercase text-[#6F4AE7] tracking-wide">
+          <p className="text-[10px] font-bold uppercase text-[#0f172a] tracking-wide">
             Edit Question
           </p>
 
@@ -158,7 +158,9 @@ const QuestionEditor = ({
               text-[10px]
               text-gray-600
               outline-none
-              focus:border-[#6F4AE7]
+              focus:border-[#0d9488]
+              focus:ring-1
+              focus:ring-[#0d9488]/15
             "
           >
             <option>Multiple Choice (MCQ)</option>
@@ -265,9 +267,9 @@ const QuestionEditor = ({
                 text-[11px]
                 text-gray-700
                 placeholder:text-gray-300
-                focus:border-[#6F4AE7]
+                focus:border-[#0d9488]
                 focus:ring-1
-                focus:ring-[#6F4AE7]/20
+                focus:ring-[#0d9488]/15
               "
             />
 
@@ -285,7 +287,7 @@ const QuestionEditor = ({
 
                 <div className="flex items-center gap-1">
 
-                  <h3 className="text-[10px] font-bold uppercase tracking-wide text-[#6F4AE7]">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wide text-[#0f172a]">
                     Options
                   </h3>
 
@@ -310,15 +312,15 @@ const QuestionEditor = ({
                         px-2.5
                         rounded-lg
                         border
-                        border-[#dcd5ff]
-                        text-[#6F4AE7]
+                        border-[#e2edf2]
+                        text-[#0d9488]
                         bg-white
                         text-[9px]
                         font-semibold
                         flex
                         items-center
                         gap-1
-                        hover:bg-[#f6f3ff]
+                        hover:bg-[#e6f7f5]
                       "
                     >
                       <AddOutlinedIcon
@@ -382,13 +384,13 @@ const QuestionEditor = ({
                           shrink-0
                           ${
                             isCorrect
-                              ? "border-[#6F4AE7]"
-                              : "border-gray-300"
+                              ? "border-[#0d9488]"
+                              : "border-[#e2edf2]"
                           }
                         `}
                       >
                         {isCorrect && (
-                          <span className="h-2 w-2 rounded-full bg-[#6F4AE7]" />
+                          <span className="h-2 w-2 rounded-full bg-[#0d9488]" />
                         )}
                       </button>
 
@@ -398,7 +400,7 @@ const QuestionEditor = ({
                         className={`
                           h-7
                           w-7
-                          rounded-md
+                          rounded-xl
                           flex
                           items-center
                           justify-center
@@ -406,8 +408,8 @@ const QuestionEditor = ({
                           font-semibold
                           ${
                             isCorrect
-                              ? "bg-[#6F4AE7] text-white"
-                              : "bg-[#f3f1ff] text-[#6F4AE7]"
+                              ? "bg-[#0d9488] text-white"
+                              : "bg-[#e6f7f5] text-[#0d9488]"
                           }
                         `}
                       >
@@ -507,7 +509,9 @@ const QuestionEditor = ({
                     px-2
                     text-[10px]
                     outline-none
-                    focus:border-[#6F4AE7]
+                    focus:border-[#0d9488]
+                    focus:ring-1
+                    focus:ring-[#0d9488]/15
                   "
                 />
 
@@ -541,7 +545,9 @@ const QuestionEditor = ({
                     px-2
                     text-[10px]
                     outline-none
-                    focus:border-[#6F4AE7]
+                    focus:border-[#0d9488]
+                    focus:ring-1
+                    focus:ring-[#0d9488]/15
                   "
                 />
 
@@ -573,7 +579,9 @@ const QuestionEditor = ({
                     text-[10px]
                     bg-white
                     outline-none
-                    focus:border-[#6F4AE7]
+                    focus:border-[#0d9488]
+                    focus:ring-1
+                    focus:ring-[#0d9488]/15
                   "
                 >
                   <option>Easy</option>
@@ -598,7 +606,7 @@ const QuestionEditor = ({
                           e.target.checked,
                       })
                     }
-                    className="accent-[#6F4AE7]"
+                    className="accent-[#0d9488]"
                   />
 
                   <span className="text-[9px] font-medium text-gray-600">
@@ -632,8 +640,11 @@ const QuestionEditor = ({
             px-3
             rounded-lg
             border
-            border-[#ddd5ff]
-            text-[#6F4AE7]
+            border-[#e2edf2]
+            text-[#0f172a]
+            hover:bg-[#f0f9f8]
+            hover:text-[#0d9488]
+            hover:border-[#0d9488]
             text-[9px]
             font-semibold
             flex
@@ -663,15 +674,16 @@ const QuestionEditor = ({
           className="
             h-8
             px-3
-            rounded-lg
-            bg-[#6F4AE7]
+            rounded-xl
+            bg-gradient-to-r from-[#0d9488] to-[#14b8a6]
+            hover:from-[#0f766e] hover:to-[#0d9488]
             text-white
             text-[9px]
             font-semibold
             flex
             items-center
             gap-1
-            shadow-sm
+            shadow-xs
             disabled:opacity-40
             disabled:cursor-not-allowed
           "

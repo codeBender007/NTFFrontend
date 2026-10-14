@@ -79,10 +79,10 @@ const QuestionForm = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden p-5 sm:p-6 space-y-6 flex flex-col justify-between">
+    <div className="bg-white/85 backdrop-blur-md rounded-2xl md:rounded-3xl border border-[#e2edf2] shadow-[0_4px_24px_rgba(15,23,42,0.03)] overflow-hidden p-5 sm:p-6 space-y-6 flex flex-col justify-between">
       <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap border-b border-gray-100 pb-4">
-          <h2 className="text-base font-bold text-gray-900">Edit Question</h2>
+        <div className="flex items-center justify-between gap-4 flex-wrap border-b border-[#e2edf2] pb-4">
+          <h2 className="text-base font-bold text-[#0f172a]">Edit Question</h2>
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-500">Question Type</span>
@@ -90,7 +90,7 @@ const QuestionForm = ({
               <select
                 value={questionType}
                 onChange={(e) => onChange({ questionType: e.target.value })}
-                className="h-9 rounded-xl border border-gray-200 bg-gray-50/50 pl-3 pr-8 text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 transition appearance-none cursor-pointer"
+                className="h-9 rounded-xl border border-gray-200 bg-gray-50/50 pl-3 pr-8 text-xs font-semibold text-gray-800 outline-none focus:bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15 transition appearance-none cursor-pointer"
               >
                 <option value="Multiple Choice (MCQ)">Multiple Choice (MCQ)</option>
                 <option value="Short Answer">Short Answer</option>
@@ -110,7 +110,7 @@ const QuestionForm = ({
             Question Text <span className="text-red-500">*</span>
           </label>
 
-          <div className="border border-gray-200 rounded-2xl overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition">
+          <div className="border border-gray-200 rounded-2xl overflow-hidden focus-within:border-[#0d9488] focus-within:ring-2 focus-within:ring-[#0d9488]/15 transition">
             {/* Formatting Toolbar */}
             <div className="bg-gray-50/80 border-b border-gray-200 px-3 py-2 flex items-center justify-between gap-2">
               <div className="flex items-center gap-1">
@@ -204,7 +204,7 @@ const QuestionForm = ({
                 <button
                   type="button"
                   onClick={addOption}
-                  className="inline-flex items-center gap-1 h-7 px-3 rounded-xl border border-primary/30 bg-primary/5 text-primary text-xs font-semibold hover:bg-primary/10 transition"
+                  className="inline-flex items-center gap-1 h-7 px-3 rounded-xl border border-[#e2edf2] bg-white text-[#0d9488] text-xs font-semibold hover:bg-[#e6f7f5] hover:border-[#0d9488] transition"
                 >
                   <AddOutlinedIcon sx={{ fontSize: 15 }} />
                   Add Option
@@ -223,8 +223,8 @@ const QuestionForm = ({
                   key={option.id}
                   className={`flex items-center gap-3 border rounded-xl px-3 py-2 transition-all ${
                     isCorrect
-                      ? "border-primary/40 bg-primary/[0.03] shadow-2xs"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
+                      ? "border-[#0d9488] bg-[#e6f7f5]/40 shadow-xs"
+                      : "border-[#e2edf2] hover:border-[#0d9488]/40 bg-white"
                   }`}
                 >
                   {/* Custom Styled Radio Button */}
@@ -233,8 +233,8 @@ const QuestionForm = ({
                     onClick={() => onChange({ correctOption: option.id })}
                     className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
                       isCorrect
-                        ? "border-primary bg-primary text-white"
-                        : "border-gray-300 bg-white hover:border-primary/50"
+                        ? "border-[#0d9488] bg-[#0d9488] text-white"
+                        : "border-gray-300 bg-white hover:border-[#0d9488]"
                     }`}
                     title="Mark as correct answer"
                   >
@@ -252,7 +252,7 @@ const QuestionForm = ({
                     value={option.value}
                     onChange={(e) => updateOption(option.id, e.target.value)}
                     placeholder={`Option ${option.label}`}
-                    className="flex-1 h-9 border border-gray-200 rounded-xl px-3 text-xs outline-none bg-gray-50/50 text-gray-900 focus:bg-white focus:border-primary transition"
+                    className="flex-1 h-9 border border-gray-200 rounded-xl px-3 text-xs outline-none bg-gray-50/50 text-gray-900 focus:bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15 transition"
                   />
 
                   {/* Red Delete Trash Icon */}
@@ -318,25 +318,25 @@ const QuestionForm = ({
               min="0"
               value={negativeMarks}
               onChange={(e) => onChange({ negativeMarks: Number(e.target.value) || 0 })}
-              className="w-full h-9 border border-gray-200 rounded-xl px-3 text-xs font-semibold bg-gray-50/50 outline-none text-gray-900 focus:bg-white focus:border-primary transition"
+              className="w-full h-9 border border-gray-200 rounded-xl px-3 text-xs font-semibold bg-gray-50/50 outline-none text-gray-900 focus:bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15 transition"
             />
           </div>
         </div>
       </div>
 
       {/* Bottom Question Navigation Buttons Bar */}
-      <div className="pt-6 border-t border-gray-100 flex items-center justify-between gap-3">
+      <div className="pt-6 border-t border-[#e2edf2] flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onPrevQuestion}
           disabled={questionIndex === 0}
-          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl border border-[#e2edf2] bg-white text-[#0f172a] text-xs font-semibold hover:bg-[#f0f9f8] hover:border-[#0d9488] hover:text-[#0d9488] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-xs"
         >
           <ArrowBackOutlinedIcon sx={{ fontSize: 16 }} />
           Previous Question
         </button>
 
-        <span className="text-xs font-semibold text-gray-500">
+        <span className="text-xs font-semibold text-[#64748b]">
           Question {currentQNum} of {totalQuestionsCount}
         </span>
 
@@ -344,7 +344,7 @@ const QuestionForm = ({
           type="button"
           onClick={onNextQuestion}
           disabled={questionIndex >= totalQuestionsCount - 1}
-          className="inline-flex items-center gap-1.5 h-10 px-5 rounded-xl bg-gradient-to-r from-primary to-primary-dark text-white text-xs font-semibold shadow-md shadow-primary/25 hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          className="inline-flex items-center gap-1.5 h-10 px-5 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] text-white text-xs font-semibold shadow-sm shadow-[#0d9488]/25 disabled:opacity-40 disabled:cursor-not-allowed transition"
         >
           Next Question
           <ArrowForwardOutlinedIcon sx={{ fontSize: 16 }} />

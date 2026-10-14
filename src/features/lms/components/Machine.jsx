@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,34 +9,77 @@ import {
   X,
   Plus,
 } from "lucide-react";
+import buildPaths from "../utils/hierarchyPaths";
+import DepartmentApi from "../services/DepartmentApi";
+import SubDepartmentApi from "../services/SubDepartmentApi";
+import LinesApi from "../services/LinesApi";
+import MachinesApi from "../services/MachinesApi";
+import PlantApi from "../services/PlantApi";
 
-const STORAGE_KEY = "lms_departments";
+// Map the backend response shape onto the shape the UI already renders.
+const normalizeMachine = (machine) => ({
+  id: machine?.id,
+  name: machine?.machineName ?? machine?.name ?? "Unnamed machine",
+});
 
-const createId = (prefix) =>
-  `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+const normalizeDepartment = (department) => ({
+  ...department,
+  id: department?.id ?? department?.department_id ?? department?.departmentId,
+  name: department?.departmentName ?? department?.name ?? "Unnamed department",
+  plantId: department?.plantId ?? department?.plant_id,
+});
 
-const loadDepartments = () => {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
+const normalizeSubDepartment = (subDepartment) => ({
+  ...subDepartment,
+  id:
+    subDepartment?.id ??
+    subDepartment?.sub_department_id ??
+    subDepartment?.subDepartmentId,
+  name:
+    subDepartment?.subDepartmentName ??
+    subDepartment?.name ??
+    "Unnamed sub-department",
+  plantId: subDepartment?.plantId ?? subDepartment?.plant_id,
+  departmentId:
+    subDepartment?.departmentId ?? subDepartment?.department_id,
+});
 
-const saveDepartments = (next) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+const normalizeLine = (line) => ({
+  ...line,
+  id: line?.id,
+  name: line?.lineName ?? line?.name ?? "Unnamed line",
+  plantId: line?.plantId,
+  departmentId: line?.departmentId,
+  subDepartmentId: line?.subDepartmentId,
+});
+
+// The list endpoints return a JSON array, but tolerate wrapped shapes too.
+const getList = (data) => {
+  if (Array.isArray(data)) return data;
+  const nested = data?.data ?? data?.items ?? data?.results;
+  return Array.isArray(nested) ? nested : [];
 };
 
 export default function Machine() {
   const navigate = useNavigate();
-  const { deptId, subDeptId, lineId } = useParams();
+  const { plantId, deptId, subDeptId, lineId } = useParams();
+  const paths = buildPaths(plantId);
 
-  const [departments, setDepartments] = useState(loadDepartments);
+  const [department, setDepartment] = useState(null);
+  const [subDepartment, setSubDepartment] = useState(null);
+  const [line, setLine] = useState(null);
+  const [machines, setMachines] = useState([]);
+  const [plantName, setPlantName] = useState(
+    plantId ? `Plant #${plantId}` : "",
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
   const [search, setSearch] = useState("");
 
   const [addModal, setAddModal] = useState(false);
   const [machineForm, setMachineForm] = useState({ name: "" });
+  const [saving, setSaving] = useState(false);
 
   const [editModal, setEditModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -52,29 +95,120 @@ export default function Machine() {
     setTimeout(() => setToast(""), 2500);
   };
 
-  const department = departments.find(
-    (dept) => String(dept.id) === String(deptId),
-  );
+  useEffect(() => {
+    let cancelled = false;
 
-  const subDepartment = department?.subDepartments?.find(
-    (subDept) => String(subDept.id) === String(subDeptId),
-  );
+    const loadData = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const [
+          departmentResponse,
+          subDepartmentResponse,
+          lineResponse,
+          machinesResponse,
+        ] = await Promise.all([
+          DepartmentApi.getDepartment(deptId),
+          SubDepartmentApi.getSubDepartment(subDeptId),
+          LinesApi.getLine(lineId),
+          MachinesApi.getMachinesByLine(lineId),
+        ]);
 
-  const line =
-    subDepartment?.lines?.find(
-      (currentLine) =>
-        String(currentLine.id) === String(lineId) ||
-        String(currentLine.code) === String(lineId),
-    ) || null;
+        if (cancelled) return;
+        setDepartment(normalizeDepartment(departmentResponse.data));
+        setSubDepartment(normalizeSubDepartment(subDepartmentResponse.data));
+        setLine(normalizeLine(lineResponse.data));
+        setMachines(getList(machinesResponse.data).map(normalizeMachine));
+      } catch (err) {
+        if (cancelled) return;
+        if (err.response?.status === 404) {
+          // One of the parent records does not exist; show not-found.
+          setDepartment(null);
+          setSubDepartment(null);
+          setLine(null);
+        } else {
+          setError(
+            err.response?.data?.detail ||
+              "Unable to load machines from the server.",
+          );
+          console.error("Get machines API error:", err);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
 
-  /* ===================== NOT FOUND ===================== */
+    loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deptId, subDeptId, lineId, reloadKey]);
+
+  // The plant name is only needed for the breadcrumb, so a failure here
+  // should not block the page. Falls back to "Plant #<id>" when unavailable.
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchPlantName = async () => {
+      if (!plantId) return;
+      try {
+        const response = await PlantApi.getPlant(plantId);
+        const name = response?.data?.plantName ?? response?.data?.name;
+        if (!cancelled && name) setPlantName(name);
+      } catch (err) {
+        console.warn("Unable to load plant name:", err);
+      }
+    };
+
+    fetchPlantName();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [plantId]);
+
+  /* ===================== RENDER GUARDS ===================== */
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[calc(100vh-70px)] items-center justify-center bg-[#F7F7F5] text-[#26364d]">
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex h-[45px] w-[45px] items-center justify-center rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20">
+            <Cpu size={21} className="text-[#0d9488]" />
+          </div>
+          <h2 className="text-[15px] font-bold">Loading machines...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-[calc(100vh-70px)] items-center justify-center bg-[#F7F7F5] text-[#26364d]">
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex h-[45px] w-[45px] items-center justify-center rounded-xl bg-[#fff0ee] border border-[#e74c3c]/20">
+            <Cpu size={21} className="text-[#e74c3c]" />
+          </div>
+          <h2 className="text-[15px] font-bold">Unable to load</h2>
+          <p className="mt-1 text-xs text-[#718096]">{error}</p>
+          <button
+            onClick={() => setReloadKey((key) => key + 1)}
+            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!department || !subDepartment || !line) {
     return (
-      <div className="flex min-h-[calc(100vh-70px)] items-center justify-center bg-[#F5F7FB] text-[#26364d]">
+      <div className="flex min-h-[calc(100vh-70px)] items-center justify-center bg-[#F7F7F5] text-[#26364d]">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-[45px] w-[45px] items-center justify-center rounded-xl bg-[#f0ecff]">
-            <Cpu size={21} className="text-[#6F4AE7]" />
+          <div className="mx-auto mb-4 flex h-[45px] w-[45px] items-center justify-center rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20">
+            <Cpu size={21} className="text-[#0d9488]" />
           </div>
           <h2 className="text-[15px] font-bold">Line not found</h2>
           <p className="mt-1 text-xs text-[#718096]">
@@ -84,11 +218,11 @@ export default function Machine() {
             onClick={() =>
               navigate(
                 department && subDepartment
-                  ? `/lms/line/${deptId}/${subDeptId}`
-                  : "/lms/department",
+                  ? paths.lines(deptId, subDeptId)
+                  : paths.departments,
               )
             }
-            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#6F4AE7] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#5A38D6]"
+            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all"
           >
             <ArrowLeft size={16} />
             Back
@@ -98,13 +232,12 @@ export default function Machine() {
     );
   }
 
-  const machines = line.machines || [];
-
   /* ===================== DERIVED DATA ===================== */
 
-  const orderedMachines = machines
-    .map((machine, index) => ({ ...machine, displayId: index + 1 }))
-    .slice();
+  const orderedMachines = machines.map((machine, index) => ({
+    ...machine,
+    displayId: index + 1,
+  }));
 
   const filteredMachines = orderedMachines.filter((machine) => {
     const query = search.trim().toLowerCase();
@@ -112,35 +245,9 @@ export default function Machine() {
 
     return (
       String(machine.displayId).includes(query) ||
-      machine.name.toLowerCase().includes(query)
+      String(machine.name).toLowerCase().includes(query)
     );
   });
-
-  const updateLine = (updater) => {
-    const next = departments.map((dept) =>
-      String(dept.id) === String(deptId)
-        ? {
-            ...dept,
-            subDepartments: (dept.subDepartments || []).map((subDept) =>
-              String(subDept.id) === String(subDeptId)
-                ? {
-                    ...subDept,
-                    lines: (subDept.lines || []).map((currentLine) =>
-                      (String(currentLine.id) === String(lineId) ||
-                        String(currentLine.code) === String(lineId))
-                        ? updater(currentLine)
-                        : currentLine,
-                    ),
-                  }
-                : subDept,
-            ),
-          }
-        : dept,
-    );
-
-    setDepartments(next);
-    saveDepartments(next);
-  };
 
   /* ===================== ADD MACHINE ===================== */
 
@@ -149,7 +256,9 @@ export default function Machine() {
     setAddModal(true);
   };
 
-  const saveMachine = () => {
+  const saveMachine = async () => {
+    if (saving) return;
+
     const name = machineForm.name.trim();
 
     if (!name) {
@@ -158,7 +267,7 @@ export default function Machine() {
     }
 
     const isDuplicate = machines.some(
-      (machine) => machine.name.toLowerCase() === name.toLowerCase(),
+      (machine) => String(machine.name).toLowerCase() === name.toLowerCase(),
     );
 
     if (isDuplicate) {
@@ -166,20 +275,36 @@ export default function Machine() {
       return;
     }
 
-    updateLine((currentLine) => ({
-      ...currentLine,
-      machines: [
-        ...(currentLine.machines || []),
-        {
-          id: createId("machine"),
-          name,
-          shifts: [],
-        },
-      ],
-    }));
+    setSaving(true);
+    try {
+      const response = await MachinesApi.createMachine({
+        lineId: Number(lineId) || lineId,
+        machineName: name,
+      });
+      const created = normalizeMachine(response.data);
 
-    showToast("Machine added successfully.");
-    setAddModal(false);
+      if (created.id === undefined || created.id === null) {
+        // The API did not return a complete record; refresh from the server.
+        const refreshed = await MachinesApi.getMachinesByLine(lineId);
+        setMachines(getList(refreshed.data).map(normalizeMachine));
+      } else {
+        setMachines((prev) => [...prev, created]);
+      }
+
+      showToast("Machine added successfully.");
+      setAddModal(false);
+    } catch (err) {
+      showToast(
+        `Failed to add machine: ${
+          err.response?.data?.detail ||
+          err.response?.data?.message ||
+          "Please try again."
+        }`,
+      );
+      console.error("Create machine API error:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   /* ===================== EDIT MACHINE ===================== */
@@ -190,8 +315,8 @@ export default function Machine() {
     setEditModal(true);
   };
 
-  const saveEdit = () => {
-    if (!editTarget) return;
+  const saveEdit = async () => {
+    if (!editTarget || saving) return;
 
     const name = editForm.name.trim();
 
@@ -200,15 +325,37 @@ export default function Machine() {
       return;
     }
 
-    updateLine((currentLine) => ({
-      ...currentLine,
-      machines: (currentLine.machines || []).map((machine) =>
-        machine.id === editTarget.id ? { ...machine, name } : machine,
-      ),
-    }));
+    setSaving(true);
+    try {
+      const response = await MachinesApi.updateMachine(editTarget.id, {
+        machineName: name,
+      });
+      const updated = normalizeMachine({
+        ...editTarget,
+        ...response.data,
+        machineName: response.data?.machineName ?? name,
+      });
 
-    showToast("Machine updated successfully.");
-    setEditModal(false);
+      setMachines((prev) =>
+        prev.map((machine) =>
+          String(machine.id) === String(editTarget.id) ? updated : machine,
+        ),
+      );
+
+      showToast("Machine updated successfully.");
+      setEditModal(false);
+    } catch (err) {
+      showToast(
+        `Failed to update machine: ${
+          err.response?.data?.detail ||
+          err.response?.data?.message ||
+          "Please try again."
+        }`,
+      );
+      console.error("Update machine API error:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   /* ===================== DELETE MACHINE ===================== */
@@ -218,19 +365,31 @@ export default function Machine() {
     setDeleteModal(true);
   };
 
-  const confirmDelete = () => {
-    if (!deleteTarget) return;
+  // Machine is the leaf of the hierarchy, so no child-existence check is needed.
+  const confirmDelete = async () => {
+    if (!deleteTarget || saving) return;
 
-    updateLine((currentLine) => ({
-      ...currentLine,
-      machines: (currentLine.machines || []).filter(
-        (machine) => machine.id !== deleteTarget.id,
-      ),
-    }));
-
-    showToast("Machine deleted successfully.");
-    setDeleteModal(false);
-    setDeleteTarget(null);
+    setSaving(true);
+    try {
+      await MachinesApi.deleteMachine(deleteTarget.id);
+      setMachines((prev) =>
+        prev.filter(
+          (machine) => String(machine.id) !== String(deleteTarget.id),
+        ),
+      );
+      showToast("Machine deleted successfully.");
+      setDeleteModal(false);
+      setDeleteTarget(null);
+    } catch (err) {
+      showToast(
+        err.response?.data?.detail ||
+          err.response?.data?.message ||
+          "Unable to delete machine. Please try again.",
+      );
+      console.error("Delete machine API error:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   /* ===================== RENDER ===================== */
@@ -241,44 +400,60 @@ export default function Machine() {
         {/* BREADCRUMB */}
         <div className="mb-3 flex flex-wrap items-center gap-1.5 text-xs text-[#9aa3af]">
           <Link
-            to="/lms/department"
-            className="hover:text-[#6F4AE7] hover:underline"
+            to="/lms/plant"
+            className="hover:text-[#0d9488] hover:underline"
           >
-            Departments
+            Plants
           </Link>
+          {plantName && (
+            <>
+              <span>/</span>
+              <Link
+                to={paths.departments}
+                className="hover:text-[#0d9488] hover:underline"
+              >
+                {plantName}
+              </Link>
+            </>
+          )}
           <span>/</span>
           <Link
-            to={`/lms/subdepartment/${deptId}`}
-            className="hover:text-[#6F4AE7] hover:underline"
+            to={paths.departments}
+            className="hover:text-[#0d9488] hover:underline"
           >
             {department.name}
           </Link>
           <span>/</span>
           <Link
-            to={`/lms/line/${deptId}/${subDeptId}`}
-            className="hover:text-[#6F4AE7] hover:underline"
+            to={paths.subDepartments(deptId)}
+            className="hover:text-[#0d9488] hover:underline"
           >
             {subDepartment.name}
           </Link>
           <span>/</span>
-          <span className="font-semibold text-[#26364d]">{line.name}</span>
+          <Link
+            to={paths.lines(deptId, subDeptId)}
+            className="hover:text-[#0d9488] hover:underline"
+          >
+            {line.name}
+          </Link>
           <span>/</span>
-          <span>Machines</span>
+          <span className="font-semibold text-[#26364d]">Machines</span>
         </div>
 
-        <div className="overflow-hidden rounded-[17px] border border-[#e3e6eb] bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white/85 backdrop-blur-md shadow-[0_4px_24px_rgba(15,23,42,0.03)]">
           {/* HEADER */}
 
-          <div className="flex flex-col gap-4 border-b border-[#edf0f3] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-[18px]">
+          <div className="flex flex-col gap-4 border-b border-[#e2edf2] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-[18px]">
             <div className="flex items-center gap-3">
-              <div className="flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#6F4AE7] to-[#8b6ffe] text-white shadow-md shadow-[#6F4AE7]/30">
-                <Cpu size={21} />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 text-[#0d9488] shadow-xs">
+                <Cpu size={20} className="text-[#0d9488]" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-[15px] font-bold">
+                <h1 className="text-[15px] font-bold text-[#0f172a]">
                   Machines: {line.name}
                 </h1>
-                <p className="mt-0.5 text-xs text-[#718096]">
+                <p className="mt-0.5 text-xs text-[#64748b]">
                   Manage machines within this line
                 </p>
               </div>
@@ -286,8 +461,8 @@ export default function Machine() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => navigate(`/lms/line/${deptId}/${subDeptId}`)}
-                className="flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#e3e6eb] bg-white px-4 text-xs font-semibold text-[#718096] transition hover:bg-[#f7f8fa] sm:flex-none"
+                onClick={() => navigate(paths.lines(deptId, subDeptId))}
+                className="flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-4 text-xs font-semibold text-[#64748b] transition hover:bg-[#f0f9f8] hover:border-[#0d9488] hover:text-[#0d9488] sm:flex-none shadow-xs"
               >
                 <ArrowLeft size={15} />
                 Back to Lines
@@ -295,7 +470,7 @@ export default function Machine() {
 
               <button
                 onClick={openAddModal}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#6c4ce8] to-[#8b6ffe] px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-[#6c4ce8]/20 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#6c4ce8]/30 sm:flex-none"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all sm:flex-none"
               >
                 <Plus size={15} />
                 Add Machine
@@ -310,7 +485,7 @@ export default function Machine() {
               <p className="text-[11px] font-semibold uppercase tracking-wide text-[#9aa3af]">
                 Line Name
               </p>
-              <p className="mt-1 text-lg font-bold text-[#6F4AE7]">
+              <p className="mt-1 text-lg font-bold text-[#0f172a]">
                 {line.name}
               </p>
             </div>
@@ -337,7 +512,7 @@ export default function Machine() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search machines..."
-                className="h-9 w-full rounded-lg border border-[#d5d9df] bg-[#f7f8fa] pl-9 pr-3 text-[13px] outline-none transition focus:border-[#6F4AE7] focus:bg-white"
+                className="h-9 w-full rounded-xl border border-[#e2edf2] bg-white pl-9 pr-3 text-[13px] text-[#0f172a] outline-none transition focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15"
               />
             </div>
 
@@ -381,7 +556,7 @@ export default function Machine() {
                           <p className="mb-4 text-sm">No machines found.</p>
                           <button
                             onClick={openAddModal}
-                            className="flex items-center gap-2 rounded-lg bg-[#6F4AE7] px-4 py-2 text-xs font-semibold text-white"
+                            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all"
                           >
                             <Plus size={15} />
                             Add Machine
@@ -397,7 +572,7 @@ export default function Machine() {
                           className="border-b border-[#edf0f2] last:border-0 hover:bg-[#fafaff]"
                         >
                           <td className="border-r border-[#edf0f2] px-3 py-3 last:border-r-0 sm:px-4">
-                            <span className="inline-flex rounded-full bg-[#f0ecff] px-2.5 py-1 text-[12px] font-semibold text-[#6F4AE7]">
+                            <span className="inline-flex rounded-full bg-[#e6f7f5] border border-[#0d9488]/20 px-2.5 py-1 text-[12px] font-semibold text-[#0d9488]">
                               #{machine.displayId}
                             </span>
                           </td>
@@ -411,7 +586,7 @@ export default function Machine() {
                               <button
                                 title="Edit machine"
                                 onClick={() => openEditModal(machine)}
-                                className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#f0ecff] text-[#6F4AE7] transition hover:bg-[#e6dfff]"
+                                className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#f8fafc] border border-[#e2edf2] text-[#0f172a] transition hover:bg-[#e6f7f5] hover:text-[#0d9488]"
                               >
                                 <Pencil size={15} />
                               </button>
@@ -471,7 +646,7 @@ export default function Machine() {
                 }
                 onKeyDown={(event) => event.key === "Enter" && saveMachine()}
                 placeholder="Enter machine name"
-                className="h-11 w-full rounded-lg border border-[#d5d9df] px-3 text-sm outline-none focus:border-[#6F4AE7]"
+                className="h-11 w-full rounded-xl border border-[#e2edf2] px-3 text-sm outline-none focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15"
               />
 
               <div className="mt-6 flex flex-col-reverse gap-2 border-t border-[#e3e6eb] pt-4 sm:flex-row sm:justify-end">
@@ -483,7 +658,8 @@ export default function Machine() {
                 </button>
                 <button
                   onClick={saveMachine}
-                  className="rounded-lg bg-[#6F4AE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5A38D6]"
+                  disabled={saving}
+                  className="rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all"
                 >
                   Save
                 </button>
@@ -528,7 +704,7 @@ export default function Machine() {
                 }
                 onKeyDown={(event) => event.key === "Enter" && saveEdit()}
                 placeholder="Enter machine name"
-                className="h-11 w-full rounded-lg border border-[#d5d9df] px-3 text-sm outline-none focus:border-[#6F4AE7]"
+                className="h-11 w-full rounded-xl border border-[#e2edf2] px-3 text-sm outline-none focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15"
               />
 
               <div className="mt-6 flex flex-col-reverse gap-2 border-t border-[#e3e6eb] pt-4 sm:flex-row sm:justify-end">
@@ -540,7 +716,8 @@ export default function Machine() {
                 </button>
                 <button
                   onClick={saveEdit}
-                  className="rounded-lg bg-[#6F4AE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5A38D6]"
+                  disabled={saving}
+                  className="rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all"
                 >
                   Save
                 </button>
@@ -588,6 +765,7 @@ export default function Machine() {
                 </button>
                 <button
                   onClick={confirmDelete}
+                  disabled={saving}
                   className="rounded-lg bg-[#fff0ee] px-4 py-2.5 text-xs font-semibold text-[#e74c3c]"
                 >
                   Delete

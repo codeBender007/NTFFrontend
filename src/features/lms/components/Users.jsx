@@ -1,7 +1,11 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  ChevronLeft,
+  ChevronRight,
   CirclePlus,
+  Eye,
+  EyeOff,
   Pencil,
   Search,
   Trash2,
@@ -13,35 +17,186 @@ import * as XLSX from "xlsx";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import Filters from "../../../components/Filters";
 import {
-  USERS_STORAGE_KEY,
-  createId,
   filterUsers,
   getUserDepartmentOptions,
   EMPTY_USER_FORM,
   USER_FORM_FIELDS,
   USER_COLUMNS,
   USER_DATE_KEYS,
-  loadUsers,
 } from "../utils/userUtils";
 import { formatDate } from "../utils/operatorUtils";
+import UserApi from "../services/UserApi";
+
+const ITEMS_PER_PAGE = 10;
+
+// The backend caps a page at 1000 rows by default (100). The existing UI does
+// its own search/pagination across the full list, so request the maximum page.
+const MAX_USERS_PAGE = 1000;
 
 const inputClass =
-  "h-11 w-full rounded-lg border border-[#d5d9df] px-3 text-sm outline-none transition focus:border-[#6F4AE7]";
+  "h-11 w-full rounded-xl border border-[#e2edf2] px-3 text-sm outline-none transition focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15";
+
+const getApiErrorMessage = (error, fallback) => {
+  const detail = error?.response?.data?.detail;
+
+  if (typeof detail === "string" && detail.trim()) return detail;
+
+  if (Array.isArray(detail) && detail.length) {
+    const messages = detail.map((item) => item?.msg).filter(Boolean);
+    if (messages.length) return messages.join(", ");
+  }
+
+  return error?.response?.data?.message || fallback;
+};
+
+const asNullable = (value) => {
+  const text = typeof value === "string" ? value.trim() : value;
+  return text === "" || text === undefined ? null : text;
+};
+
+// Map the backend user response onto the shape the table/form already use.
+const mapUserFromApi = (user) => {
+  const isInactive = user.active === false || user.active === 0;
+  const isLeft = Boolean(user.leavingDate);
+  const status = isInactive ? "Inactive" : isLeft ? "Left" : "Active";
+
+  return {
+    id: user.id,
+    plantId: user.plantId ?? "",
+    departmentId: user.departmentId ?? "",
+    subDepartmentId: user.subDepartmentId ?? "",
+    lineId: user.lineId ?? "",
+    machineId: user.machineId ?? "",
+    active: !isInactive,
+    status,
+
+    sno: user.sno ?? "",
+    payCode: user.payCode ?? "",
+    cardNo: user.cardNo ?? "",
+    empName: user.empName ?? "",
+    fatherName: user.fatherName ?? "",
+    dob: user.dob ?? "",
+    joiningDate: user.dateOfJoining ?? "",
+    leavingDate: user.leavingDate ?? "",
+    companyName: user.companyName ?? "",
+    department: user.departmentName ?? "",
+    subDepartment: user.subDepartmentName ?? "",
+    line: user.lineName ?? "",
+    machine: user.machineName ?? "",
+    shift: user.shift ?? "",
+    plant: user.plantId != null ? String(user.plantId) : "",
+    plantLocation: user.plantLocation ?? "",
+    grade: user.grade ?? "",
+    designation: user.designation ?? "",
+    category: user.category ?? "",
+    gender: user.gender ?? "",
+    bloodGroup: user.bloodGroup ?? "",
+    maritalStatus: user.maritalStatus ?? "",
+    email: user.email ?? "",
+    number: user.mobileNo ?? "",
+    isDojo: user.isDojo ? "Yes" : "No",
+    firstOfDate: user.firstOfDay ?? "",
+    skillLevel: user.skillLevel ?? "",
+    salary: user.salary != null ? String(user.salary) : "",
+  };
+};
+
+const mapUsersFromApi = (data) =>
+  (Array.isArray(data) ? data : []).map(mapUserFromApi);
+
+const USER_TABLE_COLUMNS = [
+  { label: "SNo", key: "sno" },
+  { label: "Status", key: "status" },
+  ...USER_COLUMNS.filter((column) => column.key !== "sno" && column.key !== "status"),
+];
+
+const buildCreatePayload = (form) => {
+  const payload = {
+    payCode: String(form.payCode || "").trim(),
+    cardNo: asNullable(form.cardNo),
+    empName: String(form.empName || "").trim(),
+    fatherName: asNullable(form.fatherName),
+    dob: asNullable(form.dob),
+    dateOfJoining: asNullable(form.joiningDate),
+    leavingDate: asNullable(form.leavingDate),
+    companyName: asNullable(form.companyName),
+    departmentName: asNullable(form.department),
+    subDepartmentName: asNullable(form.subDepartment),
+    lineName: asNullable(form.line),
+    machineName: asNullable(form.machine),
+    shift: asNullable(form.shift),
+    plantLocation: asNullable(form.plantLocation),
+    grade: asNullable(form.grade),
+    designation: asNullable(form.designation),
+    category: asNullable(form.category),
+    gender: asNullable(form.gender),
+    bloodGroup: asNullable(form.bloodGroup),
+    maritalStatus: asNullable(form.maritalStatus),
+    email: asNullable(form.email),
+    mobileNo: asNullable(form.number),
+    isDojo: form.isDojo === "Yes",
+    firstOfDay: asNullable(form.firstOfDate),
+    skillLevel: asNullable(form.skillLevel),
+    salary: asNullable(form.salary) === null ? null : Number(form.salary),
+  };
+
+  const plantId = Number(form.plant);
+  if (asNullable(form.plant) !== null && Number.isFinite(plantId)) {
+    payload.plantId = plantId;
+  }
+
+  const password = asNullable(form.password);
+  if (password !== null) payload.password = password;
+
+  return payload;
+};
+
+const buildUpdatePayload = (form) => {
+  const payload = {
+    empName: String(form.empName || "").trim(),
+    plantLocation: asNullable(form.plantLocation),
+    departmentName: asNullable(form.department),
+    subDepartmentName: asNullable(form.subDepartment),
+    lineName: asNullable(form.line),
+    machineName: asNullable(form.machine),
+    shift: asNullable(form.shift),
+    designation: asNullable(form.designation),
+    skillLevel: asNullable(form.skillLevel),
+    isDojo: form.isDojo === "Yes",
+    mobileNo: asNullable(form.number),
+    email: asNullable(form.email),
+  };
+
+  const plantId = Number(form.plant);
+  if (asNullable(form.plant) !== null && Number.isFinite(plantId)) {
+    payload.plantId = plantId;
+  }
+
+  return payload;
+};
 
 const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
   const navigate = useNavigate();
 
-  const [localUsers, setLocalUsers] = useState(loadUsers);
+  const [localUsers, setLocalUsers] = useState([]);
 
   const users = propUsers ?? localUsers;
   const setUsers = propSetUsers ?? setLocalUsers;
 
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
   const [filterValues, setFilterValues] = useState({});
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [form, setForm] = useState(EMPTY_USER_FORM);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -57,12 +212,50 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     }, 2500);
   };
 
+  /* ===================== LOAD USERS FROM API ===================== */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchUsers = async () => {
+      setLoading(true);
+      setLoadError("");
+
+      try {
+        const response = await UserApi.getUsers({ limit: MAX_USERS_PAGE });
+        if (!cancelled) setUsers(mapUsersFromApi(response.data));
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(
+            getApiErrorMessage(error, "Unable to load users. Please try again."),
+          );
+        }
+        console.error("Get users API error:", error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchUsers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey, setUsers]);
+
+  const refreshUsers = async () => {
+    const response = await UserApi.getUsers({ limit: MAX_USERS_PAGE });
+    setUsers(mapUsersFromApi(response.data));
+  };
+
   /* ===================== UPLOAD EXCEL ===================== */
 
   const handleFileUpload = async (event) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
+
+    setUploading(true);
 
     try {
       const buffer = await file.arrayBuffer();
@@ -75,60 +268,30 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
         return;
       }
 
-      const normalizeHeader = (value) =>
-        String(value)
-          .toLowerCase()
-          .replace(/\s+/g, "");
+      const formData = new FormData();
+      formData.append("file", file);
 
-      const headerAliases = new Map(
-        USER_COLUMNS.map((column) => [
-          normalizeHeader(column.label),
-          column.key,
-        ]),
-      );
+      const response = await UserApi.uploadExcel(formData);
+      const summary = response.data || {};
 
-      const parsedUsers = rows
-        .map((row) => {
-          const user = { ...EMPTY_USER_FORM };
-
-          Object.keys(row).forEach((header) => {
-            const key = headerAliases.get(normalizeHeader(header));
-
-            if (key) user[key] = row[header] ?? "";
-          });
-
-          return user;
-        })
-        .filter((user) => String(user.empName || "").trim());
-
-      if (!parsedUsers.length) {
-        showToast("No valid employee rows found in the Excel file.");
-        return;
-      }
-
-      const baseSno = users.length;
-      const next = [
-        ...users,
-        ...parsedUsers.map((user, index) => ({
-          ...user,
-          id: createId("user"),
-          sno: baseSno + index + 1,
-        })),
-      ];
-
-      setUsers(next);
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next));
-      showToast(`${parsedUsers.length} user(s) imported successfully.`);
-    } catch {
+      await refreshUsers();
       showToast(
-        "Failed to read the Excel file. Please upload a valid .xlsx or .xls file.",
+        `Import complete: ${summary.inserted ?? 0} added, ${
+          summary.updated ?? 0
+        } updated.`,
       );
+    } catch (error) {
+      showToast(
+        getApiErrorMessage(error, "Failed to import the Excel file."),
+      );
+      console.error("Excel upload API error:", error);
     } finally {
+      setUploading(false);
       event.target.value = "";
     }
   };
 
-  /* ===================== TABLE DATA ===================== */
+  /* ===================== TABLE DATA & PAGINATION ===================== */
 
   const departmentOptions = getUserDepartmentOptions(users);
 
@@ -136,6 +299,43 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     search,
     department: filterValues.department,
   });
+
+  const totalPages = Math.max(1, Math.ceil(tableRows.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedRows = tableRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    if (safeCurrentPage <= 4) {
+      return [1, 2, 3, 4, 5, "...", totalPages];
+    }
+
+    if (safeCurrentPage >= totalPages - 3) {
+      return [
+        1,
+        "...",
+        totalPages - 4,
+        totalPages - 3,
+        totalPages - 2,
+        totalPages - 1,
+        totalPages,
+      ];
+    }
+
+    return [
+      1,
+      "...",
+      safeCurrentPage - 1,
+      safeCurrentPage,
+      safeCurrentPage + 1,
+      "...",
+      totalPages,
+    ];
+  };
 
   /* ===================== FORM MODAL ===================== */
 
@@ -157,12 +357,14 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     };
 
     setForm(formWithSno);
+    setShowPassword(false);
     setFormModalOpen(true);
   };
 
   const openEditModal = (user) => {
     setEditingUser(user);
-    setForm(user);
+    setForm({ ...user, password: "" });
+    setShowPassword(false);
     setFormModalOpen(true);
   };
 
@@ -170,37 +372,49 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     navigate(`/lms/user/${user.id}`);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (saving) return;
+
     const empName = form.empName?.trim();
+    const payCode = form.payCode?.trim();
     const email = form.email?.trim();
+    const nextForm = { ...form, empName, email, payCode };
 
     if (!empName) {
       showToast("Please enter employee name.");
       return;
     }
 
-    if (editingUser) {
-      const next = users.map((user) =>
-        user.id === editingUser.id
-          ? { ...user, ...form, empName, email }
-          : user,
-      );
-
-      setUsers(next);
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next));
-      showToast("User updated successfully.");
-    } else {
-      const next = [
-        ...users,
-        { id: createId("user"), ...form, sno: users.length + 1, empName, email },
-      ];
-
-      setUsers(next);
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next));
-      showToast("User added successfully.");
+    if (!editingUser && !payCode) {
+      showToast("Please enter pay code.");
+      return;
     }
 
-    setFormModalOpen(false);
+    setSaving(true);
+
+    try {
+      if (editingUser) {
+        await UserApi.updateUser(
+          editingUser.id,
+          buildUpdatePayload(nextForm),
+        );
+        await refreshUsers();
+        showToast("User updated successfully.");
+      } else {
+        await UserApi.createUser(buildCreatePayload(nextForm));
+        await refreshUsers();
+        showToast("User added successfully.");
+      }
+
+      setFormModalOpen(false);
+    } catch (error) {
+      showToast(
+        getApiErrorMessage(error, "Failed to save the user. Please try again."),
+      );
+      console.error("Save user API error:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   /* ===================== DELETE ===================== */
@@ -210,17 +424,40 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     setDeleteModalOpen(true);
   };
 
-  const handleDelete = () => {
-    if (!deleteTarget) return;
+  const handleDelete = async () => {
+    if (!deleteTarget || saving) return;
 
-    const next = users.filter((user) => user.id !== deleteTarget.id);
+    setSaving(true);
 
-    setUsers(next);
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next));
-    showToast("User deleted successfully.");
+    try {
+      const response = await UserApi.deleteUser(deleteTarget.id);
 
-    setDeleteModalOpen(false);
-    setDeleteTarget(null);
+      // Immediately mark user as Inactive in local state so the table reflects the status right away
+      setUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === deleteTarget.id
+            ? { ...u, active: false, status: "Inactive" }
+            : u,
+        ),
+      );
+
+      // Refresh authoritative list from backend to confirm database state
+      await refreshUsers();
+      showToast(response?.data?.message || "User deactivated successfully.");
+
+      setDeleteModalOpen(false);
+      setDeleteTarget(null);
+    } catch (error) {
+      showToast(
+        getApiErrorMessage(
+          error,
+          "Unable to delete the user. Please try again.",
+        ),
+      );
+      console.error("Delete user API error:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renderFormField = (field) => {
@@ -246,6 +483,29 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       );
     }
 
+    if (field.type === "password") {
+      return (
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            value={value}
+            onChange={setFormField(field.key)}
+            placeholder={field.placeholder}
+            className={`${inputClass} pr-11`}
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowPassword((previous) => !previous)}
+            title={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#64748b] transition hover:bg-[#f0f9f8] hover:text-[#0d9488]"
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+      );
+    }
+
     return (
       <input
         type={field.type || "text"}
@@ -262,19 +522,19 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
   return (
     <div className="text-[#26364d]">
       <section className="py-4">
-        <div className="overflow-hidden rounded-[17px] border border-[#e3e6eb] bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white/85 backdrop-blur-md shadow-[0_4px_24px_rgba(15,23,42,0.03)]">
           {/* PAGE HEADER */}
 
-          <div className="flex flex-col gap-4 border-b border-[#edf0f3] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-[18px]">
+          <div className="flex flex-col gap-4 border-b border-[#e2edf2] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-[18px]">
             <div className="flex items-center gap-3">
-              <div className="flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-xl bg-[#6F4AE7] text-white">
-                <ManageAccountsOutlinedIcon sx={{ fontSize: 21 }} />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 text-[#0d9488] shadow-xs">
+                <ManageAccountsOutlinedIcon sx={{ fontSize: 20, color: "#0d9488" }} />
               </div>
 
               <div className="min-w-0">
-                <h1 className="text-[15px] font-bold">Users Management</h1>
+                <h1 className="text-[15px] font-bold text-[#0f172a]">Users Management</h1>
 
-                <p className="mt-0.5 text-xs text-[#718096]">
+                <p className="mt-0.5 text-xs text-[#64748b]">
                   Manage users, access and account status
                 </p>
               </div>
@@ -291,7 +551,8 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#D5D9DF] bg-white px-4 py-2.5 text-xs font-semibold text-[#344054] transition hover:bg-[#F9FAFB] sm:w-auto"
+                disabled={uploading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#e2edf2] bg-white px-4 py-2.5 text-xs font-semibold text-[#0f172a] transition hover:bg-[#f0f9f8] hover:border-[#0d9488] hover:text-[#0d9488] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto shadow-xs"
               >
                 <UploadCloud size={16} />
                 Upload Excel
@@ -299,7 +560,7 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
               <button
                 onClick={openAddModal}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#6F4AE7] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#5A38D6] sm:w-auto"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all sm:w-auto"
               >
                 <CirclePlus size={16} />
                 Add User
@@ -312,12 +573,10 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
           <div className="m-4 sm:m-5">
             <Filters
               values={filterValues}
-              onChange={setFilterValues}
-              departmentOptions={departmentOptions}
-              subDepartmentOptions={["Sub 1", "Sub 2", "Sub 3"]}
-              lineOptions={["Line 1", "Line 2", "Line 3"]}
-              machineOptions={["Morning", "Evening", "Night"]}
-              machineLabel="Shift"
+              onChange={(values) => {
+                setFilterValues(values);
+                setCurrentPage(1);
+              }}
             />
           </div>
 
@@ -339,9 +598,12 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
                 <input
                   value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                    setCurrentPage(1);
+                  }}
                   placeholder="Search..."
-                  className="h-9 w-full rounded-lg border border-[#d5d9df] bg-[#f7f8fa] pl-9 pr-3 text-[13px] outline-none transition focus:border-[#6F4AE7] focus:bg-white"
+                  className="h-9 w-full rounded-xl border border-[#e2edf2] bg-white pl-9 pr-3 text-[13px] text-[#0f172a] outline-none transition focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15"
                 />
               </div>
             </div>
@@ -353,7 +615,7 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                 <thead>
                   <tr className="bg-[#f5f6f8]">
                     {[
-                      ...USER_COLUMNS.map((column) => column.label),
+                      ...USER_TABLE_COLUMNS.map((column) => column.label),
                       "Actions",
                     ].map((column) => (
                       <th
@@ -367,9 +629,33 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                 </thead>
 
                 <tbody>
-                  {tableRows.length === 0 ? (
+                  {loading ? (
                     <tr>
-                      <td colSpan={USER_COLUMNS.length + 1} className="p-0">
+                      <td colSpan={USER_TABLE_COLUMNS.length + 1} className="p-0">
+                        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                          <UsersIcon size={42} className="mb-3 animate-pulse opacity-40" />
+                          <p className="text-sm">Loading users...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : loadError ? (
+                    <tr>
+                      <td colSpan={USER_TABLE_COLUMNS.length + 1} className="p-0">
+                        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                          <UsersIcon size={42} className="mb-3 opacity-40" />
+                          <p className="mb-4 text-sm text-[#e74c3c]">{loadError}</p>
+                          <button
+                            onClick={() => setReloadKey((key) => key + 1)}
+                            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : tableRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={USER_TABLE_COLUMNS.length + 1} className="p-0">
                         <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                           <UsersIcon size={42} className="mb-3 opacity-40" />
 
@@ -377,7 +663,7 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
                           <button
                             onClick={openAddModal}
-                            className="flex items-center gap-2 rounded-lg bg-[#6F4AE7] px-4 py-2 text-xs font-semibold text-white"
+                            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all"
                           >
                             <CirclePlus size={15} />
                             Add User
@@ -386,58 +672,170 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                       </td>
                     </tr>
                   ) : (
-                    tableRows.map((user, index) => (
-                      <tr
-                        key={user.id}
-                        className="group border-b border-[#edf0f2] last:border-0 hover:bg-[#fafaff]"
-                      >
-                        {USER_COLUMNS.map((column) => (
-                          <td
-                            key={column.key}
-                            className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4"
-                          >
-                            {column.key === "sno" ? (
-                              index + 1
-                            ) : column.key === "empName" ? (
+                    paginatedRows.map((user, index) => {
+                      const isInactive = user.active === false || user.status === "Inactive";
+
+                      return (
+                        <tr
+                          key={user.id}
+                          className={`group border-b border-[#edf0f2] last:border-0 transition-colors ${
+                            isInactive
+                              ? "bg-[#f8f9fa] opacity-80 hover:bg-[#f1f3f5]"
+                              : "hover:bg-[#fafaff]"
+                          }`}
+                        >
+                          {USER_TABLE_COLUMNS.map((column) => (
+                            <td
+                              key={column.key}
+                              className={`border-r border-[#edf0f2] px-3 py-3 text-[14px] last:border-r-0 sm:px-4 ${
+                                isInactive ? "text-[#8a99ad]" : "text-[#44556c]"
+                              }`}
+                            >
+                              {column.key === "sno" ? (
+                                startIndex + index + 1
+                              ) : column.key === "status" ? (
+                                isInactive ? (
+                                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-300 bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600 shadow-2xs">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                                    Inactive
+                                  </span>
+                                ) : user.status === "Left" ? (
+                                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 shadow-2xs">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                    Left
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 shadow-2xs">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Active
+                                  </span>
+                                )
+                              ) : column.key === "empName" ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleViewUser(user)}
+                                    className={`font-semibold transition hover:underline ${
+                                      isInactive
+                                        ? "text-gray-500 hover:text-gray-700"
+                                        : "text-[#0f172a] hover:text-[#0d9488]"
+                                    }`}
+                                  >
+                                    {user[column.key]}
+                                  </button>
+                                  {isInactive && (
+                                    <span className="rounded bg-gray-100 border border-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
+                                      Inactive
+                                    </span>
+                                  )}
+                                </div>
+                              ) : USER_DATE_KEYS.includes(column.key) ? (
+                                formatDate(user[column.key])
+                              ) : (
+                                user[column.key] || "-"
+                              )}
+                            </td>
+                          ))}
+
+                          <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
+                            <div className="flex gap-2">
                               <button
-                                type="button"
-                                onClick={() => handleViewUser(user)}
-                                className="font-semibold text-[#344760] transition hover:text-[#6F4AE7] hover:underline"
+                                title="Edit user"
+                                onClick={() => openEditModal(user)}
+                                className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#f8fafc] border border-[#e2edf2] text-[#0f172a] transition hover:bg-[#e6f7f5] hover:text-[#0d9488]"
                               >
-                                {user[column.key]}
+                                <Pencil size={15} />
                               </button>
-                            ) : USER_DATE_KEYS.includes(column.key) ? (
-                              formatDate(user[column.key])
-                            ) : (
-                              user[column.key] || "-"
-                            )}
+
+                              <button
+                                title={isInactive ? "User is already inactive" : "Delete user"}
+                                disabled={isInactive}
+                                onClick={() => openDeleteModal(user)}
+                                className={`flex h-[34px] w-[34px] items-center justify-center rounded-lg transition ${
+                                  isInactive
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 opacity-60"
+                                    : "bg-[#fff0ee] text-[#e74c3c] hover:bg-[#ffe3df]"
+                                }`}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
                           </td>
-                        ))}
-
-                        <td className="border-r border-[#edf0f2] px-3 py-3 text-[14px] text-[#44556c] last:border-r-0 sm:px-4">
-                          <div className="flex gap-2">
-                            <button
-                              title="Edit user"
-                              onClick={() => openEditModal(user)}
-                              className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#f0ecff] text-[#6F4AE7] transition hover:bg-[#e6dfff]"
-                            >
-                              <Pencil size={15} />
-                            </button>
-
-                            <button
-                              title="Delete user"
-                              onClick={() => openDeleteModal(user)}
-                              className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#fff0ee] text-[#e74c3c] transition hover:bg-[#ffe3df]"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* PAGINATION */}
+            <div className="flex flex-col gap-3 border-t border-[#edf0f3] px-4 py-3.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
+              <p className="text-xs text-[#64748b]">
+                Showing{" "}
+                <span className="font-semibold text-[#0f172a]">
+                  {tableRows.length === 0 ? 0 : startIndex + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-semibold text-[#0f172a]">
+                  {Math.min(startIndex + ITEMS_PER_PAGE, tableRows.length)}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-[#0f172a]">
+                  {tableRows.length}
+                </span>{" "}
+                users
+              </p>
+
+              <div className="flex flex-wrap items-center gap-1">
+                <button
+                  type="button"
+                  disabled={safeCurrentPage === 1}
+                  onClick={() =>
+                    setCurrentPage(Math.max(1, safeCurrentPage - 1))
+                  }
+                  className="flex h-8 items-center gap-1 rounded-lg border border-[#e2edf2] px-2.5 text-xs font-medium text-[#64748b] transition hover:bg-[#f0f9f8] hover:border-[#0d9488] hover:text-[#0d9488] disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
+                >
+                  <ChevronLeft size={13} />
+                  Previous
+                </button>
+
+                {getPageNumbers().map((page, index) =>
+                  page === "..." ? (
+                    <span
+                      key={`ellipsis-${index}`}
+                      className="flex h-8 min-w-8 items-center justify-center px-1 text-xs text-[#94a3b8]"
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold transition ${
+                        safeCurrentPage === page
+                          ? "bg-[#0d9488] text-white shadow-xs"
+                          : "border border-[#e2edf2] text-[#64748b] hover:bg-[#f0f9f8] hover:border-[#0d9488] hover:text-[#0d9488]"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                )}
+
+                <button
+                  type="button"
+                  disabled={safeCurrentPage === totalPages}
+                  onClick={() =>
+                    setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))
+                  }
+                  className="flex h-8 items-center gap-1 rounded-lg border border-[#e2edf2] px-2.5 text-xs font-medium text-[#64748b] transition hover:bg-[#f0f9f8] hover:border-[#0d9488] hover:text-[#0d9488] disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
+                >
+                  Next
+                  <ChevronRight size={13} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -504,7 +902,8 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
                 <button
                   onClick={handleSubmit}
-                  className="rounded-lg bg-[#6F4AE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5A38D6]"
+                  disabled={saving}
+                  className="rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {editingUser ? "Save Changes" : "Save"}
                 </button>
@@ -539,11 +938,11 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
             <div className="max-h-[65vh] overflow-y-auto p-5">
               <div className="text-sm leading-6 text-gray-600">
-                Are you sure you want to delete{" "}
+                Are you sure you want to deactivate{" "}
                 <strong className="text-gray-900">
                   "{deleteTarget?.empName}"
                 </strong>
-                ?
+                ? The user will be marked as inactive and retained for historical records.
               </div>
 
               <div className="mt-6 flex flex-col-reverse gap-2 border-t border-[#e3e6eb] pt-4 sm:flex-row sm:justify-end">
@@ -556,9 +955,10 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
                 <button
                   onClick={handleDelete}
-                  className="rounded-lg bg-[#fff0ee] px-4 py-2.5 text-xs font-semibold text-[#e74c3c]"
+                  disabled={saving}
+                  className="rounded-lg bg-[#fff0ee] px-4 py-2.5 text-xs font-semibold text-[#e74c3c] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Delete
+                  Deactivate User
                 </button>
               </div>
             </div>
@@ -569,7 +969,7 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       {/* TOAST */}
 
       {toast && (
-        <div className="fixed bottom-4 right-4 z-[1000] max-w-[calc(100vw-2rem)] rounded-lg border-l-4 border-[#5A38D6] bg-[#6F4AE7] px-5 py-3 text-xs font-medium text-white shadow-xl sm:bottom-6 sm:right-6">
+        <div className="fixed bottom-4 right-4 z-[1000] max-w-[calc(100vw-2rem)] rounded-xl border-l-4 border-[#0d9488] bg-[#0f172a] px-5 py-3 text-xs font-medium text-white shadow-xl sm:bottom-6 sm:right-6">
           {toast}
         </div>
       )}

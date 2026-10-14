@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import logo from "../assets/images/NTF_logo_black.png";
 import sidebarBg from "../assets/images/sidebar_bg.png";
-import { ChevronsLeft, ChevronsRight, LayoutGrid, LogOut } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, LayoutGrid, LogOut, Sparkles } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import AuthApi from "../features/auth/services/AuthApi";
+import { clearSession } from "../features/auth/utils/authStorage";
 
 const Sidebar = ({
   mobileOpen,
@@ -15,6 +17,17 @@ const Sidebar = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleLogout = async () => {
+    try {
+      await AuthApi.logout();
+    } catch {
+      // Always clear the local session, even if the server call fails
+    } finally {
+      clearSession();
+      navigate("/");
+    }
+  };
 
   // Desktop = Open
   // Mobile = Collapsed
@@ -53,13 +66,12 @@ const Sidebar = ({
 
       {/* Sidebar */}
       <aside
-        className={`relative flex h-screen flex-col overflow-hidden border-r border-gray-200 bg-gradient-to-b from-white via-white to-primary/5 shadow-xl transition-all duration-300 ${
-          collapsed ? "w-20" : "w-64"
-        }`}
+        className={`relative flex h-screen flex-col overflow-hidden border-r border-[#e2edf2] bg-white/90 backdrop-blur-md transition-all duration-300 ${collapsed ? "w-20" : "w-64"
+          }`}
       >
-        {/* Sidebar Background Image */}
+        {/* Sidebar Background Image - Subtle overlay */}
         <div
-          className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
           style={{
             backgroundImage: `url(${sidebarBg})`,
           }}
@@ -69,9 +81,8 @@ const Sidebar = ({
         <div className="relative z-10 flex h-full flex-col">
           {/* Header */}
           <div
-            className={`flex h-16 shrink-0 items-center border-b border-gray-100 ${
-              collapsed ? "justify-center px-2" : "justify-between px-4"
-            }`}
+            className={`flex h-16 shrink-0 items-center border-b border-[#e2edf2] ${collapsed ? "justify-center px-2" : "justify-between px-4"
+              }`}
           >
             {/* Logo */}
             {!collapsed && (
@@ -80,7 +91,7 @@ const Sidebar = ({
                   <img
                     src={logo}
                     alt="NTF Logo"
-                    className="h-16 object-contain drop-shadow-sm"
+                    className="h-12 object-contain"
                   />
                 </div>
               </div>
@@ -96,13 +107,13 @@ const Sidebar = ({
                   setMobileOpen(false);
                 }
               }}
-              className="flex h-9 w-9 items-center justify-center rounded-lg p-2 text-primary transition-all hover:bg-primary/10 hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e2edf2] bg-white p-2 text-[#64748b] transition-all hover:bg-[#e6f7f5] hover:text-[#0d9488] shadow-xs"
               title={collapsed ? "Expand" : "Collapse"}
             >
               {collapsed ? (
-                <ChevronsRight size={20} />
+                <ChevronsRight size={18} />
               ) : (
-                <ChevronsLeft size={20} />
+                <ChevronsLeft size={18} />
               )}
             </button>
           </div>
@@ -111,32 +122,30 @@ const Sidebar = ({
           <div className="px-3 pt-3">
             <button
               onClick={() => navigate("/home")}
-              className={`group relative flex w-full items-center rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 py-2.5 transition-all duration-200 hover:border-primary/30 hover:from-primary/15 hover:to-primary/10 ${
-                collapsed ? "justify-center" : "gap-3 px-3"
-              }`}
-              title="Back to Home"
+              className={`group relative flex w-full items-center rounded-2xl border border-[#e2edf2] bg-white/80 py-2.5 transition-all duration-200 hover:border-[#0d9488]/40 hover:bg-[#e6f7f5]/40 shadow-xs ${collapsed ? "justify-center" : "gap-3 px-3"
+                }`}
+              title="Back to Home Portal"
             >
               {/* Portal Icon */}
               <div
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary-light to-primary-dark text-white shadow-md shadow-primary/30 ${
-                  collapsed ? "mx-auto" : ""
-                }`}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] text-white shadow-xs ${collapsed ? "mx-auto" : ""
+                  }`}
               >
                 <LayoutGrid size={18} />
               </div>
 
               {/* Portal Text */}
               {!collapsed && (
-                <span className="whitespace-nowrap text-sm font-bold text-primary">
-                  PORTAL (Switch)
+                <span className="whitespace-nowrap text-xs font-bold uppercase tracking-wider text-[#0f172a]">
+                  Home Portal
                 </span>
               )}
 
               {/* Tooltip when Collapsed */}
               {collapsed && (
                 <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                  <div className="whitespace-nowrap rounded-lg bg-dark px-3 py-1.5 text-xs font-medium text-white shadow-lg">
-                    PORTAL (Switch)
+                  <div className="whitespace-nowrap rounded-xl bg-[#0f172a] px-3 py-1.5 text-xs font-medium text-white shadow-lg">
+                    Home Portal
                   </div>
                 </div>
               )}
@@ -148,15 +157,13 @@ const Sidebar = ({
             {menuItems.map((item) => {
               const active =
                 activeMenu === item.name ||
-                (item.path && location.pathname === item.path);
+                (item.path && location.pathname === item.path) ||
+                (item.path &&
+                  item.path !== "/lms" &&
+                  location.pathname.startsWith(item.path));
 
               return (
                 <div key={item.name} className="group relative">
-                  {/* Active Indicator */}
-                  {active && !collapsed && (
-                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-primary-light to-primary-dark" />
-                  )}
-
                   {/* Menu Button */}
                   <button
                     onClick={() => {
@@ -172,21 +179,18 @@ const Sidebar = ({
                         setMobileOpen(false);
                       }
                     }}
-                    className={`flex w-full items-center rounded-xl py-2.5 transition-all duration-200 ${
-                      collapsed ? "justify-center" : "gap-3 px-3"
-                    } ${
-                      active
-                        ? "bg-gradient-to-r from-primary/15 to-primary/5 font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(111,74,231,0.15)]"
-                        : "text-gray-500 hover:bg-primary/5 hover:text-primary"
-                    }`}
+                    className={`flex w-full items-center rounded-2xl py-2.5 transition-all duration-200 ${collapsed ? "justify-center" : "gap-3 px-3"
+                      } ${active
+                        ? "bg-[#e6f7f5] font-semibold text-[#0d9488] shadow-xs"
+                        : "text-[#64748b] hover:bg-[#f0f9f8] hover:text-[#0d9488]"
+                      }`}
                   >
                     {/* Menu Icon */}
                     <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-200 ${
-                        active
-                          ? "bg-gradient-to-br from-primary-light to-primary-dark text-white shadow-md shadow-primary/30"
-                          : "bg-gray-100 text-gray-500 group-hover:bg-primary/10 group-hover:text-primary"
-                      } ${collapsed ? "mx-auto" : ""}`}
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${active
+                        ? "bg-white text-[#0d9488] shadow-xs"
+                        : "bg-[#f1f6f9] text-[#64748b] group-hover:bg-[#e6f7f5] group-hover:text-[#0d9488]"
+                        } ${collapsed ? "mx-auto" : ""}`}
                     >
                       {item.icon}
                     </div>
@@ -198,16 +202,16 @@ const Sidebar = ({
                       </span>
                     )}
 
-                    {/* Right Dot */}
-                    {!active && !collapsed && item.name && (
-                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-gray-200 transition-colors group-hover:bg-primary/40" />
+                    {/* Right Active Indicator Dot */}
+                    {!collapsed && active && (
+                      <span className="ml-auto h-2 w-2 rounded-full bg-[#0d9488]" />
                     )}
                   </button>
 
                   {/* Tooltip when Collapsed */}
                   {collapsed && (
                     <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                      <div className="whitespace-nowrap rounded-lg bg-dark px-3 py-1.5 text-xs font-medium text-white shadow-lg">
+                      <div className="whitespace-nowrap rounded-xl bg-[#0f172a] px-3 py-1.5 text-xs font-medium text-white shadow-lg">
                         {item.name}
                       </div>
                     </div>
@@ -217,24 +221,29 @@ const Sidebar = ({
             })}
           </nav>
 
-          {/* Logout Button */}
+          {/* Bottom Card & Logout */}
           <div className="mt-auto px-3 pb-4">
+            {!collapsed && (
+              <div className="mb-3 p-3 rounded-2xl bg-gradient-to-b from-[#f0fdfa] to-[#e6f7f5] border border-[#ccfbf1] text-center shadow-xs">
+                <div className="mx-auto mb-1.5 flex h-7 w-7 items-center justify-center rounded-xl bg-[#0d9488] text-white shadow-xs">
+                  <Sparkles size={14} />
+                </div>
+                <p className="text-xs font-bold text-[#0f172a]">NTF Operations</p>
+                <p className="mt-0.5 text-[10px] text-[#64748b]">Live data sync &amp; analytics</p>
+              </div>
+            )}
+
             <button
-              onClick={() => {
-                // Add your logout logic here
-                console.log("Logout clicked");
-              }}
-              className={`group relative flex w-full items-center rounded-xl py-2.5 transition-all duration-200 ${
-                collapsed ? "justify-center" : "gap-3 px-3"
-              } text-red-500 hover:bg-red-50 hover:text-red-600`}
+              onClick={handleLogout}
+              className={`group relative flex w-full items-center rounded-2xl py-2.5 transition-all duration-200 ${collapsed ? "justify-center" : "gap-3 px-3"
+                } text-[#64748b] hover:bg-[#fff1f2] hover:text-[#fb7185]`}
             >
               {/* Logout Icon */}
               <div
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-200 bg-red-100 text-red-500 group-hover:bg-red-200 group-hover:text-red-600 ${
-                  collapsed ? "mx-auto" : ""
-                }`}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 bg-[#f1f6f9] text-[#64748b] group-hover:bg-[#fff1f2] group-hover:text-[#fb7185] ${collapsed ? "mx-auto" : ""
+                  }`}
               >
-                <LogOut size={20} />
+                <LogOut size={18} />
               </div>
 
               {/* Logout Text */}
@@ -247,7 +256,7 @@ const Sidebar = ({
               {/* Tooltip when Collapsed */}
               {collapsed && (
                 <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                  <div className="whitespace-nowrap rounded-lg bg-dark px-3 py-1.5 text-xs font-medium text-white shadow-lg">
+                  <div className="whitespace-nowrap rounded-xl bg-[#0f172a] px-3 py-1.5 text-xs font-medium text-white shadow-lg">
                     Logout
                   </div>
                 </div>

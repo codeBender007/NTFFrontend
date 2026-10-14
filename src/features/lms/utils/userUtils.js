@@ -1,5 +1,5 @@
 import { unique } from "./operatorUtils";
-import { SEED_EMPLOYEES, USER_COLUMNS, hasUserShape } from "./userSchema";
+import { SEED_EMPLOYEES, USER_COLUMNS } from "./userSchema";
 
 export { createId } from "./operatorUtils";
 
@@ -15,24 +15,6 @@ export {
 
 export { SEED_EMPLOYEES, USER_COLUMNS };
 
-export const USERS_STORAGE_KEY = "lms_users_v2";
-
-export const SEED_USERS = SEED_EMPLOYEES;
-
-export const loadUsers = () => {
-  try {
-    const stored = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY));
-
-    if (hasUserShape(stored)) return stored;
-
-    localStorage.removeItem("lms_users");
-
-    return SEED_USERS;
-  } catch {
-    return SEED_USERS;
-  }
-};
-
 export const getUserDepartmentOptions = (users) =>
   unique([
     ...users.map((user) => user.department),
@@ -42,18 +24,61 @@ export const getUserDepartmentOptions = (users) =>
     "Admin",
   ]);
 
-export const filterUsers = (users, { search = "", department = "" } = {}) => {
+export const getUserMachineOptions = (users) =>
+  unique([
+    ...users.map((user) => user.machine),
+    "M/C 01",
+    "M/C 02",
+    "M/C 03",
+    "M/C 04",
+  ]);
+
+export const getUserShiftOptions = (users) =>
+  unique([
+    ...users.map((user) => user.shift),
+    "Shift A",
+    "Shift B",
+    "Shift C",
+  ]);
+
+export const filterUsers = (
+  users,
+  {
+    search = "",
+    department = "",
+    subDepartment = "",
+    line = "",
+    machine = "",
+    shift = "",
+  } = {},
+) => {
   const query = search.toLowerCase();
 
   return users.filter((user) => {
-    const text = USER_COLUMNS.map((column) => user[column.key])
+    const text = [
+      ...USER_COLUMNS.map((column) => user[column.key]),
+      user.status,
+      user.active === false ? "inactive deactivated" : "active",
+    ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
 
     const matchesText = !query || text.includes(query);
     const matchesDepartment = !department || user.department === department;
+    const matchesSubDepartment =
+      !subDepartment || user.subDepartment === subDepartment;
+    const matchesLine = !line || user.line === line;
+    const matchesMachine = !machine || user.machine === machine;
+    const matchesShift = !shift || user.shift === shift;
 
-    return matchesText && matchesDepartment;
+    return (
+      matchesText &&
+      matchesDepartment &&
+      matchesSubDepartment &&
+      matchesLine &&
+      matchesMachine &&
+      matchesShift
+    );
   });
 };

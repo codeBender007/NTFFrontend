@@ -305,16 +305,16 @@ const LinesTable = ({
   };
 
   return (
-    <div className="overflow-hidden rounded-[14px] border border-[#e3e6eb] bg-white">
+    <div className="overflow-hidden rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white/85 backdrop-blur-md shadow-[0_4px_24px_rgba(15,23,42,0.03)]">
       {/* HEADER */}
 
-      <div className="flex flex-col gap-3 border-b border-[#edf0f3] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-[18px]">
+      <div className="flex flex-col gap-3 border-b border-[#e2edf2] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-[18px]">
         <div>
-          <h4 className="text-[13px] font-bold text-[#26364d]">
+          <h4 className="text-[13px] font-bold text-[#0f172a]">
             Lines in this Section
           </h4>
 
-          <p className="mt-0.5 text-xs text-[#718096]">
+          <p className="mt-0.5 text-xs text-[#64748b]">
             {lines.length} line{lines.length !== 1 ? "s" : ""} assigned to this
             section
           </p>
@@ -323,7 +323,7 @@ const LinesTable = ({
         <button
           type="button"
           onClick={onAddLine}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#6c4ce8] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#5937d1] sm:w-auto"
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all sm:w-auto"
         >
           <Plus size={14} />
           Add Line
@@ -383,7 +383,7 @@ const LinesTable = ({
                     <button
                       type="button"
                       onClick={onAddLine}
-                      className="mt-2 text-xs font-semibold text-[#6c4ce8] hover:underline"
+                      className="mt-2 text-xs font-semibold text-[#0d9488] hover:underline"
                     >
                       + Add your first line
                     </button>
@@ -396,20 +396,19 @@ const LinesTable = ({
 
                 // Combine ids with the index to guarantee a unique key
                 // (line ids can currently be duplicated in the data).
-                const lineKey = `${deptId ?? "dept"}-${subDeptId ?? "subdept"}-${
-                  sectionId ?? "section"
-                }-${line?.id ?? "line"}-${index}`;
+                const lineKey = `${deptId ?? "dept"}-${subDeptId ?? "subdept"}-${sectionId ?? "section"
+                  }-${line?.id ?? "line"}-${index}`;
 
                 return (
                   <tr
                     key={lineKey}
-                    className="border-b border-[#edf0f2] bg-white last:border-0 hover:bg-[#fafaff]"
+                    className="border-b border-[#edf0f2] bg-white last:border-0 hover:bg-[#F7F7F5]"
                   >
                     <td className="px-3 py-3 sm:px-4">
                       <button
                         type="button"
                         onClick={() => handleLineClick(line, index)}
-                        className="text-left text-[14px] font-semibold text-[#344760] underline-offset-2 transition-colors duration-200 hover:text-[#6c4ce8] hover:underline"
+                        className="text-left text-[14px] font-semibold text-[#0f172a] underline-offset-2 transition-colors duration-200 hover:text-[#0d9488] hover:underline"
                       >
                         {line?.name || `Line ${index + 1}`}
                       </button>
@@ -460,7 +459,7 @@ const LinesTable = ({
                         <button
                           type="button"
                           onClick={() => onEditLine?.(line)}
-                          className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-[#f0ecff] text-[#6c4ce8] transition hover:bg-[#e6dfff]"
+                          className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg border border-[#e2edf2] bg-[#f8fafc] text-[#0f172a] transition hover:bg-[#e6f7f5] hover:text-[#0d9488]"
                           title="Edit Line"
                         >
                           <Pencil size={15} />

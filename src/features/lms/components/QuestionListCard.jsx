@@ -27,29 +27,29 @@ const QuestionListCard = ({
   }, [questions, search]);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden p-4 space-y-3 flex flex-col justify-between">
+    <div className="bg-white/85 backdrop-blur-md rounded-2xl md:rounded-3xl border border-[#e2edf2] shadow-[0_4px_24px_rgba(15,23,42,0.03)] overflow-hidden p-4 space-y-3 flex flex-col justify-between">
       <div className="space-y-3">
         {/* Header Title */}
-        <h2 className="text-sm font-bold text-gray-900">
+        <h2 className="text-sm font-bold text-[#0f172a]">
           Questions in {sectionName}
         </h2>
 
         {/* Search, Filter, & Add Q Row */}
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-9 rounded-xl border border-gray-200 bg-gray-50/50 px-2.5 flex items-center gap-2 focus-within:bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition">
+          <div className="flex-1 h-9 rounded-xl border border-[#e2edf2] bg-gray-50/50 px-2.5 flex items-center gap-2 focus-within:bg-white focus-within:border-[#0d9488] focus-within:ring-2 focus-within:ring-[#0d9488]/15 transition">
             <SearchOutlinedIcon sx={{ fontSize: 18, color: "#9CA3AF" }} />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search questions..."
-              className="w-full text-xs bg-transparent outline-none text-gray-800 placeholder:text-gray-400"
+              className="w-full text-xs bg-transparent outline-none text-[#0f172a] placeholder:text-[#94a3b8]"
             />
           </div>
 
           <button
             type="button"
-            className="h-9 w-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 shrink-0 transition"
+            className="h-9 w-9 rounded-xl border border-[#e2edf2] bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 shrink-0 transition shadow-xs"
             title="Filter"
           >
             <FilterListOutlinedIcon sx={{ fontSize: 18 }} />
@@ -58,7 +58,7 @@ const QuestionListCard = ({
           <button
             type="button"
             onClick={onAddQuestion}
-            className="h-9 px-3 rounded-xl bg-gradient-to-r from-primary to-primary-dark text-white text-xs font-semibold hover:opacity-95 shadow-xs flex items-center gap-1 shrink-0 transition"
+            className="h-9 px-3 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] text-white text-xs font-semibold shadow-sm shadow-[#0d9488]/25 flex items-center gap-1 shrink-0 transition"
           >
             <AddOutlinedIcon sx={{ fontSize: 16 }} />
             Add Question
@@ -83,14 +83,14 @@ const QuestionListCard = ({
                   onClick={() => onSelectQuestion(q.id)}
                   className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border cursor-pointer transition-all group ${
                     active
-                      ? "bg-primary/[0.08] border-primary/30 text-primary font-semibold shadow-2xs"
-                      : "bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50/60 text-gray-700"
+                      ? "bg-[#e6f7f5]/40 border-[#0d9488] text-[#0d9488] font-semibold shadow-xs"
+                      : "bg-white border-[#e2edf2] hover:border-[#0d9488]/40 hover:bg-[#f0f9f8] text-[#0f172a]"
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <span
                       className={`text-xs font-bold shrink-0 ${
-                        active ? "text-primary" : "text-gray-500"
+                        active ? "text-[#0d9488]" : "text-[#64748b]"
                       }`}
                     >
                       {serialNum}.
@@ -117,7 +117,7 @@ const QuestionListCard = ({
                     )}
 
                     <MoreVertOutlinedIcon
-                      sx={{ fontSize: 16, color: active ? "#6F4AE7" : "#9CA3AF" }}
+                      sx={{ fontSize: 16, color: active ? "#0d9488" : "#8A8A8A" }}
                     />
                   </div>
                 </div>

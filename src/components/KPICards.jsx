@@ -1,45 +1,10 @@
-const colorClasses = {
-  blue: {
-    bg: "bg-[#F0EDFF]",
-    text: "text-[#6F4AE7]",
-    border: "border-[#E8E1FF]",
-    wave: "#E9E3FF",
-  },
-
-  green: {
-    bg: "bg-[#E8FBF2]",
-    text: "text-[#16B364]",
-    border: "border-[#DDF4E9]",
-    wave: "#D9F7E8",
-  },
-
-  red: {
-    bg: "bg-[#FFF0F0]",
-    text: "text-[#EF2F35]",
-    border: "border-[#FBE1E1]",
-    wave: "#FFE3E3",
-  },
-
-  purple: {
-    bg: "bg-[#F5EDFF]",
-    text: "text-[#9B4DEB]",
-    border: "border-[#E9DCFA]",
-    wave: "#EEE1FF",
-  },
-
-  orange: {
-    bg: "bg-amber-50",
-    text: "text-amber-600",
-    border: "border-amber-100",
-    wave: "#FEF0C7",
-  },
-
-  indigo: {
-    bg: "bg-indigo-50",
-    text: "text-indigo-600",
-    border: "border-indigo-100",
-    wave: "#E5E7FF",
-  },
+const colorStyles = {
+  blue: "bg-[#eff6ff] text-[#2563eb] border-[#2563eb]/20",
+  green: "bg-[#ecfdf5] text-[#10b981] border-[#10b981]/20",
+  orange: "bg-[#fff7ed] text-[#ea580c] border-[#ea580c]/20",
+  red: "bg-[#fff1f2] text-[#fb7185] border-[#fb7185]/20",
+  purple: "bg-[#f3e8ff] text-[#9333ea] border-[#9333ea]/20",
+  teal: "bg-[#e6f7f5] text-[#0d9488] border-[#0d9488]/20",
 };
 
 const KPICards = ({ data = [], gridClass }) => {
@@ -50,98 +15,40 @@ const KPICards = ({ data = [], gridClass }) => {
       }`}
     >
       {data.map((item, index) => {
-        const c = colorClasses[item.color] || colorClasses.purple;
+        const iconStyle = colorStyles[item.color] || colorStyles.teal;
 
         return (
           <div
             key={index}
-            className={`
-              group
-              relative
-              h-[100px]
-              overflow-hidden
-              rounded-2xl
-              border
-              ${c.border}
-              bg-white
-              px-3.5
-              py-3
-              shadow-[0_2px_8px_rgba(30,41,59,0.05)]
-              transition-all
-              duration-300
-              hover:-translate-y-[2px]
-              hover:shadow-[0_6px_18px_rgba(30,41,59,0.08)]
-            `}
+            className="group relative overflow-hidden rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white/85 backdrop-blur-md px-5 py-4 shadow-[0_4px_20px_rgba(15,23,42,0.03)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#0d9488]/30 hover:shadow-[0_8px_30px_rgba(13,148,136,0.08)]"
           >
-            {/* Decorative Wave */}
-            {/* <div className="pointer-events-none absolute bottom-0 right-0 h-[65px] w-[55%]">
-              <svg
-                viewBox="0 0 220 100"
-                className="h-full w-full"
-                preserveAspectRatio="none"
-              >
-                <path
-                  d="M0 82 C25 65 42 70 62 68 C87 65 98 32 122 39 C148 47 151 73 175 67 C193 63 207 48 220 42 L220 100 L0 100 Z"
-                  fill={c.wave}
-                  opacity="0.55"
-                />
-
-                <path
-                  d="M0 82 C25 65 42 70 62 68 C87 65 98 32 122 39 C148 47 151 73 175 67 C193 63 207 48 220 42"
-                  fill="none"
-                  stroke={c.wave}
-                  strokeWidth="1.5"
-                  opacity="0.65"
-                />
-              </svg>
-            </div> */}
-
             {/* Main Content */}
-            <div className="relative z-10 flex h-full items-center">
+            <div className="relative z-10 flex items-center">
               {/* Icon */}
               <div
-                className={`
-                  flex
-                  h-[48px]
-                  w-[48px]
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-[15px]
-                  ${c.bg}
-                  ${c.text}
-                  transition-transform
-                  duration-300
-                  group-hover:scale-105
-                `}
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-transform duration-200 group-hover:scale-105 shadow-xs ${iconStyle}`}
               >
                 {item.icon}
               </div>
 
               {/* Text Content */}
-              <div className="ml-3.5 flex h-full flex-col justify-center">
+              <div className="ml-4 flex flex-col justify-center min-w-0">
                 {/* Title */}
-                <p className="text-[12px] font-medium leading-[15px] text-[#64748B]">
+                <p className="text-xs font-medium text-[#64748b] truncate">
                   {item.title}
                 </p>
 
                 {/* Value */}
-                <h2 className="mt-[3px] text-[21px] font-bold leading-[24px] tracking-tight text-[#172033]">
+                <h2 className="mt-0.5 text-2xl font-bold tracking-tight text-[#0f172a]">
                   {item.value}
                 </h2>
 
                 {/* Trend */}
                 {item.trend && (
-                  <div className="mt-[7px] flex items-center whitespace-nowrap">
-                    <span className="mr-1 text-[11px] font-bold text-[#16B364]">
-                      ↗
-                    </span>
-
-                    <span className="text-[10px] font-medium text-[#16B364]">
-                      {item.trend}
-                    </span>
-
-                    <span className="ml-1 text-[10px] font-normal text-[#94A3B8]">
+                  <div className="mt-1 flex items-center whitespace-nowrap text-[11px] font-semibold text-[#10b981]">
+                    <span className="mr-1">↑</span>
+                    <span>{item.trend}</span>
+                    <span className="ml-1 font-normal text-[#94a3b8]">
                       vs last 7 days
                     </span>
                   </div>
@@ -156,3 +63,4 @@ const KPICards = ({ data = [], gridClass }) => {
 };
 
 export default KPICards;
+

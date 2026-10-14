@@ -47,11 +47,12 @@ const chartData = {
         70, 75, 68, 80, 74, 60, 78, 70,
         75, 68, 80, 74, 60, 78, 74, 72,
       ],
-      backgroundColor: "#6F4AE7",
+      backgroundColor: "#13B8FF",
+      hoverBackgroundColor: "#38bdf8",
 
       borderRadius: {
-        topLeft: 5,
-        topRight: 5,
+        topLeft: 6,
+        topRight: 6,
         bottomLeft: 0,
         bottomRight: 0,
       },
@@ -65,11 +66,11 @@ const chartData = {
         55, 62, 50, 66, 58, 44, 60, 52,
         62, 50, 66, 58, 44, 60, 58, 55,
       ],
-      backgroundColor: "#4285F4",
+      backgroundColor: "#0d9488",
 
       borderRadius: {
-        topLeft: 5,
-        topRight: 5,
+        topLeft: 6,
+        topRight: 6,
         bottomLeft: 0,
         bottomRight: 0,
       },
@@ -83,11 +84,11 @@ const chartData = {
         45, 52, 40, 58, 48, 36, 54, 44,
         52, 40, 58, 48, 36, 54, 48, 46,
       ],
-      backgroundColor: "#26B7A0",
+      backgroundColor: "#f59e0b",
 
       borderRadius: {
-        topLeft: 5,
-        topRight: 5,
+        topLeft: 6,
+        topRight: 6,
         bottomLeft: 0,
         bottomRight: 0,
       },
@@ -113,7 +114,7 @@ const options = {
 
     tooltip: {
       enabled: false,
-      external: () => {},
+      external: () => { },
     },
 
     // Number displayed on top of every bar
@@ -179,9 +180,9 @@ const options = {
         padding: 8,
       },
 
-      // Horizontal lines removed
       grid: {
         display: false,
+        color: "#e8f1f5",
         drawTicks: false,
       },
 
@@ -194,23 +195,23 @@ const options = {
 
 const DojoManpowerTrend = () => {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="bg-white/85 backdrop-blur-md rounded-2xl md:rounded-3xl border border-[#e2edf2] shadow-[0_4px_24px_rgba(15,23,42,0.03)] overflow-hidden">
       {/* Header */}
-      <div className="px-5 pt-4">
+      <div className="px-5 pt-5 pb-2">
         <div className="flex items-center justify-between">
           {/* Left side */}
           <div className="flex items-center gap-3">
-            {/* Icon - same color as Planned bar */}
-            <div className="w-9 h-9 rounded-lg bg-[#F3EEFF] flex items-center justify-center text-[#6F4AE7]">
+            {/* Icon */}
+            <div className="w-10 h-10 rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 flex items-center justify-center text-[#0d9488] shadow-xs">
               <PsychologyIcon sx={{ fontSize: 20 }} />
             </div>
 
             <div>
-              <h2 className="text-sm font-bold text-slate-800">
+              <h2 className="text-sm font-bold text-[#0f172a]">
                 Dojo Manpower Trend
               </h2>
 
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-xs text-[#64748b] mt-0.5">
                 Planned vs deployed vs optimal manpower movement
               </p>
             </div>
@@ -219,7 +220,7 @@ const DojoManpowerTrend = () => {
       </div>
 
       {/* Scrollable Chart */}
-      <div className="px-4 pb-4 pt-2 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+      <div className="px-4 pb-3 pt-2 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
         <div
           className="h-[230px]"
           style={{
@@ -231,10 +232,10 @@ const DojoManpowerTrend = () => {
       </div>
 
       {/* Legend */}
-      <div className="flex justify-center items-center gap-4 pb-4">
+      <div className="flex justify-center items-center gap-5 pb-4">
         {/* Planned */}
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#6F4AE7]"></span>
+          <span className="w-2.5 h-2.5 rounded-full bg-[#13B8FF]"></span>
 
           <span className="text-xs font-medium text-slate-500">
             Planned
@@ -243,7 +244,7 @@ const DojoManpowerTrend = () => {
 
         {/* Deployed */}
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#4285F4]"></span>
+          <span className="w-2.5 h-2.5 rounded-full bg-[#0d9488]"></span>
 
           <span className="text-xs font-medium text-slate-500">
             Deployed
@@ -252,7 +253,7 @@ const DojoManpowerTrend = () => {
 
         {/* Optimal */}
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#26B7A0]"></span>
+          <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span>
 
           <span className="text-xs font-medium text-slate-500">
             Optimal

@@ -203,23 +203,25 @@ const TrainingEffectivenessForm = () => {
           }
 
           .field-label {
-            font-size: 14px;
-            line-height: 18px;
+            font-size: 15px;
+            line-height: 20px;
             white-space: nowrap;
-            margin-right: 4px;
+            margin-right: 5px;
+            color: #111111;
           }
 
           .field-input {
             flex: 1;
             min-width: 0;
-            height: 20px;
-            padding: 0 2px;
+            height: 22px;
+            padding: 0 4px;
             border: none;
             border-bottom: 1px solid #555555;
             outline: none;
             background: transparent;
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 13px;
+            font-size: 14px;
+            color: #111111;
           }
 
           /* =========================
@@ -227,18 +229,19 @@ const TrainingEffectivenessForm = () => {
           ========================= */
 
           .section-title {
-            font-size: 14px;
-            line-height: 17px;
+            font-size: 15.5px;
+            line-height: 19px;
             font-weight: bold;
             color: #000000;
-            margin-top: 27px;
+            margin-top: 22px;
             margin-bottom: 4px;
           }
 
           .instruction {
-            font-size: 13px;
-            line-height: 17px;
+            font-size: 14px;
+            line-height: 18px;
             margin-bottom: 8px;
+            color: #111111;
           }
 
           /* =========================
@@ -249,21 +252,22 @@ const TrainingEffectivenessForm = () => {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            font-size: 13px;
+            font-size: 14px;
           }
 
           .rating-table th,
           .rating-table td {
             border: 1px solid #777777;
-            padding: 5px 7px;
+            padding: 6px 8px;
             vertical-align: middle;
           }
 
           .rating-table th {
-            font-size: 13px;
+            font-size: 14.5px;
             font-weight: bold;
             text-align: left;
             height: 44px;
+            color: #000000;
           }
 
           .rating-table th.serial,
@@ -291,10 +295,12 @@ const TrainingEffectivenessForm = () => {
 
           .rating-table td {
             height: 43px;
+            color: #111111;
           }
 
           .rating-table td.objective-cell {
-            line-height: 16px;
+            line-height: 18px;
+            font-size: 14px;
           }
 
           .rating-select {
@@ -303,9 +309,11 @@ const TrainingEffectivenessForm = () => {
             border: none;
             outline: none;
             background: transparent;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 600;
             text-align: center;
             cursor: pointer;
+            color: #111111;
           }
 
           .remarks-input {
@@ -314,24 +322,27 @@ const TrainingEffectivenessForm = () => {
             border: none;
             outline: none;
             background: transparent;
-            font-size: 13px;
+            font-size: 14px;
+            color: #111111;
           }
 
           .other-input {
             display: block;
             width: 90%;
-            height: 19px;
+            height: 20px;
             margin-top: 2px;
             border: none;
             border-bottom: 1px solid #777777;
             outline: none;
             background: transparent;
-            font-size: 12px;
+            font-size: 13.5px;
+            color: #111111;
           }
 
           .total-row td {
-            height: 27px;
-            font-weight: normal;
+            height: 28px;
+            font-size: 14px;
+            font-weight: bold;
           }
 
           .total-label {
@@ -344,12 +355,12 @@ const TrainingEffectivenessForm = () => {
           ========================= */
 
           .review-section {
-            margin-top: 20px;
+            margin-top: 18px;
           }
 
           .review-title {
-            font-size: 14px;
-            line-height: 18px;
+            font-size: 15.5px;
+            line-height: 19px;
             color: #000000;
             font-weight: bold;
             margin-bottom: 8px;
@@ -358,26 +369,30 @@ const TrainingEffectivenessForm = () => {
           .index-row {
             display: flex;
             align-items: flex-end;
-            font-size: 12px;
+            font-size: 13.5px;
+            font-weight: 600;
             margin-bottom: 3px;
+            color: #111111;
           }
 
           .index-line {
             width: 190px;
-            height: 19px;
+            height: 20px;
             margin-left: 5px;
-            padding: 0 2px;
+            padding: 0 4px;
             border: none;
             border-bottom: 1px solid #777777;
             outline: none;
             background: transparent;
-            font-size: 12px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #111111;
           }
 
           .formula {
-            font-size: 10px;
+            font-size: 12px;
             color: #333333;
-            margin-bottom: 11px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -397,20 +412,21 @@ const TrainingEffectivenessForm = () => {
             border-bottom: 1px solid #333333;
             padding: 0 5px;
             line-height: 1.5;
-            font-size: 10px;
+            font-size: 12px;
           }
 
           .formula-denominator {
             display: block;
             padding: 0 5px;
             line-height: 1.5;
-            font-size: 10px;
+            font-size: 12px;
           }
 
           .effectiveness-title {
-            font-size: 12px;
+            font-size: 13.5px;
             font-weight: bold;
             margin-bottom: 6px;
+            color: #000000;
           }
 
           .checkbox-row {
@@ -418,38 +434,43 @@ const TrainingEffectivenessForm = () => {
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            font-size: 11px;
+            font-size: 12.5px;
+            font-weight: 500;
             width: 100%;
           }
 
           .checkbox-item {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
             white-space: nowrap;
           }
 
           .checkbox-item input {
             appearance: none;
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             margin: 0;
             border: 1px solid #555555;
             background: #ffffff;
             position: relative;
+            cursor: pointer;
           }
 
           .checkbox-item input:checked::after {
             content: "✓";
             position: absolute;
-            left: 1px;
+            left: 2px;
             top: -4px;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: bold;
           }
 
           .action-row {
-            margin-top: 13px;
-            font-size: 12px;
+            margin-top: 12px;
+            font-size: 13.5px;
+            font-weight: 500;
+            color: #111111;
           }
 
           .action-options {
@@ -460,7 +481,7 @@ const TrainingEffectivenessForm = () => {
 
           .if-yes {
             margin-top: 7px;
-            font-size: 11px;
+            font-size: 12.5px;
           }
 
           .further-row {
@@ -468,7 +489,7 @@ const TrainingEffectivenessForm = () => {
             align-items: center;
             gap: 30px;
             margin-top: 5px;
-            font-size: 11px;
+            font-size: 12.5px;
           }
 
           .if-yes-row {
@@ -477,39 +498,42 @@ const TrainingEffectivenessForm = () => {
             flex-wrap: wrap;
             gap: 8px 14px;
             margin-top: 7px;
-            font-size: 11px;
+            font-size: 12.5px;
           }
 
           .training-area-inline {
-            font-size: 10px;
-            line-height: 13px;
+            font-size: 12px;
+            line-height: 15px;
           }
 
           .area-line-inline {
             flex: 1;
             min-width: 140px;
-            height: 21px;
+            height: 22px;
             border: none;
             border-bottom: 1px solid #777777;
             outline: none;
             background: transparent;
-            font-size: 11px;
+            font-size: 13px;
+            color: #111111;
           }
 
           .training-area {
             margin-top: 7px;
-            font-size: 10px;
-            line-height: 13px;
+            font-size: 12px;
+            line-height: 15px;
           }
 
           .area-line {
             display: block;
             width: 100%;
-            height: 21px;
+            height: 22px;
             border: none;
             border-bottom: 1px solid #777777;
             outline: none;
             background: transparent;
+            font-size: 13px;
+            color: #111111;
           }
 
           /* =========================
@@ -520,7 +544,7 @@ const TrainingEffectivenessForm = () => {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            margin-top: 19px;
+            margin-top: 18px;
           }
 
           .signature-table td {
@@ -529,7 +553,9 @@ const TrainingEffectivenessForm = () => {
             vertical-align: bottom;
             text-align: center;
             padding-bottom: 7px;
-            font-size: 11px;
+            font-size: 12.5px;
+            font-weight: 500;
+            color: #111111;
           }
 
           /* =========================
@@ -543,7 +569,8 @@ const TrainingEffectivenessForm = () => {
             bottom: 25px;
             display: flex;
             justify-content: space-between;
-            font-size: 10px;
+            font-size: 11px;
+            font-weight: 500;
             color: #222222;
           }
 
@@ -555,63 +582,84 @@ const TrainingEffectivenessForm = () => {
             page-break-before: always;
           }
 
-          .criteria-page-header {
-            margin-bottom: 50px;
+          .criteria-footer {
+            position: absolute;
+            left: 56px;
+            right: 56px;
+            bottom: 210px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #222222;
           }
 
           .criteria-title {
             text-align: center;
-            font-size: 13px;
-            line-height: 17px;
+            font-size: 15px;
+            line-height: 20px;
             font-weight: bold;
             color: #000000;
-            margin-bottom: 4px;
+            margin-top: 8px;
+            margin-bottom: 14px;
           }
 
           .criteria-table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            font-size: 11px;
+            font-size: 13.5px;
+            margin-top: 4px;
           }
 
           .criteria-table th,
           .criteria-table td {
             border: 1px solid #777777;
-            padding: 5px 7px;
+            padding: 14px 18px;
             vertical-align: middle;
           }
 
           .criteria-table th {
-            font-size: 11px;
+            font-size: 14px;
             font-weight: bold;
             text-align: left;
-            height: 32px;
+            height: 52px;
+            line-height: 18px;
+            background-color: #fafafa;
+            color: #000000;
           }
 
           .criteria-table .score-col {
-            width: 9%;
+            width: 11%;
             text-align: center;
           }
 
           .criteria-table .level-col {
-            width: 23%;
+            width: 24%;
           }
 
           .criteria-table .explanation-col {
-            width: 68%;
+            width: 65%;
           }
 
           .criteria-table td {
-            line-height: 14px;
+            height: 96px;
+            line-height: 22px;
+            font-size: 13.5px;
+            color: #111111;
           }
 
           .criteria-table .score-cell {
             text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000000;
           }
 
           .criteria-table .level-cell {
-            font-weight: normal;
+            font-weight: bold;
+            font-size: 14px;
+            line-height: 20px;
+            color: #000000;
           }
 
           /* =========================
@@ -692,34 +740,34 @@ const TrainingEffectivenessForm = () => {
             }
 
             .field-label {
-              font-size: 12px;
+              font-size: 13.5px;
               white-space: normal;
             }
 
             .field-input {
-              font-size: 13px;
+              font-size: 13.5px;
             }
 
             .section-title {
               margin-top: 18px;
-              font-size: 13px;
+              font-size: 14.5px;
             }
 
             .instruction {
-              font-size: 12px;
+              font-size: 13.5px;
             }
 
             .rating-table {
-              font-size: 11px;
+              font-size: 12.5px;
             }
 
             .rating-table th,
             .rating-table td {
-              padding: 4px 3px;
+              padding: 5px 4px;
             }
 
             .rating-table th {
-              font-size: 11px;
+              font-size: 12.5px;
               height: auto;
             }
 
@@ -740,21 +788,21 @@ const TrainingEffectivenessForm = () => {
             }
 
             .rating-select {
-              font-size: 12px;
-              height: 26px;
+              font-size: 13px;
+              height: 28px;
             }
 
             .remarks-input {
-              font-size: 11px;
+              font-size: 12.5px;
             }
 
             .other-input {
               width: 100%;
-              font-size: 11px;
+              font-size: 12.5px;
             }
 
             .review-section {
-              margin-top: 14px;
+              margin-top: 16px;
             }
 
             .index-line {
@@ -768,7 +816,7 @@ const TrainingEffectivenessForm = () => {
             }
 
             .checkbox-item {
-              font-size: 10px;
+              font-size: 11.5px;
             }
 
             .action-options {
@@ -777,35 +825,60 @@ const TrainingEffectivenessForm = () => {
             }
 
             .signature-table {
-              font-size: 10px;
+              font-size: 11.5px;
             }
 
             .signature-table td {
-              height: 48px;
+              height: 50px;
             }
 
             .criteria-title {
-              font-size: 12px;
+              font-size: 13px;
+              margin-top: 6px;
+              margin-bottom: 10px;
             }
 
             .criteria-table {
-              font-size: 10px;
+              font-size: 11.5px;
             }
 
             .criteria-table th,
             .criteria-table td {
-              padding: 4px 3px;
+              padding: 8px 6px;
             }
 
             .criteria-table th {
-              font-size: 10px;
+              font-size: 11.5px;
+              height: 42px;
+            }
+
+            .criteria-table td {
               height: auto;
+              line-height: 18px;
+              font-size: 11.5px;
+            }
+
+            .criteria-table .score-cell {
+              font-size: 16px;
+            }
+
+            .criteria-table .level-cell {
+              font-size: 12px;
             }
 
             .footer {
               left: 14px;
               right: 14px;
               bottom: 14px;
+            }
+
+            .criteria-footer {
+              position: static;
+              display: flex;
+              justify-content: space-between;
+              margin-top: 32px;
+              margin-bottom: 20px;
+              font-size: 10px;
             }
           }
         `}
@@ -1497,6 +1570,10 @@ const TrainingEffectivenessForm = () => {
           </div>
         </div>
 
+        <div className="criteria-title">
+          Effectiveness Scoring Criteria (for HOD Ratings)
+        </div>
+
         <table className="criteria-table">
 
           <thead>
@@ -1629,11 +1706,7 @@ const TrainingEffectivenessForm = () => {
 
         </table>
 
-        <div className="criteria-title mt-5">
-          Effectiveness Scoring Criteria (for HOD Ratings)
-        </div>
-
-        <div className="footer">
+        <div className="criteria-footer">
           <span>
             FORMAT: F11(AMD-02)
           </span>

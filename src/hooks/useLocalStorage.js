@@ -18,7 +18,6 @@ export function useLocalStorage(key, initialValue) {
   }, [key, value]);
 
   const reset = useCallback(() => setValue(resolveValue(initialValue)), [initialValue]);
-
   return [value, setValue, reset];
 }
 

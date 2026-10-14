@@ -9,7 +9,7 @@ const SavedPaperPreview = () => {
 
   if (!paper) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F7FB]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F7F5]">
         <div className="text-center">
           <p className="text-sm font-semibold text-gray-500">
             Question paper not found.

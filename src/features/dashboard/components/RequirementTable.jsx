@@ -122,26 +122,26 @@ const RequirementTable = () => {
   const to = Math.min(filteredData.length, (page + 1) * rowsPerPage);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white/85 backdrop-blur-md shadow-[0_4px_24px_rgba(15,23,42,0.03)]">
       {/* Header */}
-      <div className="flex flex-col justify-between gap-4 border-b border-gray-100 px-5 py-4 lg:flex-row lg:items-center">
+      <div className="flex flex-col justify-between gap-4 border-b border-[#e2edf2] px-5 py-4 lg:flex-row lg:items-center">
         {/* Title */}
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-light to-primary-dark shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 text-[#0d9488] shadow-xs">
             <AssignmentOutlinedIcon
               sx={{
-                color: "#fff",
-                fontSize: 22,
+                color: "#0d9488",
+                fontSize: 20,
               }}
             />
           </div>
 
           <div>
-            <h2 className="text-base font-bold leading-tight text-gray-900">
+            <h2 className="text-base font-bold leading-tight text-[#0f172a]">
               Requirement Records
             </h2>
 
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[#64748b]">
               View and manage manpower requirements
             </p>
           </div>
@@ -151,11 +151,11 @@ const RequirementTable = () => {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all duration-200 hover:from-[#0f766e] hover:to-[#0d9488] active:scale-[0.99]"
         >
           <AddCircleOutlineOutlinedIcon
             sx={{
-              fontSize: 18,
+              fontSize: 16,
             }}
           />
           Add Requirement
@@ -201,13 +201,11 @@ const RequirementTable = () => {
               </th>
 
               {/* Months */}
-              {months.map((month, index) => (
+              {months.map((month) => (
                 <th
                   key={month}
                   rowSpan={2}
-                  className={`border-b border-r border-gray-200 px-4 py-2.5 text-center text-xs font-bold text-white ${
-                    index % 2 === 0 ? "bg-primary/90" : "bg-primary-light"
-                  }`}
+                  className="border-b border-r border-[#0d9488]/30 px-4 py-2.5 text-center text-xs font-bold text-white bg-[#0f766e]"
                 >
                   {month}
                 </th>
@@ -246,14 +244,12 @@ const RequirementTable = () => {
                 <td className="border-b border-r border-gray-100 px-4 py-3 text-center text-sm text-gray-700">
                   {row.approval && (
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${
-                        approvalStyles[row.approval]?.badge
-                      }`}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${approvalStyles[row.approval]?.badge
+                        }`}
                     >
                       <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          approvalStyles[row.approval]?.dot
-                        }`}
+                        className={`h-1.5 w-1.5 rounded-full ${approvalStyles[row.approval]?.dot
+                          }`}
                       />
 
                       {row.approval}
@@ -310,15 +306,15 @@ const RequirementTable = () => {
         </table>
 
         {/* Pagination */}
-        <div className="flex min-h-[48px] items-center justify-between gap-2 border-t border-[#E5E7EB] px-2">
+        <div className="flex min-h-[48px] items-center justify-between gap-2 border-t border-[#e2edf2] px-4">
           {/* Rows */}
-          <div className="flex items-center gap-2 text-[11px] text-[#6B7280]">
+          <div className="flex items-center gap-2 text-[11px] text-[#64748b]">
             <span>Rows per page</span>
 
             <select
               value={rowsPerPage}
               onChange={handleChangeRowsPerPage}
-              className="cursor-pointer rounded-md border border-[#E5E7EB] bg-white py-1 pl-2 pr-6 text-[11px] text-[#6B7280] outline-none focus:border-[#6F4AE7]"
+              className="cursor-pointer rounded-lg border border-[#e2edf2] bg-white py-1 pl-2 pr-6 text-[11px] text-[#0f172a] outline-none focus:border-[#0d9488]"
             >
               {[10, 25, 50].map((option) => (
                 <option key={option} value={option}>

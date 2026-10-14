@@ -10,7 +10,7 @@ const TrainingEffectivenessPage = () => {
   const [activeMenu, setActiveMenu] = useState("Training Effectiveness Form");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F5F7FB]">
+    <div className="flex h-screen overflow-hidden bg-[#F7F7F5]">
       <Sidebar
         menuItems={lmsMenus}
         mobileOpen={mobileOpen}

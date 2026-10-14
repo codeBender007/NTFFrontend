@@ -148,9 +148,9 @@ const QuestionEditor = ({ question, onChange }) => {
               bg-gray-50/50
 
               focus:bg-white
-              focus:border-primary
+              focus:border-[#0d9488]
               focus:ring-2
-              focus:ring-primary/15
+              focus:ring-[#0d9488]/15
 
               transition
             "
@@ -210,8 +210,8 @@ const QuestionEditor = ({ question, onChange }) => {
 
                       ${
                         isCorrect
-                          ? "border-primary bg-primary/10 shadow-sm"
-                          : "border-gray-200 hover:border-primary/40 hover:bg-primary/[0.02]"
+                          ? "border-[#0d9488] bg-[#e6f7f5]/40 shadow-xs"
+                          : "border-[#e2edf2] hover:border-[#0d9488]/40 bg-white"
                       }
                     `}
                 >
@@ -238,8 +238,8 @@ const QuestionEditor = ({ question, onChange }) => {
 
                         ${
                           isCorrect
-                            ? "bg-primary text-white"
-                            : "bg-primary/10 text-primary hover:bg-primary/20"
+                            ? "bg-[#0d9488] text-white"
+                            : "bg-[#e6f7f5] text-[#0d9488] hover:bg-[#d5f2ee]"
                         }
                       `}
                   >
@@ -270,7 +270,7 @@ const QuestionEditor = ({ question, onChange }) => {
                     <CheckCircleOutlinedIcon
                       sx={{
                         fontSize: 18,
-                        color: "#6F4AE7",
+                        color: "#0d9488",
                       }}
                     />
                   )}
@@ -313,12 +313,12 @@ const QuestionEditor = ({ question, onChange }) => {
                 rounded-xl
                 border-2
                 border-dashed
-                border-primary/25
-                text-primary
+                border-[#e2edf2]
+                text-[#0d9488]
                 text-sm
                 font-medium
-                hover:border-primary/60
-                hover:bg-primary/5
+                hover:border-[#0d9488]
+                hover:bg-[#e6f7f5]/40
                 transition
                 flex
                 items-center

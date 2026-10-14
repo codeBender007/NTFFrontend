@@ -35,10 +35,10 @@ export const USER_COLUMNS = [
 
 export const USER_DATE_KEYS = ["dob", "joiningDate", "leavingDate", "firstOfDate"];
 
-export const EMPTY_USER_FORM = USER_COLUMNS.reduce(
-  (form, column) => ({ ...form, [column.key]: "" }),
-  {},
-);
+export const EMPTY_USER_FORM = {
+  ...USER_COLUMNS.reduce((form, column) => ({ ...form, [column.key]: "" }), {}),
+  password: "",
+};
 
 export const USER_FORM_FIELDS = [
   { label: "Pay Code", key: "payCode", placeholder: "Enter pay code" },
@@ -77,6 +77,12 @@ export const USER_FORM_FIELDS = [
   { label: "First Of Date", key: "firstOfDate", type: "date" },
   { label: "Skill Level", key: "skillLevel", placeholder: "Enter skill level" },
   { label: "Salary", key: "salary", type: "number", placeholder: "Enter salary" },
+  {
+    label: "Password",
+    key: "password",
+    type: "password",
+    placeholder: "Enter password",
+  },
 ];
 
 export const hasUserShape = (users) =>

@@ -5,13 +5,13 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 
 const inputClass =
-  "w-full h-10 rounded-xl border border-gray-200 px-3.5 text-sm outline-none bg-gray-50/50 text-gray-800 placeholder:text-gray-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 transition";
+  "w-full h-10 rounded-xl border border-[#e2edf2] px-3.5 text-sm outline-none bg-gray-50/50 text-[#0f172a] placeholder:text-[#94a3b8] focus:bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15 transition";
 
 const selectClass =
-  "w-full h-10 appearance-none rounded-xl border border-gray-200 px-3.5 pr-9 text-sm outline-none bg-gray-50/50 text-gray-800 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 transition";
+  "w-full h-10 appearance-none rounded-xl border border-[#e2edf2] px-3.5 pr-9 text-sm outline-none bg-gray-50/50 text-[#0f172a] focus:bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15 transition";
 
 const textareaClass =
-  "w-full resize-none rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none bg-gray-50/50 text-gray-800 placeholder:text-gray-400 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15 transition";
+  "w-full resize-none rounded-xl border border-[#e2edf2] px-3.5 py-2.5 text-sm outline-none bg-gray-50/50 text-[#0f172a] placeholder:text-[#94a3b8] focus:bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15 transition";
 
 const labelClass = "block text-xs font-semibold text-gray-700 mb-1.5";
 
@@ -78,26 +78,26 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200/80 bg-white shadow-sm overflow-hidden transition-all">
+    <div className="rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white/85 backdrop-blur-md shadow-[0_4px_24px_rgba(15,23,42,0.03)] overflow-hidden transition-all">
       {/* Accordion Header Bar */}
       <div
         onClick={() => setCollapsed(!collapsed)}
-        className="px-5 py-4 flex items-center justify-between gap-3 cursor-pointer bg-white hover:bg-gray-50/50 transition border-b border-gray-100"
+        className="px-5 py-4 flex items-center justify-between gap-3 cursor-pointer bg-white hover:bg-gray-50/50 transition border-b border-[#e2edf2]"
       >
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <div className="h-9 w-9 rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 text-[#0d9488] flex items-center justify-center shrink-0 shadow-xs">
             <InfoOutlinedIcon sx={{ fontSize: 20 }} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-gray-900">
+              <h2 className="text-sm font-bold text-[#0f172a]">
                 Paper Details & Header Config
               </h2>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[#e6f7f5] text-[#0d9488] border border-[#0d9488]/20">
                 {formData.departments ? `${formData.departments}` : "General"}
               </span>
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-[#64748b] mt-0.5">
               {formData.testTitle ||
                 "Configure test header, duration, & parameters"}
             </p>
@@ -262,7 +262,7 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
               </div>
             </div>
 
-             <div>
+            <div>
               <label className={labelClass}>Levels</label>
               <div className="relative">
                 <select
@@ -312,7 +312,7 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
               type="button"
               onClick={handleUploadClick}
               disabled={!isComplete}
-              className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#6F4AE7] to-[#7A5AF8] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#6F4AE7]/20 transition-all hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all disabled:cursor-not-allowed disabled:opacity-40"
             >
               <CloudUploadOutlinedIcon sx={{ fontSize: 16 }} />
               Upload

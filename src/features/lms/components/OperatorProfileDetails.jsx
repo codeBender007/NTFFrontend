@@ -1,709 +1,38 @@
-/* ============================================================
-   OLD DESIGN - KEPT COMMENTED
-   Refer to this block before reverting the UI.
-   ============================================================ */
-
-/*
-import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
-import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
-import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
-import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
-import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
-import PinDropOutlinedIcon from "@mui/icons-material/PinDropOutlined";
-import FamilyRestroomOutlinedIcon from "@mui/icons-material/FamilyRestroomOutlined";
-import WcOutlinedIcon from "@mui/icons-material/WcOutlined";
-import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
-import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
-import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
-import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import MoreVertOutlinedIcon from "@mui/icons-material/MoreVertOutlined";
-import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
-import ArrowForwardIosOutlinedIcon from "@mui/icons-material/ArrowForwardIosOutlined";
-import ScheduleOutlinedIcon from "@mui/icons-material/ScheduleOutlined";
-import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
-import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
-import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
-import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
-import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
-import KPICards from "../../../components/KPICards";
-import profileBg from "../../../assets/images/profile-bg.png";
-
-const defaultOperator = {
-  name: "RAM",
-  employeeId: "FNG",
-  department: "HR",
-  section: "80",
-  line: "N/A",
-  subSection: "N/A",
-  station: "N/A",
-  level: "L1",
-  efficiency: "0%",
-  status: "ON LEAVE",
-  email: "fng@fme-minda.co.in",
-  phone: "N/A",
-  designation: "Operator",
-  contractor: "N/A",
-  employeeType: "Regular",
-  shift: "N/A",
-  todayShift: "N/A",
-  courses: "N/A",
-  progress: "N/A",
-  submission: "N/A",
-  testAvg: "N/A",
-  fatherHusband: "—",
-  gender: "MALE",
-  dob: "—",
-  qualification: "Not Specified",
-  joiningDate: "—",
-  district: "—",
-  pinCode: "—",
-  busRoute: "Self / Not Assigned",
-  desk: "—",
-  pktCode: "—",
-  gradeRule: "Self / Not Assigned",
-};
-
-const getInitials = (name = "") => {
-  const parts = String(name).trim().split(/\s+/);
-  const initials = parts
-    .slice(0, 2)
-    .map((p) => p.charAt(0))
-    .join("")
-    .toUpperCase();
-
-  return initials || "OP";
-};
-
-const OperatorProfileDetails = ({ operator = defaultOperator }) => {
-  const data = {
-    ...defaultOperator,
-    ...operator,
-  };
-
-  const normalizedStatus = (data.status || "").toUpperCase();
-
-  const statusClasses =
-    normalizedStatus === "ACTIVE"
-      ? "border-[#7BD6A4] bg-[#EEFBF4] text-[#16864A]"
-      : normalizedStatus === "ON LEAVE"
-        ? "border-[#FFD9A8] bg-[#FFF4E5] text-[#E6920B]"
-        : normalizedStatus === "LEFT"
-          ? "border-[#FFD3D3] bg-[#FFF0EE] text-[#E74C3C]"
-          : "border-[#E4E7EC] bg-[#F9FAFB] text-[#344054]";
-
-  const statusDotClasses =
-    normalizedStatus === "ACTIVE"
-      ? "bg-[#16864A]"
-      : normalizedStatus === "ON LEAVE"
-        ? "bg-[#E6920B]"
-        : normalizedStatus === "LEFT"
-          ? "bg-[#E74C3C]"
-          : "bg-[#9AA3AF]";
-
-  return (
-    <div className="space-y-4 p-3 md:p-4 lg:p-5">
-      {/* =========================================================
-          TOP PROFILE HEADER
-      ========================================================= * /}
-      <section className="relative overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-        {/* Background image * /}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${profileBg})` }}
-        />
-
-        <div className="relative z-10 flex flex-col gap-5 p-6 md:p-7 xl:flex-row xl:items-center xl:justify-between">
-          {/* LEFT PROFILE * /}
-          <div className="flex items-center gap-4 md:gap-5">
-            {/* Avatar * /}
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] text-xl font-bold text-[#6F4AE7] md:h-20 md:w-20 md:text-2xl">
-              {getInitials(data.name)}
-            </div>
-
-            {/* Identity * /}
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold tracking-tight text-[#101828] md:text-3xl">
-                {data.name}
-              </h1>
-
-              <p className="mt-1 flex items-center gap-2 text-sm font-medium text-[#667085]">
-                <span className="text-[#8B93A7]">Employee ID</span>
-                {data.employeeId}
-              </p>
-
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] px-3 py-1 text-xs font-semibold text-[#5B3BE6]">
-                  {data.level}
-                </span>
-
-                <span className="inline-flex items-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] px-3 py-1 text-xs font-semibold text-[#5B3BE6]">
-                  {data.department}
-                </span>
-
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses}`}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${statusDotClasses}`}
-                  />
-                  {data.status || "—"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT ACTIONS * /}
-          <div className="flex items-center gap-2 self-start xl:self-center">
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-xs font-semibold text-[#344054] transition hover:bg-[#F9FAFB]"
-            >
-              <RefreshOutlinedIcon sx={{ fontSize: 16 }} />
-              Refresh Data
-            </button>
-
-            <button
-              type="button"
-              className="flex h-10 w-9 items-center justify-center rounded-lg border border-[#E4E7EC] bg-white text-[#667085] transition hover:bg-[#F9FAFB]"
-            >
-              <MoreVertOutlinedIcon sx={{ fontSize: 19 }} />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================
-          MAIN PROFILE AREA
-      ========================================================= * /}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
-        {/* =====================================================
-            PRIMARY DETAILS
-        ===================================================== * /}
-        <section className="overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-          <div className="flex items-center gap-3 bg-gradient-to-r from-[#6F4AE7] to-[#9A7CF5] px-4 py-3.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white">
-              <PersonOutlineOutlinedIcon sx={{ fontSize: 20 }} />
-            </div>
-
-            <div>
-              <h2 className="text-sm font-bold text-white">Primary Details</h2>
-              <p className="text-[11px] font-medium text-white/80">
-                Contact information
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-2.5 p-4">
-            <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-3 transition hover:border-[#DDD5FF] hover:bg-white hover:shadow-sm">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                <EmailOutlinedIcon sx={{ fontSize: 20 }} />
-              </div>
-
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-[#8B93A7]">
-                  Email Address
-                </p>
-
-                <p className="mt-0.5 truncate text-sm font-semibold text-[#252B3A]">
-                  {data.email || "—"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-3 transition hover:border-[#DDD5FF] hover:bg-white hover:shadow-sm">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                <PhoneOutlinedIcon sx={{ fontSize: 20 }} />
-              </div>
-
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-[#8B93A7]">
-                  Mobile Number
-                </p>
-
-                <p className="mt-0.5 truncate text-sm font-semibold text-[#252B3A]">
-                  {data.phone || "—"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* =====================================================
-            DETAILED PROFILE
-        ===================================================== * /}
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-          {/* Header * /}
-          <div className="flex items-center gap-3 bg-gradient-to-r from-[#6F4AE7] to-[#9A7CF5] px-4 py-3.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white">
-              <BusinessOutlinedIcon sx={{ fontSize: 20 }} />
-            </div>
-
-            <div>
-              <h2 className="text-sm font-bold text-white">
-                Detailed Profile Information
-              </h2>
-              <p className="text-[11px] font-medium text-white/80">
-                Personal, professional & location details
-              </p>
-            </div>
-          </div>
-
-          {/* THREE COLUMNS * /}
-          <div className="p-5">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              {/* PERSONAL * /}
-              <div className="rounded-2xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF]">
-                <div className="mb-2 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                    <FamilyRestroomOutlinedIcon sx={{ fontSize: 18 }} />
-                  </div>
-
-                  <h3 className="text-[13px] font-bold text-[#252B3A]">
-                    Personal
-                  </h3>
-                </div>
-
-                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                    <FamilyRestroomOutlinedIcon sx={{ fontSize: 17 }} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-[#8B93A7]">
-                      Father / Husband
-                    </p>
-                    <p className="mt-1 text-[13px] font-semibold text-[#252B3A]">
-                      {data.fatherHusband || "—"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                    <WcOutlinedIcon sx={{ fontSize: 17 }} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-[#8B93A7]">
-                      Gender / DOB
-                    </p>
-                    <p className="mt-1 text-[13px] font-semibold text-[#252B3A]">
-                      {data.gender} / {data.dob}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                    <SchoolOutlinedIcon sx={{ fontSize: 17 }} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-[#8B93A7]">
-                      Qualification
-                    </p>
-                    <p className="mt-1 inline-block rounded-md bg-[#F3F0FF] px-2 py-0.5 text-[13px] font-semibold text-[#5B3BE6]">
-                      {data.qualification || "—"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                    <FlagOutlinedIcon sx={{ fontSize: 17 }} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-[#8B93A7]">
-                      Joining Date
-                    </p>
-                    <p className="mt-1 text-[13px] font-semibold text-[#252B3A]">
-                      {data.joiningDate || "—"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* PROFESSIONAL * /}
-              <div className="rounded-2xl border border-[#EEF0F5] bg-white p-4 transition hover:border-[#DDD5FF]">
-                <div className="mb-3 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                    <AccountTreeOutlinedIcon sx={{ fontSize: 18 }} />
-                  </div>
-
-                  <h3 className="text-[13px] font-bold text-[#252B3A]">
-                    Professional
-                  </h3>
-                </div>
-
-                <p className="mb-3 text-[11px] font-bold text-[#344054]">
-                  Organizational Assignment Flow
-                </p>
-
-                <div className="flex flex-col items-center">
-                  {/* Department * /}
-                  <div className="flex w-full items-center justify-center gap-2">
-                    <div className="w-[115px]">
-                      <div className="rounded-lg border border-[#DDD5FF] bg-[#F5F2FF] px-2.5 py-2">
-                        <div className="flex items-center gap-1.5">
-                          <ApartmentOutlinedIcon
-                            sx={{ fontSize: 14 }}
-                            className="text-[#6F4AE7]"
-                          />
-
-                          <div className="min-w-0">
-                            <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
-                              DEPT
-                            </p>
-                            <p className="text-[11px] font-bold text-[#4F46B5]">
-                              {data.department}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <ArrowForwardIosOutlinedIcon
-                      sx={{ fontSize: 12, color: "#A5ACBA" }}
-                    />
-
-                    <div className="relative w-[115px]">
-                      <div className="rounded-lg border border-[#DDD5FF] bg-[#F5F2FF] px-2.5 py-2">
-                        <div className="flex items-center gap-1.5">
-                          <AccountTreeOutlinedIcon
-                            sx={{ fontSize: 14 }}
-                            className="text-[#6F4AE7]"
-                          />
-
-                          <div className="min-w-0">
-                            <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
-                              SECTION
-                            </p>
-                            <p className="text-[11px] font-bold text-[#4F46B5]">
-                              {data.section}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <span className="absolute -right-2 -top-2 rounded-full bg-[#6F4AE7] px-1.5 py-0.5 text-[7px] font-bold text-white">
-                        Primary
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Connector * /}
-                  <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
-
-                  {/* Line * /}
-                  <div className="flex w-full justify-center">
-                    <div className="rounded-lg border border-[#D6E1FF] bg-[#F2F6FF] px-2.5 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <ApartmentOutlinedIcon
-                          sx={{ fontSize: 14 }}
-                          className="text-[#5575D9]"
-                        />
-
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
-                            LINE
-                          </p>
-                          <p className="text-[11px] font-bold text-[#4457A8]">
-                            {data.line}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
-
-                  {/* Sub section * /}
-                  <div className="flex w-full justify-center">
-                    <div className="rounded-lg border border-[#DDD5FF] bg-[#F5F2FF] px-2.5 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <LayersOutlinedIcon
-                          sx={{ fontSize: 14 }}
-                          className="text-[#6F4AE7]"
-                        />
-
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
-                            SUB-SECT
-                          </p>
-                          <p className="text-[11px] font-bold text-[#4F46B5]">
-                            {data.subSection}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="h-4 w-px border-l border-dashed border-[#A5ACBA]" />
-
-                  {/* Station + Level * /}
-                  <div className="grid w-full grid-cols-2 gap-2">
-                    <div className="rounded-lg border border-[#FFD3D3] bg-[#FFF4F4] px-2.5 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <SettingsOutlinedIcon
-                          sx={{ fontSize: 14 }}
-                          className="text-[#FF4D4D]"
-                        />
-
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
-                            STATION
-                          </p>
-                          <p className="text-[11px] font-bold text-[#FF4D4D]">
-                            {data.station}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg border border-[#DDD5FF] bg-[#F5F2FF] px-2.5 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <LayersOutlinedIcon
-                          sx={{ fontSize: 14 }}
-                          className="text-[#6F4AE7]"
-                        />
-
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
-                            LEVEL
-                          </p>
-                          <p className="text-[11px] font-bold text-[#4F46B5]">
-                            {data.level}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="h-3 w-px border-l border-dashed border-[#A5ACBA]" />
-
-                  {/* Efficiency * /}
-                  <div className="w-1/2 min-w-[100px]">
-                    <div className="rounded-lg border border-[#C7EED8] bg-[#EEFBF4] px-2.5 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <SettingsOutlinedIcon
-                          sx={{ fontSize: 14 }}
-                          className="text-[#1DA65B]"
-                        />
-
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-semibold uppercase text-[#8B93A7]">
-                            EFFICIENCY
-                          </p>
-                          <p className="text-[11px] font-bold text-[#16864A]">
-                            {data.efficiency}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* LOCATION & TRANSIT * /}
-              <div className="rounded-2xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF]">
-                <div className="mb-2 flex items-center gap-2.5 border-b border-[#EEF0F5] pb-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                    <LocationOnOutlinedIcon sx={{ fontSize: 18 }} />
-                  </div>
-
-                  <h3 className="text-[13px] font-bold text-[#252B3A]">
-                    Location & Transit
-                  </h3>
-                </div>
-
-                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                    <LocationOnOutlinedIcon sx={{ fontSize: 17 }} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-[#8B93A7]">
-                      District & State
-                    </p>
-                    <p className="mt-1 text-[13px] font-semibold text-[#252B3A]">
-                      {data.district || "—"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 border-b border-[#F0F2F7] py-3 last:border-b-0">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-                    <PinDropOutlinedIcon sx={{ fontSize: 17 }} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-[#8B93A7]">
-                      PIN Code
-                    </p>
-                    <p className="mt-1 text-[13px] font-semibold text-[#252B3A]">
-                      {data.pinCode || "—"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* =========================================================
-          SHIFT SCHEDULE
-      ========================================================= * /}
-      <section className="overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-        <div className="flex items-center gap-3 bg-gradient-to-r from-[#6F4AE7] to-[#9A7CF5] px-4 py-3.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white">
-            <ScheduleOutlinedIcon sx={{ fontSize: 20 }} />
-          </div>
-
-          <div>
-            <h2 className="text-sm font-bold text-white">Shift Schedule</h2>
-            <p className="text-[11px] font-medium text-white/80">
-              Default and today&apos;s working shift
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
-          {/* DEFAULT SHIFT * /}
-          <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF] hover:bg-white">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-              <CalendarMonthOutlinedIcon sx={{ fontSize: 22 }} />
-            </div>
-
-            <div>
-              <p className="text-[11px] font-medium text-[#8B93A7]">
-                Default Shift
-              </p>
-              <p className="mt-0.5 text-sm font-bold text-[#252B3A]">
-                {data.shift || "—"}
-              </p>
-            </div>
-          </div>
-
-          {/* TODAY'S SHIFT * /}
-          <div className="flex items-center gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] p-4 transition hover:border-[#DDD5FF] hover:bg-white">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-              <TodayOutlinedIcon sx={{ fontSize: 22 }} />
-            </div>
-
-            <div>
-              <p className="text-[11px] font-medium text-[#8B93A7]">
-                Today&apos;s Shift
-              </p>
-              <p className="mt-0.5 text-sm font-bold text-[#252B3A]">
-                {data.todayShift || "—"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* LEARNING / TRAINING CARD * /}
-      <KPICards
-        data={[
-          {
-            title: "Courses",
-            value: data.courses || "—",
-            color: "indigo",
-            icon: <MenuBookOutlinedIcon sx={{ fontSize: 24 }} />,
-          },
-          {
-            title: "Progress",
-            value: data.progress || "—",
-            color: "green",
-            icon: <TrendingUpOutlinedIcon sx={{ fontSize: 24 }} />,
-          },
-          {
-            title: "Submission",
-            value: data.submission || "—",
-            color: "blue",
-            icon: <TaskAltOutlinedIcon sx={{ fontSize: 24 }} />,
-          },
-          {
-            title: "Test Avg",
-            value: data.testAvg || "—",
-            color: "orange",
-            icon: <FactCheckOutlinedIcon sx={{ fontSize: 24 }} />,
-          },
-        ]}
-      />
-    </div>
-  );
-};
-
-export default OperatorProfileDetails;
-*/
-
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
+  ArrowLeft,
   Award,
   BadgeCheck,
-  BookOpen,
-  Briefcase,
   Building2,
-  CalendarDays,
+  Calendar,
+  Check,
   CheckCircle2,
   Clock,
+  Copy,
   CreditCard,
+  Cpu,
   Droplets,
+  ExternalLink,
+  Factory,
+  FileCheck2,
+  FileText,
   Hash,
-HeartPulse,
+  HeartPulse,
   Layers,
   Mail,
   MapPin,
-  MoreVertical,
   Phone,
-  RefreshCw,
+  Printer,
+  ShieldCheck,
+  Sparkles,
   TrendingUp,
   User,
   Users,
-Wallet,
+  Wallet,
+  Wrench,
 } from "lucide-react";
 import profileBg from "../../../assets/images/profile-bg.png";
-
-const defaultOperator = {
-  sno: "—",
-  name: "—",
-  employeeId: "—",
-  cardNo: "—",
-  designation: "—",
-  department: "—",
-  status: "",
-  level: "—",
-  companyName: "—",
-  subDepartment: "—",
-  category: "—",
-  grade: "—",
-  line: "—",
-  machine: "—",
-  shift: "—",
-  plant: "—",
-  plantLocation: "—",
-  isDojo: "—",
-  fatherHusband: "—",
-  gender: "—",
-  dob: "—",
-  bloodGroup: "—",
-  maritalState: "—",
-  email: "—",
-  phone: "—",
-  joiningDate: "—",
-  leavingDate: "—",
-  firstOfDate: "—",
-  salary: "—",
-  courses: "—",
-  progress: "—",
-  submission: "—",
-  testAvg: "—",
-};
 
 const getInitials = (name = "") => {
   const parts = String(name).trim().split(/\s+/);
@@ -712,255 +41,623 @@ const getInitials = (name = "") => {
     .map((part) => part.charAt(0))
     .join("")
     .toUpperCase();
-
-return initials || "OP";
+  return initials || "OP";
 };
 
-const InfoCard = ({ title, subtitle, icon: Icon, children }) => (
-  <section className="overflow-hidden rounded-2xl border border-[#e6e8ef] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-    <div className="border-b border-[#F0F2F7] px-4 py-3.5">
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7]">
-          <Icon size={18} />
-        </div>
+const getSkillLevelNumber = (level = "") => {
+  const str = String(level).toLowerCase();
+  if (str.includes("4") || str.includes("expert") || str.includes("master")) return 4;
+  if (str.includes("3") || str.includes("skilled") || str.includes("senior")) return 3;
+  if (str.includes("2") || str.includes("semi")) return 2;
+  if (str.includes("1") || str.includes("trainee") || str.includes("beginner")) return 1;
+  return 2;
+};
 
-        <div>
-          <h2 className="text-sm font-bold text-[#101828]">{title}</h2>
+const OperatorProfileDetails = ({ operator }) => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("station");
+  const [copiedKey, setCopiedKey] = useState("");
+  const [toast, setToast] = useState("");
 
-          {subtitle && (
-            <p className="text-[11px] font-medium text-[#8B93A7]">{subtitle}</p>
-          )}
+  const showToast = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(""), 2400);
+  };
+
+  const handleCopy = (text, key) => {
+    if (!text || text === "—") return;
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    showToast(`Copied ${key} to clipboard!`);
+    setTimeout(() => setCopiedKey(""), 2000);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  if (!operator) {
+    return (
+      <div className="mx-auto max-w-4xl p-6 sm:p-10">
+        <div className="rounded-3xl border border-[#e2edf2] bg-white/90 p-12 text-center shadow-[0_4px_24px_rgba(15,23,42,0.04)] backdrop-blur-md">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f0f9f8] text-[#0d9488]">
+            <Wrench size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-[#0f172a]">Operator Record Not Found</h2>
+          <p className="mt-2 text-sm text-[#64748b]">
+            The operator profile you are searching for does not exist or has been removed.
+          </p>
+          <button
+            onClick={() => navigate("/lms/operators")}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] px-5 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition hover:from-[#0f766e] hover:to-[#0d9488]"
+          >
+            <ArrowLeft size={16} />
+            Back to Operators List
+          </button>
         </div>
       </div>
-    </div>
+    );
+  }
 
-    <div className="grid gap-2.5 p-4 sm:grid-cols-2 xl:grid-cols-1">
-      {children}
-    </div>
-  </section>
-);
+  const initials = getInitials(operator.name);
+  const isActive = String(operator.status || "").toLowerCase() === "active";
+  const isDojo = String(operator.isDojo || "").toLowerCase() === "yes";
+  const skillNum = getSkillLevelNumber(operator.level);
 
-const Field = ({ icon: Icon, label, value }) => (
-  <div className="flex items-start gap-3 rounded-xl border border-[#EEF0F5] bg-[#FBFCFE] px-3 py-3 transition hover:border-[#DDD5FF] hover:bg-white">
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F4F1FF] text-[#6F4AE7] ring-1 ring-[#E9E3FF]">
-      <Icon size={17} />
-    </div>
+  const tabs = [
+    { id: "station", label: "Workstation & Hierarchy", icon: Factory },
+    { id: "skills", label: "Skill Matrix & Dojo", icon: Award },
+    { id: "personal", label: "Personal Information", icon: User },
+    { id: "employment", label: "Employment & Contact", icon: Wallet },
+  ];
 
-    <div className="min-w-0">
-      <p className="text-[11px] font-medium text-[#8B93A7]">{label}</p>
-      <p className="mt-0.5 truncate text-[13px] font-semibold text-[#252B3A]">
-        {value || "—"}
-      </p>
-    </div>
-  </div>
-);
-
-const StatCard = ({ icon: Icon, label, value, accent }) => (
-  <div className="flex items-center gap-3 rounded-2xl border border-[#e6e8ef] bg-white p-4 shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-    <div
-      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${accent}`}
-    >
-      <Icon size={20} />
-    </div>
-
-    <div className="min-w-0">
-      <p className="text-[11px] font-medium text-[#8B93A7]">{label}</p>
-      <p className="truncate text-lg font-extrabold text-[#101828]">{value}</p>
-    </div>
-  </div>
-);
-
-const OperatorProfileDetails = ({ operator = defaultOperator }) => {
-  const data = { ...defaultOperator, ...operator };
-  const initials = getInitials(data.name);
-  const normalizedStatus = String(data.status || "").toUpperCase();
-
-const statusClasses =
-    normalizedStatus === "ACTIVE"
-      ? "border-[#BFEBD4] bg-[#EEFBF4] text-[#16864A]"
-      : normalizedStatus === "ON LEAVE"
-        ? "border-[#FFD9A8] bg-[#FFF4E5] text-[#E6920B]"
-        : normalizedStatus === "LEFT"
-          ? "border-[#FFD3D3] bg-[#FFF0EE] text-[#E74C3C]"
-          : "border-[#E4E7EC] bg-[#F9FAFB] text-[#344054]";
-
-  const statusDotClasses =
-    normalizedStatus === "ACTIVE"
-      ? "bg-[#16864A]"
-      : normalizedStatus === "ON LEAVE"
-        ? "bg-[#E6920B]"
-        : normalizedStatus === "LEFT"
-          ? "bg-[#E74C3C]"
-          : "bg-[#9AA3AF]";
-
-  const stats = [
-    {
-      label: "Courses",
-      value: data.courses,
-      icon: BookOpen,
-      accent: "bg-[#F4F1FF] text-[#6F4AE7]",
-    },
-    {
-      label: "Progress",
-      value: data.progress,
-      icon: TrendingUp,
-      accent: "bg-[#EEFBF4] text-[#16864A]",
-    },
-    {
-      label: "Submission",
-      value: data.submission,
-      icon: CheckCircle2,
-      accent: "bg-[#EFF6FF] text-[#2563EB]",
-    },
-    {
-      label: "Test Avg",
-      value: data.testAvg,
-      icon: Award,
-      accent: "bg-[#FFF4E5] text-[#E6920B]",
-    },
+  const hierarchyLevels = [
+    { label: "Plant", value: operator.plant || "Plant 1", icon: Factory, note: operator.plantLocation || "Manufacturing Plant" },
+    { label: "Department", value: operator.department || "Production", icon: Building2, note: "Shop Floor Department" },
+    { label: "Sub-Department", value: operator.subDepartment || "General", icon: Layers, note: "Operational Division" },
+    { label: "Line", value: operator.line || "Line 1", icon: Hash, note: "Production Line" },
+    { label: "Machine Station", value: operator.machine || "Machine 01", icon: Cpu, note: `Shift: ${operator.shift || "Morning"}` },
   ];
 
   return (
-    <div className="mx-auto max-w-[1320px] space-y-5 p-4 md:p-6 lg:p-7">
-      {/* =========================================================
-          PROFILE HEADER
-      ========================================================= */}
-<section className="relative overflow-hidden rounded-2xl border border-[#E8EAF0] bg-white shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-        {/* Background image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${profileBg})` }}
-        />
+    <div className="mx-auto max-w-[1360px] space-y-6 p-4 sm:p-6 lg:p-8">
+      {/* ===================== TOP NAVIGATION & BREADCRUMB ===================== */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate("/lms/operators")}
+            className="flex h-9 items-center gap-2 rounded-xl border border-[#e2edf2] bg-white px-3.5 text-xs font-semibold text-[#0f172a] shadow-xs transition hover:border-[#0d9488] hover:bg-[#f0f9f8] hover:text-[#0d9488]"
+          >
+            <ArrowLeft size={15} />
+            Back to Operators
+          </button>
+          <div className="hidden items-center gap-2 text-xs text-[#94a3b8] sm:flex">
+            <span>LMS</span>
+            <span>/</span>
+            <button
+              onClick={() => navigate("/lms/operators")}
+              className="text-[#64748b] hover:text-[#0d9488]"
+            >
+              Operators
+            </button>
+            <span>/</span>
+            <span className="font-semibold text-[#0f172a]">{operator.name}</span>
+          </div>
+        </div>
 
-        <div className="relative z-10 flex flex-col gap-5 p-6 md:p-7 xl:flex-row xl:items-center xl:justify-between">
-          {/* LEFT PROFILE */}
-          <div className="flex items-center gap-4 md:gap-5">
-            {/* Avatar */}
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] text-xl font-bold text-[#6F4AE7] md:h-20 md:w-20 md:text-2xl">
-              {initials}
+        <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
+          <button
+            type="button"
+            onClick={() => navigate("/lms/operator-observance")}
+            className="flex h-9 items-center gap-1.5 rounded-xl border border-[#0d9488]/30 bg-[#e6f7f5] px-3.5 text-xs font-semibold text-[#0d9488] shadow-xs transition hover:bg-[#d0f0ec]"
+          >
+            <FileText size={14} />
+            Observance Sheet
+          </button>
+          <button
+            type="button"
+            onClick={() => handleCopy(`${operator.name} | PayCode: ${operator.employeeId} | Line: ${operator.line} | Machine: ${operator.machine}`, "Operator details")}
+            className="flex h-9 items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-3 text-xs font-semibold text-[#64748b] shadow-xs transition hover:border-[#0d9488] hover:text-[#0d9488]"
+          >
+            {copiedKey === "Operator details" ? <Check size={14} className="text-[#0d9488]" /> : <Copy size={14} />}
+            Copy Info
+          </button>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="flex h-9 items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-3 text-xs font-semibold text-[#64748b] shadow-xs transition hover:border-[#0d9488] hover:text-[#0d9488]"
+          >
+            <Printer size={14} />
+            Print
+          </button>
+        </div>
+      </div>
+
+      {/* ===================== HERO OPERATOR CARD ===================== */}
+      <div className="relative overflow-hidden rounded-2xl border border-[#e2edf2] bg-white shadow-[0_4px_24px_rgba(15,23,42,0.04)] md:rounded-3xl">
+        {/* Ambient Cover Banner */}
+        <div
+          className="relative h-36 w-full bg-cover bg-center sm:h-44"
+          style={{ backgroundImage: `url(${profileBg})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0f172a]/80 via-[#0d9488]/45 to-transparent backdrop-blur-[1px]" />
+          <div className="absolute right-4 top-4 hidden items-center gap-2 rounded-full border border-white/20 bg-black/25 px-3 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md sm:flex">
+            <Cpu size={13} className="text-[#5eead4]" />
+            Shop Floor LMS Operator
+          </div>
+        </div>
+
+        {/* Operator Info Header */}
+        <div className="relative -mt-14 px-5 pb-6 sm:-mt-16 sm:px-8 sm:pb-7">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+              {/* Avatar with Status Glow */}
+              <div className="relative h-24 w-24 shrink-0 rounded-2xl border-4 border-white bg-gradient-to-br from-[#0d9488] to-[#14b8a6] p-1 shadow-lg shadow-[#0d9488]/20 sm:h-28 sm:w-28 md:rounded-3xl">
+                <div className="flex h-full w-full items-center justify-center rounded-xl bg-gradient-to-br from-[#0d9488] to-[#0f766e] text-2xl font-bold text-white sm:text-3xl">
+                  {initials}
+                </div>
+                <span
+                  title={isActive ? "Active on Shift" : "Off Duty / Left"}
+                  className={`absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white ${isActive ? "bg-emerald-500 ring-2 ring-emerald-400/40" : "bg-rose-500 ring-2 ring-rose-400/40"
+                    }`}
+                >
+                  <span className="h-2 w-2 rounded-full bg-white" />
+                </span>
+              </div>
+
+              {/* Title & Identifiers */}
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-xl font-bold tracking-tight text-[#0f172a] sm:text-2xl md:text-3xl">
+                    {operator.name}
+                  </h1>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${isActive
+                        ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border border-rose-200 bg-rose-50 text-rose-700"
+                      }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+                    {operator.status || (isActive ? "Active" : "Inactive")}
+                  </span>
+                </div>
+
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#64748b]">
+                  <span className="flex items-center gap-1">
+                    <span className="text-[#94a3b8]">Pay Code:</span>
+                    <strong className="font-semibold text-[#0f172a]">{operator.employeeId || "—"}</strong>
+                  </span>
+                  <span className="hidden text-gray-300 sm:inline">•</span>
+                  <span className="flex items-center gap-1">
+                    <span className="text-[#94a3b8]">Card No:</span>
+                    <strong className="font-semibold text-[#0f172a]">{operator.cardNo || "—"}</strong>
+                  </span>
+                  <span className="hidden text-gray-300 sm:inline">•</span>
+                  <span className="flex items-center gap-1">
+                    <span className="text-[#94a3b8]">Station:</span>
+                    <strong className="font-semibold text-[#0d9488]">{operator.machine || "General Station"}</strong>
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Identity */}
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold tracking-tight text-[#101828] md:text-3xl">
-                {data.name}
-              </h1>
+            {/* Badges / Chips */}
+            <div className="flex flex-wrap items-center gap-2 sm:self-center">
+              {operator.shift && (
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-2xs">
+                  <Clock size={13} />
+                  {operator.shift} Shift
+                </span>
+              )}
+              {operator.line && (
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-[#f8fafc] px-3 py-1.5 text-xs font-medium text-[#0f172a] shadow-2xs">
+                  <Hash size={13} className="text-[#0d9488]" />
+                  {operator.line}
+                </span>
+              )}
+              {isDojo && (
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-teal-200 bg-[#e6f7f5] px-3 py-1.5 text-xs font-semibold text-[#0d9488] shadow-2xs">
+                  <ShieldCheck size={13} />
+                  Dojo Certified
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-              <p className="mt-1 flex items-center gap-2 text-sm font-medium text-[#667085]">
-                <span className="text-[#8B93A7]">Employee ID</span>
-                {data.employeeId}
+      {/* ===================== KPI STATS ROW ===================== */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Machine & Line */}
+        <div className="flex items-center gap-3.5 rounded-2xl border border-[#e2edf2] bg-white/85 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#0d9488]/20 bg-[#e6f7f5] text-[#0d9488]">
+            <Cpu size={22} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-[#64748b]">Assigned Machine</p>
+            <p className="mt-0.5 truncate text-sm font-bold text-[#0f172a]">
+              {operator.machine || "Station 01"}
+            </p>
+            <p className="truncate text-[11px] text-[#94a3b8]">Line: {operator.line || "Line 1"}</p>
+          </div>
+        </div>
+
+        {/* Shift & Dept */}
+        <div className="flex items-center gap-3.5 rounded-2xl border border-[#e2edf2] bg-white/85 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-600">
+            <Clock size={22} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-[#64748b]">Operating Shift</p>
+            <p className="mt-0.5 truncate text-sm font-bold text-[#0f172a]">
+              {operator.shift ? `${operator.shift} Shift` : "Regular Shift"}
+            </p>
+            <p className="truncate text-[11px] text-[#94a3b8]">{operator.department || "Production"}</p>
+          </div>
+        </div>
+
+        {/* Skill Rating */}
+        <div className="flex items-center gap-3.5 rounded-2xl border border-[#e2edf2] bg-white/85 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-purple-200 bg-purple-50 text-purple-600">
+            <Award size={22} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-[#64748b]">Skill Matrix Rating</p>
+            <p className="mt-0.5 truncate text-sm font-bold text-[#0f172a]">
+              {operator.level || `Level ${skillNum}`}
+            </p>
+            <p className="truncate text-[11px] text-[#94a3b8]">Grade: {operator.grade || "Standard"}</p>
+          </div>
+        </div>
+
+        {/* Dojo Qualification */}
+        <div className="flex items-center gap-3.5 rounded-2xl border border-[#e2edf2] bg-white/85 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-teal-200 bg-[#e6f7f5] text-[#0d9488]">
+            <ShieldCheck size={22} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-[#64748b]">Dojo Qualification</p>
+            <p className="mt-0.5 truncate text-sm font-bold text-[#0f172a]">
+              {isDojo ? "Dojo Qualified" : "Standard Operator"}
+            </p>
+            <p className="truncate text-[11px] text-[#94a3b8]">{isDojo ? "Station Verified" : "Assessment Pending"}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ===================== TAB NAVIGATION ===================== */}
+      <div className="flex overflow-x-auto border-b border-[#e2edf2] pb-px">
+        <div className="flex gap-2">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isCurrent = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 rounded-t-xl px-4 py-3 text-xs font-semibold transition ${isCurrent
+                    ? "border-b-2 border-[#0d9488] bg-white text-[#0d9488] shadow-2xs"
+                    : "text-[#64748b] hover:bg-white/60 hover:text-[#0f172a]"
+                  }`}
+              >
+                <Icon size={16} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ===================== TAB CONTENT PANELS ===================== */}
+      {/* 1. WORKSTATION & HIERARCHY */}
+      {activeTab === "station" && (
+        <div className="space-y-6">
+          <div className="overflow-hidden rounded-2xl border border-[#e2edf2] bg-white/90 p-6 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+            <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-base font-bold text-[#0f172a]">Shop Floor Station Hierarchy</h3>
+                <p className="text-xs text-[#64748b]">
+                  Full production mapping: Plant → Department → Sub-Department → Line → Machine
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#0d9488]/20 bg-[#e6f7f5] px-3 py-1 text-xs font-semibold text-[#0d9488]">
+                <Cpu size={13} />
+                Active Station: {operator.machine || "Machine 01"}
+              </span>
+            </div>
+
+            {/* Stepper / Hierarchy Chain */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+              {hierarchyLevels.map((lvl, index) => {
+                const Icon = lvl.icon;
+                return (
+                  <div
+                    key={lvl.label}
+                    className="relative flex flex-col justify-between rounded-xl border border-[#e2edf2] bg-[#f8fafc] p-4 transition hover:border-[#0d9488] hover:bg-white hover:shadow-sm"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">
+                          Level 0{index + 1}
+                        </span>
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#0d9488]/20 bg-[#e6f7f5] text-[#0d9488]">
+                          <Icon size={14} />
+                        </div>
+                      </div>
+                      <p className="mt-3 text-[11px] font-medium text-[#64748b]">{lvl.label}</p>
+                      <h4 className="mt-0.5 text-sm font-bold text-[#0f172a]">{lvl.value}</h4>
+                    </div>
+                    <div className="mt-3 border-t border-[#edf2f6] pt-2 text-[10px] text-[#94a3b8]">
+                      {lvl.note}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Station Work Details Grid */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="overflow-hidden rounded-2xl border border-[#e2edf2] bg-white/90 p-5 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+              <h4 className="border-b border-[#f0f4f7] pb-3 text-sm font-bold text-[#0f172a]">
+                Workstation Parameters
+              </h4>
+              <div className="divide-y divide-[#f1f5f8] py-1">
+                <OperatorRow label="Company" value={operator.companyName} />
+                <OperatorRow label="Plant Location" value={operator.plantLocation} />
+                <OperatorRow label="Line Assignment" value={operator.line} />
+                <OperatorRow label="Machine Station" value={operator.machine} />
+                <OperatorRow label="Operating Shift" value={operator.shift} />
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-[#e2edf2] bg-white/90 p-5 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+              <h4 className="border-b border-[#f0f4f7] pb-3 text-sm font-bold text-[#0f172a]">
+                Observance & Quality Monitoring
+              </h4>
+              <p className="mt-3 text-xs leading-relaxed text-[#64748b]">
+                Operators are routinely evaluated for standard work adherence, safety compliance, and defect prevention.
               </p>
-
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] px-3 py-1 text-xs font-semibold text-[#5B3BE6]">
-                  {data.level}
-                </span>
-
-                <span className="inline-flex items-center rounded-full border border-[#DDD5FF] bg-[#F4F1FF] px-3 py-1 text-xs font-semibold text-[#5B3BE6]">
-                  {data.department}
-                </span>
-
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses}`}
+              <div className="mt-5 flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate("/lms/operator-observance")}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition hover:from-[#0f766e] hover:to-[#0d9488]"
                 >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${statusDotClasses}`}
-                  />
-                  {data.status || "—"}
-                </span>
+                  <FileCheck2 size={16} />
+                  Open Observance Sheet
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. SKILL MATRIX & DOJO */}
+      {activeTab === "skills" && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Skill Matrix Breakdown */}
+          <div className="overflow-hidden rounded-2xl border border-[#e2edf2] bg-white/90 p-6 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#0d9488]/20 bg-[#e6f7f5] text-[#0d9488]">
+                <Award size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#0f172a]">Operator Skill Matrix</h3>
+                <p className="text-[11px] text-[#64748b]">Skill level classification</p>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-[#e2edf2] bg-[#f8fafc] p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-[#64748b]">Assigned Skill Rating</p>
+                  <h4 className="mt-1 text-2xl font-bold text-[#0f172a]">{operator.level || `Level ${skillNum}`}</h4>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0d9488] to-[#14b8a6] text-xl font-bold text-white shadow-md shadow-[#0d9488]/20">
+                  {`L${skillNum}`}
+                </div>
+              </div>
+
+              {/* Visual 4-Level Gauge */}
+              <div className="mt-5 space-y-2">
+                <div className="grid grid-cols-4 gap-2">
+                  {[1, 2, 3, 4].map((step) => {
+                    const isPassed = step <= skillNum;
+                    return (
+                      <div
+                        key={step}
+                        className={`h-2 rounded-full transition-all ${isPassed ? "bg-[#0d9488]" : "bg-[#e2edf2]"
+                          }`}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between text-[11px] text-[#64748b]">
+                  <span>L1 (Trainee)</span>
+                  <span>L2 (Semi-Skilled)</span>
+                  <span>L3 (Skilled)</span>
+                  <span>L4 (Expert)</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-[#e2edf2] bg-[#f8fafc] p-3.5">
+                <p className="text-[11px] text-[#64748b]">Operator Grade</p>
+                <p className="mt-0.5 text-sm font-bold text-[#0f172a]">{operator.grade || "Standard"}</p>
+              </div>
+              <div className="rounded-xl border border-[#e2edf2] bg-[#f8fafc] p-3.5">
+                <p className="text-[11px] text-[#64748b]">Designation</p>
+                <p className="mt-0.5 text-sm font-bold text-[#0f172a]">{operator.designation || "Operator"}</p>
               </div>
             </div>
           </div>
 
-          {/* RIGHT ACTIONS */}
-          <div className="flex items-center gap-2 self-start xl:self-center">
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-lg border border-[#E4E7EC] bg-white px-4 py-2.5 text-xs font-semibold text-[#344054] transition hover:bg-[#F9FAFB]"
-            >
-              <RefreshCw size={16} />
-              Refresh Data
-            </button>
+          {/* Dojo Center Training Card */}
+          <div className="overflow-hidden rounded-2xl border border-[#e2edf2] bg-white/90 p-6 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-teal-200 bg-[#e6f7f5] text-[#0d9488]">
+                <ShieldCheck size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#0f172a]">Dojo Training Center Qualification</h3>
+                <p className="text-[11px] text-[#64748b]">Shop-floor training standards</p>
+              </div>
+            </div>
 
-            <button
-              type="button"
-              className="flex h-10 w-9 items-center justify-center rounded-lg border border-[#E4E7EC] bg-white text-[#667085] transition hover:bg-[#F9FAFB]"
-            >
-              <MoreVertical size={19} />
-            </button>
+            <div className="mt-6 rounded-2xl border border-[#e2edf2] bg-[#f8fafc] p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-[#64748b]">Status</p>
+                  <h4 className="mt-1 text-lg font-bold text-[#0f172a]">
+                    {isDojo ? "Dojo Certified Technician" : "General Shop-floor Operator"}
+                  </h4>
+                </div>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isDojo
+                      ? "border border-teal-200 bg-[#e6f7f5] text-[#0d9488]"
+                      : "border border-gray-200 bg-gray-100 text-gray-600"
+                    }`}
+                >
+                  <CheckCircle2 size={13} />
+                  {isDojo ? "Certified" : "Not Certified"}
+                </span>
+              </div>
+
+              <p className="mt-3 text-xs leading-relaxed text-[#64748b]">
+                {isDojo
+                  ? "Operator has passed practical assessments in the Dojo training center, including standard cycle times, machine safety protocols, and 5S principles."
+                  : "Operator is undergoing standard factory onboarding. Dojo center verification pending."}
+              </p>
+            </div>
           </div>
         </div>
-      </section>
+      )}
 
-      {/* =========================================================
-          QUICK STATS
-      ========================================================= */}
-      {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <StatCard
-            key={stat.label}
-            label={stat.label}
-            value={stat.value}
-            icon={stat.icon}
-            accent={stat.accent}
-          />
-        ))}
-      </div> */}
+      {/* 3. PERSONAL INFORMATION */}
+      {activeTab === "personal" && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="overflow-hidden rounded-2xl border border-[#e2edf2] bg-white/90 p-6 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+            <div className="flex items-center gap-2.5 border-b border-[#f0f4f7] pb-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-purple-200 bg-purple-50 text-purple-600">
+                <User size={16} />
+              </div>
+              <h3 className="text-sm font-bold text-[#0f172a]">Personal Details</h3>
+            </div>
+            <div className="divide-y divide-[#f1f5f8] py-2">
+              <OperatorRow label="Full Name" value={operator.name} />
+              <OperatorRow label="Father / Husband Name" value={operator.fatherHusband} />
+              <OperatorRow label="Gender" value={operator.gender} />
+              <OperatorRow label="Date of Birth" value={operator.dob} />
+              <OperatorRow label="Blood Group" value={operator.bloodGroup} />
+              <OperatorRow label="Marital Status" value={operator.maritalState} />
+            </div>
+          </div>
 
-      {/* =========================================================
-          DETAILED INFORMATION
-      ========================================================= */}
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-        {/* PERSONAL */}
-        <InfoCard title="Personal Information" subtitle="Personal details" icon={User}>
-          <Field icon={Users} label="Father / Husband" value={data.fatherHusband} />
-          <Field icon={HeartPulse} label="Gender" value={data.gender} />
-          <Field icon={CalendarDays} label="Date of Birth" value={data.dob} />
-          <Field icon={Droplets} label="Blood Group" value={data.bloodGroup} />
-          <Field icon={BadgeCheck} label="Marital State" value={data.maritalState} />
-        </InfoCard>
+          <div className="overflow-hidden rounded-2xl border border-[#e2edf2] bg-white/90 p-6 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+            <div className="flex items-center gap-2.5 border-b border-[#f0f4f7] pb-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600">
+                <Phone size={16} />
+              </div>
+              <h3 className="text-sm font-bold text-[#0f172a]">Communication & Identifiers</h3>
+            </div>
+            <div className="divide-y divide-[#f1f5f8] py-2">
+              <OperatorRow
+                label="Contact Number"
+                value={operator.phone}
+                action={
+                  operator.phone ? (
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(operator.phone, "Phone")}
+                      className="text-[#0d9488] hover:text-[#0f766e]"
+                      title="Copy phone"
+                    >
+                      {copiedKey === "Phone" ? <Check size={14} /> : <Copy size={14} />}
+                    </button>
+                  ) : null
+                }
+              />
+              <OperatorRow
+                label="Email Address"
+                value={operator.email}
+                action={
+                  operator.email ? (
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(operator.email, "Email")}
+                      className="text-[#0d9488] hover:text-[#0f766e]"
+                      title="Copy email"
+                    >
+                      {copiedKey === "Email" ? <Check size={14} /> : <Copy size={14} />}
+                    </button>
+                  ) : null
+                }
+              />
+              <OperatorRow label="Pay Code" value={operator.employeeId} />
+              <OperatorRow label="Card Number" value={operator.cardNo} />
+            </div>
+          </div>
+        </div>
+      )}
 
-        {/* JOB & ORGANIZATION */}
-        <InfoCard title="Job & Organization" subtitle="Company and role" icon={Briefcase}>
-          <Field icon={Building2} label="Company" value={data.companyName} />
-          <Field icon={Layers} label="Department" value={data.department} />
-          <Field icon={Hash} label="Sub Department" value={data.subDepartment} />
-          <Field icon={BadgeCheck} label="Designation" value={data.designation} />
-          <Field icon={Award} label="Grade" value={data.grade} />
-          <Field icon={TrendingUp} label="Skill Level" value={data.level} />
-        </InfoCard>
+      {/* 4. EMPLOYMENT & TIMELINE */}
+      {activeTab === "employment" && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="overflow-hidden rounded-2xl border border-[#e2edf2] bg-white/90 p-6 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+            <div className="flex items-center gap-2.5 border-b border-[#f0f4f7] pb-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#0d9488]/20 bg-[#e6f7f5] text-[#0d9488]">
+                <Calendar size={16} />
+              </div>
+              <h3 className="text-sm font-bold text-[#0f172a]">Tenure & Service Record</h3>
+            </div>
+            <div className="divide-y divide-[#f1f5f8] py-2">
+              <OperatorRow label="Joining Date" value={operator.joiningDate} />
+              <OperatorRow label="First Of Date" value={operator.firstOfDate} />
+              <OperatorRow label="Leaving Date" value={operator.leavingDate || "Currently Active"} />
+              <OperatorRow label="Service Status" value={operator.status} />
+            </div>
+          </div>
 
-        {/* WORKSPACE & SHIFT */}
-        <InfoCard title="Workspace & Shift" subtitle="Line, machine and shift" icon={MapPin}>
-          <Field icon={Building2} label="Plant" value={data.plant} />
-          <Field icon={MapPin} label="Plant Location" value={data.plantLocation} />
-          <Field icon={Hash} label="Line / Machine" value={[data.line, data.machine].filter(Boolean).join(" / ")} />
-          <Field icon={Clock} label="Shift" value={data.shift} />
-          <Field icon={BadgeCheck} label="Is Dojo" value={data.isDojo} />
-          <Field icon={Users} label="Category" value={data.category} />
-        </InfoCard>
-      </div>
+          <div className="overflow-hidden rounded-2xl border border-[#e2edf2] bg-white/90 p-6 shadow-[0_4px_20px_rgba(15,23,42,0.02)] backdrop-blur-md">
+            <div className="flex items-center gap-2.5 border-b border-[#f0f4f7] pb-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600">
+                <Wallet size={16} />
+              </div>
+              <h3 className="text-sm font-bold text-[#0f172a]">Compensation & Category</h3>
+            </div>
+            <div className="divide-y divide-[#f1f5f8] py-2">
+              <OperatorRow label="Salary / Scale" value={operator.salary ? `₹ ${operator.salary}` : "—"} />
+              <OperatorRow label="Pay Code" value={operator.employeeId} />
+              <OperatorRow label="Card Number" value={operator.cardNo} />
+              <OperatorRow label="Worker Category" value={operator.category} />
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* =========================================================
-          CONTACT & TIMELINE
-      ========================================================= */}
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <InfoCard title="Contact Details" subtitle="How to reach" icon={Phone}>
-          <Field icon={Mail} label="Email Address" value={data.email} />
-          <Field icon={Phone} label="Mobile Number" value={data.phone} />
-          <Field icon={Layers} label="Pay Code" value={data.employeeId} />
-          <Field icon={CreditCard} label="Card No" value={data.cardNo} />
-        </InfoCard>
-
-        <InfoCard title="Employment Timeline" subtitle="Dates and compensation" icon={CalendarDays}>
-          <Field icon={CalendarDays} label="Joining Date" value={data.joiningDate} />
-          <Field icon={CalendarDays} label="Leaving Date" value={data.leavingDate} />
-          <Field icon={CalendarDays} label="First Of Date" value={data.firstOfDate} />
-          <Field icon={Wallet} label="Salary" value={data.salary} />
-        </InfoCard>
-      </div>
+      {/* ===================== TOAST ===================== */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-[#0d9488] bg-[#0f172a] px-4 py-2.5 text-xs font-semibold text-white shadow-xl">
+          <Check size={14} className="text-[#0d9488]" />
+          {toast}
+        </div>
+      )}
     </div>
   );
 };
+
+const OperatorRow = ({ label, value, action }) => (
+  <div className="flex items-center justify-between py-2.5 text-xs">
+    <span className="font-medium text-[#64748b]">{label}</span>
+    <div className="flex items-center gap-2">
+      <span className="font-semibold text-[#0f172a]">{value || "—"}</span>
+      {action}
+    </div>
+  </div>
+);
 
 export default OperatorProfileDetails;

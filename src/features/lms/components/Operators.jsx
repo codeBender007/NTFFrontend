@@ -16,7 +16,7 @@ import {
 } from "../utils/operatorUtils";
 
 const inputClass =
-  "h-11 w-full rounded-lg border border-[#d5d9df] px-3 text-sm outline-none transition focus:border-[#6F4AE7]";
+  "h-11 w-full rounded-xl border border-[#e2edf2] px-3 text-sm outline-none transition focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15";
 
 const Operators = ({ operators: propOperators, setOperators: propSetOperators }) => {
   const navigate = useNavigate();
@@ -186,19 +186,19 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
   return (
     <div className="text-[#26364d]">
       <section className="py-4">
-        <div className="overflow-hidden rounded-[17px] border border-[#e3e6eb] bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white/85 backdrop-blur-md shadow-[0_4px_24px_rgba(15,23,42,0.03)]">
           {/* PAGE HEADER */}
 
-          <div className="flex flex-col gap-4 border-b border-[#edf0f3] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-[18px]">
+          <div className="flex flex-col gap-4 border-b border-[#e2edf2] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-[18px]">
             <div className="flex items-center gap-3">
-              <div className="flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-xl bg-[#6F4AE7] text-white">
-                <Building2 size={21} />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e6f7f5] border border-[#0d9488]/20 text-[#0d9488] shadow-xs">
+                <Building2 size={20} className="text-[#0d9488]" />
               </div>
 
               <div className="min-w-0">
-                <h1 className="text-[15px] font-bold">Operators</h1>
+                <h1 className="text-[15px] font-bold text-[#0f172a]">Operators</h1>
 
-                <p className="mt-0.5 text-xs text-[#718096]">
+                <p className="mt-0.5 text-xs text-[#64748b]">
                   Manage operators and their details
                 </p>
               </div>
@@ -206,7 +206,7 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
 
             <button
               onClick={openAddModal}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#6F4AE7] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#5A38D6] sm:w-auto"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all sm:w-auto"
             >
               <CirclePlus size={16} />
               Add Operator
@@ -219,11 +219,6 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
             <Filters
               values={filterValues}
               onChange={setFilterValues}
-              departmentOptions={departmentOptions}
-              subDepartmentOptions={["Sub 1", "Sub 2", "Sub 3"]}
-              lineOptions={["Line 1", "Line 2", "Line 3"]}
-              machineOptions={["Morning", "Evening", "Night"]}
-              machineLabel="Shift"
             />
           </div>
 
@@ -249,7 +244,7 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search..."
-                  className="h-9 w-full rounded-lg border border-[#d5d9df] bg-[#f7f8fa] pl-9 pr-3 text-[13px] outline-none transition focus:border-[#6F4AE7] focus:bg-white"
+                  className="h-9 w-full rounded-xl border border-[#e2edf2] bg-white pl-9 pr-3 text-[13px] text-[#0f172a] outline-none transition focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15"
                 />
               </div>
             </div>
@@ -285,7 +280,7 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
 
                           <button
                             onClick={openAddModal}
-                            className="flex items-center gap-2 rounded-lg bg-[#6F4AE7] px-4 py-2 text-xs font-semibold text-white"
+                            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all"
                           >
                             <CirclePlus size={15} />
                             Add Operator
@@ -297,7 +292,7 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
                     tableRows.map((operator, index) => (
                       <tr
                         key={operator.id}
-                        className="group border-b border-[#edf0f2] last:border-0 hover:bg-[#fafaff]"
+                        className="group border-b border-[#edf0f2] last:border-0 hover:bg-[#F7F7F5]"
                       >
                         {USER_COLUMNS.map((column) => (
                           <td
@@ -310,7 +305,7 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
                               <button
                                 type="button"
                                 onClick={() => handleViewOperator(operator)}
-                                className="font-semibold text-[#344760] transition hover:text-[#6F4AE7] hover:underline"
+                                className="font-semibold text-[#0f172a] transition hover:text-[#0d9488] hover:underline"
                               >
                                 {operator[column.key]}
                               </button>
@@ -327,7 +322,7 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
                             <button
                               title="Edit operator"
                               onClick={() => openEditModal(operator)}
-                              className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#f0ecff] text-[#6F4AE7] transition hover:bg-[#e6dfff]"
+                              className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-[#e2edf2] bg-[#f8fafc] text-[#0f172a] transition hover:bg-[#e6f7f5] hover:text-[#0d9488]"
                             >
                               <Pencil size={15} />
                             </button>
@@ -405,14 +400,14 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
               <div className="mt-6 flex flex-col-reverse gap-2 border-t border-[#e3e6eb] pt-4 sm:flex-row sm:justify-end">
                 <button
                   onClick={() => setFormModalOpen(false)}
-                  className="rounded-lg bg-gray-100 px-4 py-2.5 text-xs font-semibold text-gray-600"
+                  className="rounded-lg bg-[#F7F7F5] border border-[#E5E5E5] px-4 py-2.5 text-xs font-semibold text-[#171717] hover:bg-[#F2F2EF]"
                 >
                   Cancel
                 </button>
 
                 <button
                   onClick={handleSubmit}
-                  className="rounded-lg bg-[#6F4AE7] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5A38D6]"
+                  className="rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] hover:from-[#0f766e] hover:to-[#0d9488] px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-[#0d9488]/25 transition-all"
                 >
                   {editingOperator ? "Save Changes" : "Save"}
                 </button>
@@ -477,7 +472,7 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
       {/* TOAST */}
 
       {toast && (
-        <div className="fixed bottom-4 right-4 z-[1000] max-w-[calc(100vw-2rem)] rounded-lg border-l-4 border-[#5A38D6] bg-[#6F4AE7] px-5 py-3 text-xs font-medium text-white shadow-xl sm:bottom-6 sm:right-6">
+        <div className="fixed bottom-4 right-4 z-[1000] max-w-[calc(100vw-2rem)] rounded-xl border-l-4 border-[#0d9488] bg-[#0f172a] px-5 py-3 text-xs font-medium text-white shadow-xl sm:bottom-6 sm:right-6">
           {toast}
         </div>
       )}

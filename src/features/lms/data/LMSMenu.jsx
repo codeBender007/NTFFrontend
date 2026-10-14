@@ -1,6 +1,6 @@
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
-import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
+import FactoryOutlinedIcon from "@mui/icons-material/FactoryOutlined";
 import EngineeringOutlinedIcon from "@mui/icons-material/EngineeringOutlined";
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
@@ -19,9 +19,9 @@ export const lmsMenus = [
     path: "/lms",
   },
   {
-    name: "Department",
-    icon: <ApartmentOutlinedIcon />,
-    path: "/lms/department",
+    name: "Plant",
+    icon: <FactoryOutlinedIcon />,
+    path: "/lms/plant",
   },
 
   {
