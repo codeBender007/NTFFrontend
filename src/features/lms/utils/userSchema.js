@@ -1,6 +1,13 @@
 export const GENDER_OPTIONS = ["Male", "Female", "Other"];
-export const MARITAL_OPTIONS = ["Married", "Unmarried"];
+export const MARITAL_OPTIONS = [
+  "Single",
+  "Married",
+  "Unmarried",
+  "Divorced",
+  "Widowed",
+];
 export const YES_NO_OPTIONS = ["Yes", "No"];
+export const STATUS_OPTIONS = ["Active", "Inactive"];
 
 export const USER_COLUMNS = [
   { label: "SNo", key: "sno" },
@@ -37,17 +44,20 @@ export const USER_DATE_KEYS = ["dob", "joiningDate", "leavingDate", "firstOfDate
 
 export const EMPTY_USER_FORM = {
   ...USER_COLUMNS.reduce((form, column) => ({ ...form, [column.key]: "" }), {}),
+  status: "Active",
+  active: true,
   password: "",
 };
 
 export const USER_FORM_FIELDS = [
-  { label: "Pay Code", key: "payCode", placeholder: "Enter pay code" },
-  { label: "Card No", key: "cardNo", placeholder: "Enter card number" },
   {
     label: "Employee Name",
     key: "empName",
     placeholder: "Enter employee name",
   },
+  { label: "Status", key: "status", type: "select", options: STATUS_OPTIONS },
+  { label: "Pay Code", key: "payCode", placeholder: "Enter pay code" },
+  { label: "Card No", key: "cardNo", placeholder: "Enter card number" },
   { label: "Father Name", key: "fatherName", placeholder: "Enter father name" },
   { label: "DOB", key: "dob", type: "date" },
   { label: "Joining Date", key: "joiningDate", type: "date" },

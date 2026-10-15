@@ -9,6 +9,7 @@ import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
 import PersonOffOutlinedIcon from "@mui/icons-material/PersonOffOutlined";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import { isUserInactive } from "../utils/userUtils";
 
 const UsersPage = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -25,7 +26,7 @@ const UsersPage = () => {
     },
     {
       title: "Active Users",
-      value: users.filter((user) => !user.leavingDate).length,
+      value: users.filter((user) => !user.leavingDate && !isUserInactive(user)).length,
       color: "green",
       icon: <VerifiedUserOutlinedIcon sx={{ fontSize: 24 }} />,
     },

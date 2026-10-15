@@ -7,6 +7,7 @@ export {
   GENDER_OPTIONS,
   MARITAL_OPTIONS,
   YES_NO_OPTIONS,
+  STATUS_OPTIONS,
   USER_DATE_KEYS,
   EMPTY_USER_FORM,
   USER_FORM_FIELDS,
@@ -14,6 +15,21 @@ export {
 } from "./userSchema";
 
 export { SEED_EMPLOYEES, USER_COLUMNS };
+
+export const toDateInputValue = (val) => {
+  if (!val) return "";
+  const str = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.substring(0, 10);
+  const parts = str.split(/[-/]/);
+  if (parts.length === 3 && parts[2].length === 4) {
+    const day = parts[0].padStart(2, "0");
+    const month = parts[1].padStart(2, "0");
+    const year = parts[2];
+    return `${year}-${month}-${day}`;
+  }
+  return str;
+};
 
 export const getUserDepartmentOptions = (users) =>
   unique([
@@ -41,6 +57,28 @@ export const getUserShiftOptions = (users) =>
     "Shift C",
   ]);
 
+export const isUserInactive = (user) => {
+  if (!user) return false;
+  if (
+    user.active === false ||
+    user.is_active === false ||
+    user.active === 0 ||
+    user.is_active === 0
+  ) {
+    return true;
+  }
+  const statusStr = String(user.status || "").trim().toLowerCase();
+  return statusStr === "inactive" || statusStr === "deactivated";
+};
+
+export const getUserDisplayStatus = (user) => {
+  if (isUserInactive(user)) return "Inactive";
+  const statusStr = String(user.status || "").trim().toLowerCase();
+  if (statusStr === "active") return "Active";
+  if (user.status === "Left" || (user.leavingDate && !user.status)) return "Left";
+  return "Active";
+};
+
 export const filterUsers = (
   users,
   {
@@ -55,10 +93,11 @@ export const filterUsers = (
   const query = search.toLowerCase();
 
   return users.filter((user) => {
+    const isInactive = isUserInactive(user);
     const text = [
       ...USER_COLUMNS.map((column) => user[column.key]),
       user.status,
-      user.active === false ? "inactive deactivated" : "active",
+      isInactive ? "inactive deactivated" : "active",
     ]
       .filter(Boolean)
       .join(" ")

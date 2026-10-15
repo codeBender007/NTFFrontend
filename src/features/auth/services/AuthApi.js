@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getToken } from "../utils/authStorage";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 
@@ -20,6 +21,17 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+api.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    const authHeader = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+    config.headers = config.headers || {};
+    config.headers.Authorization = authHeader;
+  }
+  return config;
+});
+
 
 const AuthApi = {
   // POST - /api/auth/login

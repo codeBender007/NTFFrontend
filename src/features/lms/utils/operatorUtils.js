@@ -62,11 +62,27 @@ const MONTHS = [
 export const formatDate = (value) => {
   if (!value) return "-";
 
-  const [year, month, day] = value.split("-");
+  const cleanStr = String(value).trim().split("T")[0];
 
-  if (!year || !month || !day) return value;
+  const partsDash = cleanStr.split("-");
+  if (partsDash.length === 3 && partsDash[0].length === 4) {
+    const [year, month, day] = partsDash;
+    const monthName = MONTHS[Number(month) - 1];
+    if (monthName && !isNaN(Number(day))) {
+      return `${Number(day)} ${monthName} ${year}`;
+    }
+  }
 
-  return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
+  const partsSlash = cleanStr.split(/[-/]/);
+  if (partsSlash.length === 3 && partsSlash[2].length === 4) {
+    const [day, month, year] = partsSlash;
+    const monthName = MONTHS[Number(month) - 1];
+    if (monthName && !isNaN(Number(day))) {
+      return `${Number(day)} ${monthName} ${year}`;
+    }
+  }
+
+  return cleanStr;
 };
 
 export const getOperatorDepartmentOptions = (operators) =>

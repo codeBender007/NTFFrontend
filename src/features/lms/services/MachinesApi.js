@@ -1,11 +1,4 @@
-import axios from "axios";
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import api from "../../../api/axios";
 
 const MachinesApi = {
   // Get all machines (supports query params: { plantId, departmentId, subDepartmentId, lineId, machineName })

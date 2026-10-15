@@ -23,9 +23,13 @@ import {
   USER_FORM_FIELDS,
   USER_COLUMNS,
   USER_DATE_KEYS,
+  toDateInputValue,
+  isUserInactive,
+  getUserDisplayStatus,
 } from "../utils/userUtils";
 import { formatDate } from "../utils/operatorUtils";
 import UserApi from "../services/UserApi";
+import { isAuthenticated, clearSession } from "../../auth/utils/authStorage";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -37,16 +41,22 @@ const inputClass =
   "h-11 w-full rounded-xl border border-[#e2edf2] px-3 text-sm outline-none transition focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/15";
 
 const getApiErrorMessage = (error, fallback) => {
-  const detail = error?.response?.data?.detail;
+  const data = error?.response?.data;
+  const errors = data?.errors || data?.detail;
 
-  if (typeof detail === "string" && detail.trim()) return detail;
-
-  if (Array.isArray(detail) && detail.length) {
-    const messages = detail.map((item) => item?.msg).filter(Boolean);
-    if (messages.length) return messages.join(", ");
+  if (Array.isArray(errors) && errors.length) {
+    const messages = errors
+      .map((item) => {
+        const field = Array.isArray(item?.loc) ? item.loc.slice(1).join(".") : "";
+        return field ? `${field}: ${item?.msg}` : item?.msg;
+      })
+      .filter(Boolean);
+    if (messages.length) return messages.join("; ");
   }
 
-  return error?.response?.data?.message || fallback;
+  if (typeof data?.detail === "string" && data.detail.trim()) return data.detail;
+
+  return data?.message || fallback;
 };
 
 const asNullable = (value) => {
@@ -56,9 +66,8 @@ const asNullable = (value) => {
 
 // Map the backend user response onto the shape the table/form already use.
 const mapUserFromApi = (user) => {
-  const isInactive = user.active === false || user.active === 0;
-  const isLeft = Boolean(user.leavingDate);
-  const status = isInactive ? "Inactive" : isLeft ? "Left" : "Active";
+  const isInactive = isUserInactive(user);
+  const status = getUserDisplayStatus(user);
 
   return {
     id: user.id,
@@ -68,6 +77,7 @@ const mapUserFromApi = (user) => {
     lineId: user.lineId ?? "",
     machineId: user.machineId ?? "",
     active: !isInactive,
+    is_active: !isInactive,
     status,
 
     sno: user.sno ?? "",
@@ -111,6 +121,7 @@ const USER_TABLE_COLUMNS = [
 ];
 
 const buildCreatePayload = (form) => {
+  const isInactive = isUserInactive(form);
   const payload = {
     payCode: String(form.payCode || "").trim(),
     cardNo: asNullable(form.cardNo),
@@ -132,13 +143,18 @@ const buildCreatePayload = (form) => {
     gender: asNullable(form.gender),
     bloodGroup: asNullable(form.bloodGroup),
     maritalStatus: asNullable(form.maritalStatus),
-    email: asNullable(form.email),
     mobileNo: asNullable(form.number),
     isDojo: form.isDojo === "Yes",
     firstOfDay: asNullable(form.firstOfDate),
     skillLevel: asNullable(form.skillLevel),
     salary: asNullable(form.salary) === null ? null : Number(form.salary),
+    active: !isInactive,
   };
+
+  const emailStr = String(form.email || "").trim();
+  if (emailStr && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
+    payload.email = emailStr;
+  }
 
   const plantId = Number(form.plant);
   if (asNullable(form.plant) !== null && Number.isFinite(plantId)) {
@@ -152,25 +168,48 @@ const buildCreatePayload = (form) => {
 };
 
 const buildUpdatePayload = (form) => {
+  const isInactive = isUserInactive(form);
   const payload = {
+    payCode: asNullable(form.payCode),
+    cardNo: asNullable(form.cardNo),
     empName: String(form.empName || "").trim(),
-    plantLocation: asNullable(form.plantLocation),
+    fatherName: asNullable(form.fatherName),
+    dob: asNullable(form.dob),
+    dateOfJoining: asNullable(form.joiningDate),
+    leavingDate: asNullable(form.leavingDate),
+    companyName: asNullable(form.companyName),
     departmentName: asNullable(form.department),
     subDepartmentName: asNullable(form.subDepartment),
     lineName: asNullable(form.line),
     machineName: asNullable(form.machine),
     shift: asNullable(form.shift),
+    plantLocation: asNullable(form.plantLocation),
+    grade: asNullable(form.grade),
     designation: asNullable(form.designation),
-    skillLevel: asNullable(form.skillLevel),
-    isDojo: form.isDojo === "Yes",
+    category: asNullable(form.category),
+    gender: asNullable(form.gender),
+    bloodGroup: asNullable(form.bloodGroup),
+    maritalStatus: asNullable(form.maritalStatus),
     mobileNo: asNullable(form.number),
-    email: asNullable(form.email),
+    isDojo: form.isDojo === "Yes",
+    firstOfDay: asNullable(form.firstOfDate),
+    skillLevel: asNullable(form.skillLevel),
+    salary: asNullable(form.salary) === null ? null : Number(form.salary),
+    active: !isInactive,
   };
+
+  const emailStr = String(form.email || "").trim();
+  if (emailStr && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
+    payload.email = emailStr;
+  }
 
   const plantId = Number(form.plant);
   if (asNullable(form.plant) !== null && Number.isFinite(plantId)) {
     payload.plantId = plantId;
   }
+
+  const password = asNullable(form.password);
+  if (password !== null) payload.password = password;
 
   return payload;
 };
@@ -226,6 +265,12 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
         if (!cancelled) setUsers(mapUsersFromApi(response.data));
       } catch (error) {
         if (!cancelled) {
+          if (error?.response?.status === 401) {
+            clearSession();
+            setLoadError("Access Denied: You have to login first.");
+            navigate("/");
+            return;
+          }
           setLoadError(
             getApiErrorMessage(error, "Unable to load users. Please try again."),
           );
@@ -241,11 +286,50 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     return () => {
       cancelled = true;
     };
-  }, [reloadKey, setUsers]);
+  }, [reloadKey, setUsers, navigate]);
 
-  const refreshUsers = async () => {
-    const response = await UserApi.getUsers({ limit: MAX_USERS_PAGE });
-    setUsers(mapUsersFromApi(response.data));
+  const refreshUsers = async (updatedOverride = null) => {
+    try {
+      const response = await UserApi.getUsers({ limit: MAX_USERS_PAGE });
+      const apiUsers = mapUsersFromApi(response.data);
+
+      if (updatedOverride && (updatedOverride.id != null || updatedOverride.payCode != null)) {
+        const overrideId = updatedOverride.id != null ? String(updatedOverride.id) : null;
+        const overridePayCode = updatedOverride.payCode ? String(updatedOverride.payCode) : null;
+
+        const exists = apiUsers.some(
+          (u) =>
+            (overrideId && String(u.id) === overrideId) ||
+            (overridePayCode && String(u.payCode) === overridePayCode),
+        );
+
+        if (exists) {
+          setUsers(
+            apiUsers.map((u) => {
+              const isMatch =
+                (overrideId && String(u.id) === overrideId) ||
+                (overridePayCode && String(u.payCode) === overridePayCode);
+
+              return isMatch
+                ? {
+                  ...u,
+                  ...updatedOverride,
+                  status: updatedOverride.status,
+                  active: updatedOverride.active,
+                  is_active: updatedOverride.is_active,
+                }
+                : u;
+            }),
+          );
+        } else {
+          setUsers([updatedOverride, ...apiUsers]);
+        }
+      } else {
+        setUsers(apiUsers);
+      }
+    } catch (error) {
+      console.error("Refresh users error:", error);
+    }
   };
 
   /* ===================== UPLOAD EXCEL ===================== */
@@ -254,6 +338,12 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
+
+    if (!isAuthenticated()) {
+      showToast("Access Denied: You have to login first.");
+      navigate("/");
+      return;
+    }
 
     setUploading(true);
 
@@ -276,14 +366,21 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
       await refreshUsers();
       showToast(
-        `Import complete: ${summary.inserted ?? 0} added, ${
-          summary.updated ?? 0
+        `Import complete: ${summary.inserted ?? 0} added, ${summary.updated ?? 0
         } updated.`,
       );
     } catch (error) {
-      showToast(
-        getApiErrorMessage(error, "Failed to import the Excel file."),
-      );
+      if (error?.response?.status === 401) {
+        clearSession();
+        showToast(
+          getApiErrorMessage(error, "Access Denied: You have to login first."),
+        );
+        setTimeout(() => navigate("/"), 1500);
+      } else {
+        showToast(
+          getApiErrorMessage(error, "Failed to import the Excel file."),
+        );
+      }
       console.error("Excel upload API error:", error);
     } finally {
       setUploading(false);
@@ -354,6 +451,8 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       sno: users.length + 1,
       empName: "",
       email: "",
+      status: "Active",
+      active: true,
     };
 
     setForm(formWithSno);
@@ -363,7 +462,21 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
   const openEditModal = (user) => {
     setEditingUser(user);
-    setForm({ ...user, password: "" });
+    const isInactive = isUserInactive(user);
+    const currentStatus = isInactive ? "Inactive" : "Active";
+
+    setForm({
+      ...EMPTY_USER_FORM,
+      ...user,
+      dob: toDateInputValue(user.dob),
+      joiningDate: toDateInputValue(user.joiningDate),
+      leavingDate: toDateInputValue(user.leavingDate),
+      firstOfDate: toDateInputValue(user.firstOfDate),
+      status: currentStatus,
+      active: !isInactive,
+      is_active: !isInactive,
+      password: "",
+    });
     setShowPassword(false);
     setFormModalOpen(true);
   };
@@ -374,6 +487,12 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
   const handleSubmit = async () => {
     if (saving) return;
+
+    if (!isAuthenticated()) {
+      showToast("Access Denied: You have to login first.");
+      navigate("/");
+      return;
+    }
 
     const empName = form.empName?.trim();
     const payCode = form.payCode?.trim();
@@ -394,23 +513,110 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
     try {
       if (editingUser) {
-        await UserApi.updateUser(
+        const payload = buildUpdatePayload(nextForm);
+        const response = await UserApi.updateUser(
           editingUser.id,
-          buildUpdatePayload(nextForm),
+          payload,
         );
-        await refreshUsers();
+
+        // Derive unambiguous status & active values
+        const isInactive = isUserInactive(nextForm);
+        const finalStatus = isInactive ? "Inactive" : "Active";
+        const finalActive = !isInactive;
+
+        const apiUser = response?.data ? mapUserFromApi(response.data) : {};
+
+        // Merge: original row -> nextForm edits -> mapped apiUser fields
+        const updatedRow = {
+          ...editingUser,
+          ...nextForm,
+          ...apiUser,
+          id: editingUser.id,
+          sno: editingUser.sno || nextForm.sno,
+          empName: nextForm.empName || apiUser.empName || editingUser.empName,
+          payCode: nextForm.payCode || apiUser.payCode || editingUser.payCode,
+          cardNo: nextForm.cardNo ?? apiUser.cardNo ?? editingUser.cardNo,
+          fatherName: nextForm.fatherName ?? apiUser.fatherName ?? editingUser.fatherName,
+          dob: nextForm.dob ?? apiUser.dob ?? editingUser.dob,
+          joiningDate: nextForm.joiningDate ?? apiUser.joiningDate ?? editingUser.joiningDate,
+          leavingDate: nextForm.leavingDate ?? apiUser.leavingDate ?? editingUser.leavingDate,
+          companyName: nextForm.companyName ?? apiUser.companyName ?? editingUser.companyName,
+          department: nextForm.department ?? apiUser.department ?? editingUser.department,
+          subDepartment: nextForm.subDepartment ?? apiUser.subDepartment ?? editingUser.subDepartment,
+          line: nextForm.line ?? apiUser.line ?? editingUser.line,
+          machine: nextForm.machine ?? apiUser.machine ?? editingUser.machine,
+          shift: nextForm.shift ?? apiUser.shift ?? editingUser.shift,
+          plant: nextForm.plant ?? apiUser.plant ?? editingUser.plant,
+          plantLocation: nextForm.plantLocation ?? apiUser.plantLocation ?? editingUser.plantLocation,
+          grade: nextForm.grade ?? apiUser.grade ?? editingUser.grade,
+          designation: nextForm.designation ?? apiUser.designation ?? editingUser.designation,
+          category: nextForm.category ?? apiUser.category ?? editingUser.category,
+          gender: nextForm.gender ?? apiUser.gender ?? editingUser.gender,
+          bloodGroup: nextForm.bloodGroup ?? apiUser.bloodGroup ?? editingUser.bloodGroup,
+          maritalStatus: nextForm.maritalStatus ?? apiUser.maritalStatus ?? editingUser.maritalStatus,
+          email: nextForm.email ?? apiUser.email ?? editingUser.email,
+          number: nextForm.number ?? apiUser.number ?? editingUser.number,
+          isDojo: nextForm.isDojo ?? apiUser.isDojo ?? editingUser.isDojo,
+          firstOfDate: nextForm.firstOfDate ?? apiUser.firstOfDate ?? editingUser.firstOfDate,
+          skillLevel: nextForm.skillLevel ?? apiUser.skillLevel ?? editingUser.skillLevel,
+          salary: nextForm.salary ?? apiUser.salary ?? editingUser.salary,
+          status: finalStatus,
+          active: finalActive,
+          is_active: finalActive,
+        };
+
+        // Immediately update React state with updated user object
+        setUsers((prevUsers) =>
+          prevUsers.map((u) => {
+            const isMatch =
+              (u.id != null && editingUser.id != null && String(u.id) === String(editingUser.id)) ||
+              (u.payCode && editingUser.payCode && String(u.payCode) === String(editingUser.payCode));
+
+            return isMatch ? updatedRow : u;
+          }),
+        );
+
+        setFormModalOpen(false);
         showToast("User updated successfully.");
+
+        // Fetch fresh server state while preserving our latest merged edits
+        await refreshUsers(updatedRow);
       } else {
-        await UserApi.createUser(buildCreatePayload(nextForm));
-        await refreshUsers();
+        const payload = buildCreatePayload(nextForm);
+        const response = await UserApi.createUser(payload);
+        const isInactive = isUserInactive(nextForm);
+        const finalStatus = isInactive ? "Inactive" : "Active";
+        const finalActive = !isInactive;
+
+        const apiUser = response?.data ? mapUserFromApi(response.data) : {};
+        const newUser = {
+          ...nextForm,
+          ...apiUser,
+          id: apiUser.id ?? Date.now(),
+          status: finalStatus,
+          active: finalActive,
+          is_active: finalActive,
+        };
+
+        setUsers((prevUsers) => [newUser, ...prevUsers]);
+        setFormModalOpen(false);
         showToast("User added successfully.");
+        await refreshUsers(newUser);
       }
 
       setFormModalOpen(false);
     } catch (error) {
-      showToast(
-        getApiErrorMessage(error, "Failed to save the user. Please try again."),
-      );
+      if (error?.response?.status === 401) {
+        clearSession();
+        showToast(
+          getApiErrorMessage(error, "Access Denied: You have to login first."),
+        );
+        setTimeout(() => navigate("/"), 1500);
+      } else {
+        showToast(
+          getApiErrorMessage(error, "Failed to save the user. Please try again."),
+        );
+      }
       console.error("Save user API error:", error);
     } finally {
       setSaving(false);
@@ -427,6 +633,12 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
   const handleDelete = async () => {
     if (!deleteTarget || saving) return;
 
+    if (!isAuthenticated()) {
+      showToast("Access Denied: You have to login first.");
+      navigate("/");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -434,11 +646,15 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
       // Immediately mark user as Inactive in local state so the table reflects the status right away
       setUsers((prevUsers) =>
-        prevUsers.map((u) =>
-          u.id === deleteTarget.id
-            ? { ...u, active: false, status: "Inactive" }
-            : u,
-        ),
+        prevUsers.map((u) => {
+          const isMatch =
+            (u.id != null && deleteTarget.id != null && String(u.id) === String(deleteTarget.id)) ||
+            (u.payCode && deleteTarget.payCode && String(u.payCode) === String(deleteTarget.payCode));
+
+          return isMatch
+            ? { ...u, active: false, is_active: false, status: "Inactive" }
+            : u;
+        }),
       );
 
       // Refresh authoritative list from backend to confirm database state
@@ -448,12 +664,20 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       setDeleteModalOpen(false);
       setDeleteTarget(null);
     } catch (error) {
-      showToast(
-        getApiErrorMessage(
-          error,
-          "Unable to delete the user. Please try again.",
-        ),
-      );
+      if (error?.response?.status === 401) {
+        clearSession();
+        showToast(
+          getApiErrorMessage(error, "Access Denied: You have to login first."),
+        );
+        setTimeout(() => navigate("/"), 1500);
+      } else {
+        showToast(
+          getApiErrorMessage(
+            error,
+            "Unable to delete the user. Please try again.",
+          ),
+        );
+      }
       console.error("Delete user API error:", error);
     } finally {
       setSaving(false);
@@ -461,10 +685,54 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
   };
 
   const renderFormField = (field) => {
-    const value = form[field.key] || "";
+    let value = form[field.key] ?? "";
+
+    if (field.type === "date") {
+      value = toDateInputValue(value);
+    }
+
+    if (field.key === "status") {
+      const isInactive = isUserInactive(form);
+      const statusValue = isInactive ? "Inactive" : "Active";
+      return (
+        <div className="relative">
+          <select
+            value={statusValue}
+            onChange={(event) => {
+              const val = event.target.value;
+              const isNowInactive = val === "Inactive";
+              setForm((previous) => ({
+                ...previous,
+                status: val,
+                active: !isNowInactive,
+                is_active: !isNowInactive,
+              }));
+            }}
+            className={`${inputClass} appearance-none pr-9 font-medium text-[#0f172a] bg-white cursor-pointer`}
+          >
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${statusValue === "Active"
+                  ? "bg-emerald-500 animate-pulse"
+                  : "bg-gray-400"
+                }`}
+            />
+          </div>
+        </div>
+      );
+    }
 
     if (field.type === "select") {
-      const options = field.department ? departmentOptions : field.options;
+      const rawOptions = field.department
+        ? departmentOptions
+        : field.options || [];
+      const options =
+        value && !rawOptions.includes(value)
+          ? [value, ...rawOptions]
+          : rawOptions;
 
       return (
         <select
@@ -490,7 +758,11 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
             type={showPassword ? "text" : "password"}
             value={value}
             onChange={setFormField(field.key)}
-            placeholder={field.placeholder}
+            placeholder={
+              editingUser
+                ? "Leave blank to keep existing password"
+                : field.placeholder
+            }
             className={`${inputClass} pr-11`}
           />
 
@@ -673,23 +945,22 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                     </tr>
                   ) : (
                     paginatedRows.map((user, index) => {
-                      const isInactive = user.active === false || user.status === "Inactive";
+                      const isInactive = isUserInactive(user);
+                      const displayStatus = getUserDisplayStatus(user);
 
                       return (
                         <tr
-                          key={user.id}
-                          className={`group border-b border-[#edf0f2] last:border-0 transition-colors ${
-                            isInactive
+                          key={user.id ?? user.payCode ?? index}
+                          className={`group border-b border-[#edf0f2] last:border-0 transition-colors ${isInactive
                               ? "bg-[#f8f9fa] opacity-80 hover:bg-[#f1f3f5]"
                               : "hover:bg-[#fafaff]"
-                          }`}
+                            }`}
                         >
                           {USER_TABLE_COLUMNS.map((column) => (
                             <td
                               key={column.key}
-                              className={`border-r border-[#edf0f2] px-3 py-3 text-[14px] last:border-r-0 sm:px-4 ${
-                                isInactive ? "text-[#8a99ad]" : "text-[#44556c]"
-                              }`}
+                              className={`border-r border-[#edf0f2] px-3 py-3 text-[14px] last:border-r-0 sm:px-4 ${isInactive ? "text-[#8a99ad]" : "text-[#44556c]"
+                                }`}
                             >
                               {column.key === "sno" ? (
                                 startIndex + index + 1
@@ -699,7 +970,7 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                                     <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
                                     Inactive
                                   </span>
-                                ) : user.status === "Left" ? (
+                                ) : displayStatus === "Left" ? (
                                   <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 shadow-2xs">
                                     <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                                     Left
@@ -715,11 +986,10 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                                   <button
                                     type="button"
                                     onClick={() => handleViewUser(user)}
-                                    className={`font-semibold transition hover:underline ${
-                                      isInactive
+                                    className={`font-semibold transition hover:underline ${isInactive
                                         ? "text-gray-500 hover:text-gray-700"
                                         : "text-[#0f172a] hover:text-[#0d9488]"
-                                    }`}
+                                      }`}
                                   >
                                     {user[column.key]}
                                   </button>
@@ -751,11 +1021,10 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                                 title={isInactive ? "User is already inactive" : "Delete user"}
                                 disabled={isInactive}
                                 onClick={() => openDeleteModal(user)}
-                                className={`flex h-[34px] w-[34px] items-center justify-center rounded-lg transition ${
-                                  isInactive
+                                className={`flex h-[34px] w-[34px] items-center justify-center rounded-lg transition ${isInactive
                                     ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 opacity-60"
                                     : "bg-[#fff0ee] text-[#e74c3c] hover:bg-[#ffe3df]"
-                                }`}
+                                  }`}
                               >
                                 <Trash2 size={15} />
                               </button>
@@ -813,11 +1082,10 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                       key={page}
                       type="button"
                       onClick={() => setCurrentPage(page)}
-                      className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold transition ${
-                        safeCurrentPage === page
+                      className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold transition ${safeCurrentPage === page
                           ? "bg-[#0d9488] text-white shadow-xs"
                           : "border border-[#e2edf2] text-[#64748b] hover:bg-[#f0f9f8] hover:border-[#0d9488] hover:text-[#0d9488]"
-                      }`}
+                        }`}
                     >
                       {page}
                     </button>
@@ -870,11 +1138,14 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {USER_FORM_FIELDS.map((field) => (
                   <div key={field.key}>
-                    <label className="mb-2 block text-xs font-semibold">
-                      {field.label}
-                      {field.key === "empName" && (
-                        <span className="ml-0.5 text-[#e74c3c]">*</span>
-                      )}
+                    <label className="mb-2 flex items-center justify-between text-xs font-semibold">
+                      <span>
+                        {field.label}
+                        {field.key === "empName" && (
+                          <span className="ml-0.5 text-[#e74c3c]">*</span>
+                        )}
+                      </span>
+
                     </label>
 
                     {field.key === "empName" ? (
