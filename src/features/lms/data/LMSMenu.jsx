@@ -24,11 +24,11 @@ export const lmsMenus = [
     path: "/lms/plant",
   },
 
-  {
-    name: "Operators",
-    icon: <EngineeringOutlinedIcon />,
-    path: "/lms/operators",
-  },
+  // {
+  //   name: "Operators",
+  //   icon: <EngineeringOutlinedIcon />,
+  //   path: "/lms/operators",
+  // },
   {
     name: "10 Cycle Operator",
     icon: <FactCheckOutlinedIcon />,

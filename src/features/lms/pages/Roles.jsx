@@ -22,6 +22,7 @@ import {
   X,
   Check,
   ChevronRight,
+  ChevronLeft,
   SlidersHorizontal,
   Lock,
   Unlock,
@@ -43,8 +44,6 @@ const actionMeta = {
     badge: "Read Only",
     badgeBg: "bg-blue-50 text-blue-700 border-blue-200/80",
     description: "Can view and inspect dashboards, operational tables, metrics and reports",
-    risk: "Low Risk",
-    riskColor: "text-blue-600 bg-blue-50",
   },
   "Upload Excel": {
     icon: Upload,
@@ -52,8 +51,6 @@ const actionMeta = {
     badge: "Bulk Import",
     badgeBg: "bg-cyan-50 text-cyan-700 border-cyan-200/80",
     description: "Can upload spreadsheet templates and batch import operational datasets",
-    risk: "Medium Risk",
-    riskColor: "text-cyan-600 bg-cyan-50",
   },
   Create: {
     icon: Plus,
@@ -61,8 +58,7 @@ const actionMeta = {
     badge: "Write Access",
     badgeBg: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
     description: "Can create new records, modules, department units and test configurations",
-    risk: "Standard",
-    riskColor: "text-emerald-600 bg-emerald-50",
+
   },
   Edit: {
     icon: Edit3,
@@ -70,8 +66,7 @@ const actionMeta = {
     badge: "Modify Data",
     badgeBg: "bg-amber-50 text-amber-700 border-amber-200/80",
     description: "Can modify existing entries, update settings and change operational statuses",
-    risk: "Elevated",
-    riskColor: "text-amber-600 bg-amber-50",
+
   },
   Delete: {
     icon: Trash2,
@@ -79,17 +74,27 @@ const actionMeta = {
     badge: "Destructive",
     badgeBg: "bg-rose-50 text-rose-700 border-rose-200/80",
     description: "Can permanently remove records, user accounts, and structural hierarchy items",
-    risk: "High Privilege",
-    riskColor: "text-rose-600 bg-rose-50",
   },
 };
 
-const moduleData = [
+const AVAILABLE_PAGE_ICONS = [
+  { name: "LayoutDashboard", label: "Dashboard", icon: LayoutDashboard },
+  { name: "FileText", label: "Document", icon: FileText },
+  { name: "BookOpen", label: "Learning", icon: BookOpen },
+  { name: "Users", label: "Users", icon: Users },
+  { name: "Building2", label: "Structure", icon: Building2 },
+  { name: "UserCog", label: "Admin", icon: UserCog },
+  { name: "ShieldCheck", label: "Security", icon: ShieldCheck },
+  { name: "Settings2", label: "Settings", icon: Settings2 },
+];
+
+const INITIAL_MODULE_DATA = [
   {
     id: "dashboard",
     title: "Executive Dashboard",
     description: "High-level operations analytics, production trends & KPIs",
-    category: "Operations Dashboard",
+    category: "Dashboard",
+    route: "/dashboard",
     icon: LayoutDashboard,
     color: "#3b82f6",
     permissions: ["Access"],
@@ -98,16 +103,18 @@ const moduleData = [
     id: "attendance",
     title: "Attendance Tracker",
     description: "Daily manpower attendance, shift presence & biometric records",
-    category: "Operations Dashboard",
+    category: "Dashboard",
+    route: "/dashboard/attendance",
     icon: BookOpen,
     color: "#10b981",
     permissions: ["Access"],
   },
   {
     id: "requirement",
-    title: "Manpower Requirement",
+    title: "Manpower Requirements",
     description: "Daily requirement planning, station staffing & gap analysis",
-    category: "Operations Dashboard",
+    category: "Dashboard",
+    route: "/dashboard/requirement",
     icon: Building2,
     color: "#f59e0b",
     permissions: ["Access"],
@@ -117,6 +124,7 @@ const moduleData = [
     title: "LMS Overview",
     description: "Training analytics, learning progress & certification status",
     category: "Learning Management System",
+    route: "/lms/dashboard",
     icon: LayoutDashboard,
     color: "#8b5cf6",
     permissions: ["Access"],
@@ -126,6 +134,7 @@ const moduleData = [
     title: "DOJO Hiring",
     description: "Candidate onboarding, qualification tracks & skill assessment",
     category: "Learning Management System",
+    route: "/lms",
     icon: UserCog,
     color: "#06b6d4",
     permissions: ["Access"],
@@ -135,6 +144,7 @@ const moduleData = [
     title: "Department Structure",
     description: "Plant hierarchy, sub-departments, lines & machine allocation",
     category: "Learning Management System",
+    route: "/lms/department",
     icon: Building2,
     color: "#f97316",
     permissions: ["Access"],
@@ -144,6 +154,7 @@ const moduleData = [
     title: "Operators Directory",
     description: "Operator profiles, skill levels, assignment history & records",
     category: "Learning Management System",
+    route: "/lms/operators",
     icon: Users,
     color: "#3b82f6",
     permissions: ["Access"],
@@ -153,6 +164,7 @@ const moduleData = [
     title: "10 Cycle Operator Observance",
     description: "Cycle time checks, standard work adherence & audit findings",
     category: "Learning Management System",
+    route: "/lms/operator-observance",
     icon: FileText,
     color: "#14b8a6",
     permissions: ["Access"],
@@ -162,6 +174,7 @@ const moduleData = [
     title: "Users Management",
     description: "System user credentials, account provisioning & role assignment",
     category: "Learning Management System",
+    route: "/lms/users",
     icon: Users,
     color: "#10b981",
     permissions: ["Access"],
@@ -171,6 +184,7 @@ const moduleData = [
     title: "Roles & Permissions",
     description: "Security access policies, RBAC privilege matrix & governance",
     category: "Learning Management System",
+    route: "/lms/roles",
     icon: ShieldCheck,
     color: "#f59e0b",
     permissions: ["Access"],
@@ -180,13 +194,14 @@ const moduleData = [
     title: "Training Effectiveness",
     description: "L0/L1 evaluations, test paper editor & learning efficacy metrics",
     category: "Learning Management System",
+    route: "/lms/training",
     icon: BookOpen,
     color: "#ec4899",
     permissions: ["Access"],
   },
 ];
 
-const defaultPageAccess = moduleData.reduce((acc, module) => {
+const defaultPageAccess = INITIAL_MODULE_DATA.reduce((acc, module) => {
   acc[module.id] = true;
   return acc;
 }, {});
@@ -242,10 +257,53 @@ const DEFAULT_ROLES = [
   },
 ];
 
+const createInitialPagePermissions = (roleId) => {
+  const perms = {};
+  INITIAL_MODULE_DATA.forEach((m) => {
+    if (roleId === 1) {
+      perms[m.id] = {
+        View: true,
+        "Upload Excel": true,
+        Create: true,
+        Edit: true,
+        Delete: true,
+      };
+    } else if (roleId === 2) {
+      perms[m.id] = {
+        View: true,
+        "Upload Excel": true,
+        Create: true,
+        Edit: true,
+        Delete: false,
+      };
+    } else if (roleId === 3) {
+      perms[m.id] = {
+        View: true,
+        "Upload Excel": m.category === "Dashboard",
+        Create: m.category === "Dashboard",
+        Edit: true,
+        Delete: false,
+      };
+    } else if (roleId === 4) {
+      perms[m.id] = {
+        View: true,
+        "Upload Excel": m.category === "Learning Management System",
+        Create: m.category === "Learning Management System",
+        Edit: true,
+        Delete: false,
+      };
+    } else {
+      perms[m.id] = { ...defaultPermissions };
+    }
+  });
+  return perms;
+};
+
 const INITIAL_ROLE_SETTINGS = {
   1: {
     pageAccess: { ...defaultPageAccess },
     permissions: { ...defaultPermissions },
+    pagePermissions: createInitialPagePermissions(1),
     status: true,
   },
   2: {
@@ -260,6 +318,7 @@ const INITIAL_ROLE_SETTINGS = {
       Edit: true,
       Delete: false,
     },
+    pagePermissions: createInitialPagePermissions(2),
     status: true,
   },
   3: {
@@ -277,6 +336,7 @@ const INITIAL_ROLE_SETTINGS = {
       Edit: true,
       Delete: false,
     },
+    pagePermissions: createInitialPagePermissions(3),
     status: true,
   },
   4: {
@@ -296,6 +356,7 @@ const INITIAL_ROLE_SETTINGS = {
       Edit: true,
       Delete: false,
     },
+    pagePermissions: createInitialPagePermissions(4),
     status: true,
   },
 };
@@ -320,17 +381,33 @@ const Roles = () => {
   const [roles, setRoles] = useState(DEFAULT_ROLES);
   const [selectedRoleId, setSelectedRoleId] = useState(1);
   const [searchRole, setSearchRole] = useState("");
-  const [roleTypeFilter, setRoleTypeFilter] = useState("All"); // All | System | Custom
 
-  // Role permissions mapping (roleId -> { pageAccess, permissions, status })
+  // Page Modules state (allows dynamic creation of new pages under active module)
+  const [moduleData, setModuleData] = useState(INITIAL_MODULE_DATA);
+
+  // Create Page Modal state
+  const [showCreatePageModal, setShowCreatePageModal] = useState(false);
+  const [createPageCategory, setCreatePageCategory] = useState("Dashboard");
+  const [newPageTitle, setNewPageTitle] = useState("");
+  const [newPageRoute, setNewPageRoute] = useState("");
+  const [newPageDescription, setNewPageDescription] = useState("");
+  const [newPageIcon, setNewPageIcon] = useState("LayoutDashboard");
+  const [newPageColor, setNewPageColor] = useState(PRESET_COLORS[0]);
+
+  // Role permissions mapping (roleId -> { pageAccess, permissions, pagePermissions, status })
   const [roleSettings, setRoleSettings] = useState(INITIAL_ROLE_SETTINGS);
 
   // Active tab within Role View
-  const [activeTab, setActiveTab] = useState("Pages"); // "Pages" | "Permissions" | "Matrix"
+  const [activeTab, setActiveTab] = useState("Pages"); // "Pages" | "Permissions"
 
-  // Search & category filters within tabs
+  // Search & category filters within tabs (Defaults to "Dashboard", "All" removed)
   const [searchPermission, setSearchPermission] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState("Dashboard");
+
+  // Selected page for inline granular action privileges in the main container
+  const [selectedPageId, setSelectedPageId] = useState(null);
+
+
 
   // Toast feedback state
   const [toast, setToast] = useState("");
@@ -364,30 +441,46 @@ const Roles = () => {
       return {
         pageAccess: { ...defaultPageAccess },
         permissions: { ...defaultPermissions },
+        pagePermissions: createInitialPagePermissions(1),
         status: true,
       };
     }
-    return roleSettings[selectedRoleId];
-  }, [selectedRoleId, roleSettings]);
+    const setting = roleSettings[selectedRoleId];
+    if (!setting.pagePermissions) {
+      const pPerms = {};
+      moduleData.forEach((m) => {
+        pPerms[m.id] = { ...(setting.permissions || defaultPermissions) };
+      });
+      return { ...setting, pagePermissions: pPerms };
+    }
+    return setting;
+  }, [selectedRoleId, roleSettings, moduleData]);
 
   // Backwards-compatible getters
   const pageAccess = currentRoleSetting.pageAccess;
   const permissions = currentRoleSetting.permissions;
+  const pagePermissions = currentRoleSetting.pagePermissions || {};
   const roleStatus = currentRoleSetting.status;
 
-  // Filtered Roles on the Left Panel
-  const filteredRoles = useMemo(() => {
-    return roles.filter((role) => {
-      const matchesSearch =
-        role.name.toLowerCase().includes(searchRole.toLowerCase()) ||
-        role.description.toLowerCase().includes(searchRole.toLowerCase());
-      const matchesType =
-        roleTypeFilter === "All" || role.type === roleTypeFilter;
-      return matchesSearch && matchesType;
-    });
-  }, [roles, searchRole, roleTypeFilter]);
+  // Active selected page object for inline granular action privileges
+  const selectedPageObj = useMemo(() => {
+    if (!selectedPageId) return null;
+    return moduleData.find((m) => m.id === selectedPageId) || null;
+  }, [selectedPageId, moduleData]);
 
-  // Filtered Modules on the Pages Tab
+  // Filtered Roles on the Left Panel (all roles displayed by default, filtered by search query)
+  const filteredRoles = useMemo(() => {
+    const q = searchRole.toLowerCase().trim();
+    return roles.filter((role) => {
+      return (
+        !q ||
+        role.name.toLowerCase().includes(q) ||
+        role.description.toLowerCase().includes(q)
+      );
+    });
+  }, [roles, searchRole]);
+
+  // Filtered Modules on the Pages Tab (Strictly matches selectedCategory)
   const filteredModules = useMemo(() => {
     const value = searchPermission.toLowerCase().trim();
     return moduleData.filter((module) => {
@@ -395,14 +488,14 @@ const Roles = () => {
         !value ||
         module.title.toLowerCase().includes(value) ||
         module.description.toLowerCase().includes(value) ||
-        module.category.toLowerCase().includes(value);
+        module.category.toLowerCase().includes(value) ||
+        (module.route && module.route.toLowerCase().includes(value));
 
-      const matchesCat =
-        selectedCategory === "All" || module.category === selectedCategory;
+      const matchesCat = module.category === selectedCategory;
 
       return matchesSearch && matchesCat;
     });
-  }, [searchPermission, selectedCategory]);
+  }, [moduleData, searchPermission, selectedCategory]);
 
   // Grouped Modules for Display
   const groupedModules = useMemo(() => {
@@ -414,25 +507,12 @@ const Roles = () => {
     }, {});
   }, [filteredModules]);
 
-  // All distinct categories
+  // All distinct categories ("All" removed as requested)
   const categories = useMemo(() => {
-    return ["All", ...new Set(moduleData.map((m) => m.category))];
-  }, []);
+    return Array.from(new Set(moduleData.map((m) => m.category)));
+  }, [moduleData]);
 
-  // Filtered Permissions Actions
-  const filteredActions = useMemo(() => {
-    const value = searchPermission.toLowerCase().trim();
-    if (!value) return permissionActions;
-    return permissionActions.filter((action) => {
-      const meta = actionMeta[action];
-      return (
-        action.toLowerCase().includes(value) ||
-        meta.description.toLowerCase().includes(value) ||
-        meta.badge.toLowerCase().includes(value) ||
-        meta.risk.toLowerCase().includes(value)
-      );
-    });
-  }, [searchPermission]);
+
 
   // Metric Calculations
   const metrics = useMemo(() => {
@@ -441,7 +521,18 @@ const Roles = () => {
     const customRoles = roles.filter((r) => r.type === "Custom").length;
     const totalUsers = roles.reduce((sum, r) => sum + (r.users || 0), 0);
     const enabledModulesCount = Object.values(pageAccess).filter(Boolean).length;
-    const enabledActionsCount = Object.values(permissions).filter(Boolean).length;
+
+    let totalGrantedActions = 0;
+    const totalPossibleActions = moduleData.length * permissionActions.length;
+    moduleData.forEach((m) => {
+      const isPageActive = !!pageAccess[m.id];
+      const mPerms = pagePermissions[m.id] || defaultPermissions;
+      permissionActions.forEach((act) => {
+        if (isPageActive && mPerms[act]) {
+          totalGrantedActions++;
+        }
+      });
+    });
 
     return {
       totalRoles,
@@ -449,19 +540,23 @@ const Roles = () => {
       customRoles,
       totalUsers,
       enabledModulesCount,
-      enabledActionsCount,
+      totalGrantedActions,
+      totalPossibleActions,
       totalModulesCount: moduleData.length,
       totalActionsCount: permissionActions.length,
     };
-  }, [roles, pageAccess, permissions]);
+  }, [roles, pageAccess, pagePermissions, moduleData]);
 
   // Handlers for Permission & Access Changes
   const togglePage = (moduleId) => {
     if (!selectedRoleId) return;
+    const willBeEnabled = !pageAccess[moduleId];
+
     setRoleSettings((prev) => {
       const current = prev[selectedRoleId] || {
         pageAccess: { ...defaultPageAccess },
         permissions: { ...defaultPermissions },
+        pagePermissions: createInitialPagePermissions(selectedRoleId),
         status: true,
       };
       return {
@@ -470,11 +565,81 @@ const Roles = () => {
           ...current,
           pageAccess: {
             ...current.pageAccess,
-            [moduleId]: !current.pageAccess[moduleId],
+            [moduleId]: willBeEnabled,
           },
         },
       };
     });
+
+    const mod = moduleData.find((m) => m.id === moduleId);
+    if (willBeEnabled) {
+      showToast(`Access granted to "${mod?.title || moduleId}".`);
+    } else {
+      showToast(`Access restricted for "${mod?.title || moduleId}".`);
+    }
+  };
+
+  const togglePageAction = (moduleId, action) => {
+    if (!selectedRoleId) return;
+    setRoleSettings((prev) => {
+      const current = prev[selectedRoleId] || {
+        pageAccess: { ...defaultPageAccess },
+        permissions: { ...defaultPermissions },
+        pagePermissions: createInitialPagePermissions(selectedRoleId),
+        status: true,
+      };
+      const currentPagePerms =
+        current.pagePermissions?.[moduleId] || {
+          ...(current.permissions || defaultPermissions),
+        };
+      return {
+        ...prev,
+        [selectedRoleId]: {
+          ...current,
+          pagePermissions: {
+            ...(current.pagePermissions || {}),
+            [moduleId]: {
+              ...currentPagePerms,
+              [action]: !currentPagePerms[action],
+            },
+          },
+        },
+      };
+    });
+  };
+
+  const setAllPageActions = (moduleId, value) => {
+    if (!selectedRoleId) return;
+    const updated = {};
+    permissionActions.forEach((act) => {
+      updated[act] = value;
+    });
+
+    setRoleSettings((prev) => {
+      const current = prev[selectedRoleId] || {
+        pageAccess: { ...defaultPageAccess },
+        permissions: { ...defaultPermissions },
+        pagePermissions: createInitialPagePermissions(selectedRoleId),
+        status: true,
+      };
+      return {
+        ...prev,
+        [selectedRoleId]: {
+          ...current,
+          pagePermissions: {
+            ...(current.pagePermissions || {}),
+            [moduleId]: updated,
+          },
+        },
+      };
+    });
+
+    const mod = moduleData.find((m) => m.id === moduleId);
+    showToast(
+      value
+        ? `All actions granted for "${mod?.title || moduleId}"`
+        : `All actions revoked for "${mod?.title || moduleId}"`
+    );
   };
 
   const setAllPages = (value) => {
@@ -488,6 +653,7 @@ const Roles = () => {
       const current = prev[selectedRoleId] || {
         pageAccess: { ...defaultPageAccess },
         permissions: { ...defaultPermissions },
+        pagePermissions: createInitialPagePermissions(selectedRoleId),
         status: true,
       };
       return {
@@ -508,6 +674,7 @@ const Roles = () => {
       const current = prev[selectedRoleId] || {
         pageAccess: { ...defaultPageAccess },
         permissions: { ...defaultPermissions },
+        pagePermissions: createInitialPagePermissions(selectedRoleId),
         status: true,
       };
       const updatedAccess = { ...current.pageAccess };
@@ -522,7 +689,7 @@ const Roles = () => {
         },
       };
     });
-    showToast(`${value ? "Enabled" : "Disabled"} all ${category} modules`);
+    showToast(`${value ? "Enabled" : "Disabled"} all ${category} pages`);
   };
 
   const togglePermission = (action) => {
@@ -531,6 +698,7 @@ const Roles = () => {
       const current = prev[selectedRoleId] || {
         pageAccess: { ...defaultPageAccess },
         permissions: { ...defaultPermissions },
+        pagePermissions: createInitialPagePermissions(selectedRoleId),
         status: true,
       };
       return {
@@ -557,6 +725,7 @@ const Roles = () => {
       const current = prev[selectedRoleId] || {
         pageAccess: { ...defaultPageAccess },
         permissions: { ...defaultPermissions },
+        pagePermissions: createInitialPagePermissions(selectedRoleId),
         status: true,
       };
       return {
@@ -576,6 +745,7 @@ const Roles = () => {
       const current = prev[selectedRoleId] || {
         pageAccess: { ...defaultPageAccess },
         permissions: { ...defaultPermissions },
+        pagePermissions: createInitialPagePermissions(selectedRoleId),
         status: true,
       };
       const newStatus = !current.status;
@@ -596,6 +766,7 @@ const Roles = () => {
     const defaultTemplate = INITIAL_ROLE_SETTINGS[selectedRoleId] || {
       pageAccess: { ...defaultPageAccess },
       permissions: { ...defaultPermissions },
+      pagePermissions: createInitialPagePermissions(selectedRoleId),
       status: true,
     };
 
@@ -604,6 +775,7 @@ const Roles = () => {
       [selectedRoleId]: {
         pageAccess: { ...defaultTemplate.pageAccess },
         permissions: { ...defaultTemplate.permissions },
+        pagePermissions: { ...defaultTemplate.pagePermissions },
         status: defaultTemplate.status ?? true,
       },
     }));
@@ -657,6 +829,7 @@ const Roles = () => {
       [nextId]: {
         pageAccess: { ...defaultPageAccess },
         permissions: { ...defaultPermissions },
+        pagePermissions: createInitialPagePermissions(nextId),
         status: true,
       },
     }));
@@ -665,6 +838,95 @@ const Roles = () => {
     setActiveTab("Pages");
     setShowNewRoleModal(false);
     showToast(`Role "${name}" created successfully`);
+  };
+
+  // Create Page handlers for modules (Dashboard or LMS)
+  const openCreatePageModal = (category = selectedCategory) => {
+    setCreatePageCategory(category);
+    setNewPageTitle("");
+    setNewPageRoute("");
+    setNewPageDescription("");
+    setNewPageIcon("LayoutDashboard");
+    setNewPageColor(PRESET_COLORS[moduleData.length % PRESET_COLORS.length]);
+    setShowCreatePageModal(true);
+  };
+
+  const handleCreatePage = (e) => {
+    e.preventDefault();
+    const title = newPageTitle.trim();
+    if (!title) return;
+
+    // Generate unique slug / id
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+
+    let generatedId = slug || `page-${Date.now()}`;
+    if (moduleData.some((m) => m.id === generatedId)) {
+      generatedId = `${generatedId}-${Date.now()}`;
+    }
+
+    const defaultPrefix =
+      createPageCategory === "Dashboard" ? "/dashboard" : "/lms";
+    let route = newPageRoute.trim();
+    if (!route) {
+      route = `${defaultPrefix}/${slug}`;
+    } else if (!route.startsWith("/")) {
+      route = `/${route}`;
+    }
+
+    const iconEntry = AVAILABLE_PAGE_ICONS.find((i) => i.name === newPageIcon);
+    const resolvedIcon = iconEntry ? iconEntry.icon : LayoutDashboard;
+
+    const newPage = {
+      id: generatedId,
+      title,
+      description:
+        newPageDescription.trim() ||
+        `${title} management, operational records and configuration`,
+      category: createPageCategory,
+      route,
+      icon: resolvedIcon,
+      color: newPageColor,
+      permissions: ["Access"],
+    };
+
+    setModuleData((prev) => [...prev, newPage]);
+
+    setRoleSettings((prev) => {
+      const next = { ...prev };
+      roles.forEach((r) => {
+        const cur = next[r.id] || {
+          pageAccess: { ...defaultPageAccess },
+          permissions: { ...defaultPermissions },
+          pagePermissions: createInitialPagePermissions(r.id),
+          status: true,
+        };
+        next[r.id] = {
+          ...cur,
+          pageAccess: {
+            ...cur.pageAccess,
+            [newPage.id]: true,
+          },
+          pagePermissions: {
+            ...(cur.pagePermissions || {}),
+            [newPage.id]: {
+              View: true,
+              "Upload Excel": true,
+              Create: true,
+              Edit: true,
+              Delete: r.id === 1,
+            },
+          },
+        };
+      });
+      return next;
+    });
+
+    setSelectedCategory(createPageCategory);
+    setShowCreatePageModal(false);
+    showToast(`Page "${title}" created successfully under ${createPageCategory}!`);
   };
 
   // Edit Role handlers
@@ -693,12 +955,12 @@ const Roles = () => {
       prev.map((role) =>
         role.id === selectedRole.id
           ? {
-              ...role,
-              name,
-              shortName,
-              description: editRoleDescription.trim() || role.description,
-              color: editRoleColor,
-            }
+            ...role,
+            name,
+            shortName,
+            description: editRoleDescription.trim() || role.description,
+            color: editRoleColor,
+          }
           : role
       )
     );
@@ -754,14 +1016,7 @@ const Roles = () => {
             <div className="rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white/90 backdrop-blur-md p-5 shadow-[0_4px_24px_rgba(15,23,42,0.03)] transition-all">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  {/* Breadcrumb */}
-                  <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-[#64748b]">
-                    <span>LMS</span>
-                    <span className="text-[#cbd5e1]">/</span>
-                    <span>Access Management</span>
-                    <span className="text-[#cbd5e1]">/</span>
-                    <span className="text-[#0d9488]">Roles & Permissions</span>
-                  </div>
+
 
                   <div className="flex flex-wrap items-center gap-3">
                     <h1 className="text-xl font-extrabold tracking-tight text-[#0f172a] sm:text-2xl">
@@ -791,8 +1046,7 @@ const Roles = () => {
               </div>
 
               {/* KPI QUICK STATS STRIP */}
-              <div className="mt-5 grid grid-cols-2 gap-3 pt-5 border-t border-[#f1f5f9] sm:grid-cols-2 lg:grid-cols-4">
-                {/* Stat 1 */}
+              {/* <div className="mt-5 grid grid-cols-2 gap-3 pt-5 border-t border-[#f1f5f9] sm:grid-cols-2 lg:grid-cols-4">
                 <div className="group rounded-xl border border-[#e2edf2] bg-[#f8fafc]/80 p-3.5 transition-all duration-200 hover:border-[#0d9488]/30 hover:bg-white hover:shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-medium text-[#64748b]">Total Roles</span>
@@ -806,7 +1060,6 @@ const Roles = () => {
                   </div>
                 </div>
 
-                {/* Stat 2 */}
                 <div className="group rounded-xl border border-[#e2edf2] bg-[#f8fafc]/80 p-3.5 transition-all duration-200 hover:border-blue-300 hover:bg-white hover:shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-medium text-[#64748b]">Assigned Users</span>
@@ -820,7 +1073,6 @@ const Roles = () => {
                   </div>
                 </div>
 
-                {/* Stat 3 */}
                 <div className="group rounded-xl border border-[#e2edf2] bg-[#f8fafc]/80 p-3.5 transition-all duration-200 hover:border-amber-300 hover:bg-white hover:shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-medium text-[#64748b]">Role Composition</span>
@@ -834,7 +1086,6 @@ const Roles = () => {
                   </div>
                 </div>
 
-                {/* Stat 4 */}
                 <div className="group rounded-xl border border-[#e2edf2] bg-[#f8fafc]/80 p-3.5 transition-all duration-200 hover:border-purple-300 hover:bg-white hover:shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-medium text-[#64748b]">System Modules</span>
@@ -847,7 +1098,7 @@ const Roles = () => {
                     <span className="text-[11px] text-[#64748b]">securable resources</span>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* MAIN TWO-COLUMN WORKSPACE */}
@@ -858,28 +1109,18 @@ const Roles = () => {
               <div className="flex flex-col rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white shadow-[0_4px_24px_rgba(15,23,42,0.03)] overflow-hidden">
                 {/* Panel Header */}
                 <div className="border-b border-[#f1f5f9] p-4 sm:p-5 bg-gradient-to-b from-[#f8fafc] to-white">
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e6f7f5] text-[#0d9488]">
-                        <ShieldCheck size={16} />
-                      </div>
-                      <div>
-                        <h2 className="text-sm font-bold text-[#0f172a]">Role Profiles</h2>
-                        <p className="text-[11px] text-[#64748b]">Select a role to inspect</p>
-                      </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e6f7f5] text-[#0d9488]">
+                      <ShieldCheck size={16} />
                     </div>
-
-                    <button
-                      onClick={openNewRoleModal}
-                      className="inline-flex items-center gap-1 rounded-lg border border-[#e2edf2] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#0d9488] shadow-xs transition hover:border-[#0d9488]/40 hover:bg-[#e6f7f5]/40"
-                    >
-                      <Plus size={13} strokeWidth={2.5} />
-                      <span>New</span>
-                    </button>
+                    <div>
+                      <h2 className="text-sm font-bold text-[#0f172a]">Role Profiles</h2>
+                      <p className="text-[11px] text-[#64748b]">Select a role to inspect</p>
+                    </div>
                   </div>
 
                   {/* Search Roles Input */}
-                  <div className="relative mb-3">
+                  <div className="relative">
                     <Search
                       size={14}
                       className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]"
@@ -900,26 +1141,6 @@ const Roles = () => {
                       </button>
                     )}
                   </div>
-
-                  {/* Role Type Filter Tabs */}
-                  <div className="flex items-center gap-1 rounded-xl bg-[#f1f5f9] p-1 text-[11px] font-semibold text-[#64748b]">
-                    {["All", "System", "Custom"].map((type) => {
-                      const isActive = roleTypeFilter === type;
-                      return (
-                        <button
-                          key={type}
-                          onClick={() => setRoleTypeFilter(type)}
-                          className={`flex-1 rounded-lg py-1 transition-all ${
-                            isActive
-                              ? "bg-white text-[#0f172a] font-bold shadow-xs"
-                              : "hover:text-[#0f172a]"
-                          }`}
-                        >
-                          {type}
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
 
                 {/* Role Cards List */}
@@ -934,11 +1155,10 @@ const Roles = () => {
                       <div
                         key={role.id}
                         onClick={() => setSelectedRoleId(role.id)}
-                        className={`group relative flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all duration-200 ${
-                          isSelected
-                            ? "border-[#0d9488]/50 bg-gradient-to-r from-[#e6f7f5]/70 to-white shadow-sm ring-1 ring-[#0d9488]/20"
-                            : "border-[#e2edf2] bg-white hover:border-[#cbd5e1] hover:bg-[#f8fafc]/70 hover:-translate-y-0.5"
-                        }`}
+                        className={`group relative flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all duration-200 ${isSelected
+                          ? "border-[#0d9488]/50 bg-gradient-to-r from-[#e6f7f5]/70 to-white shadow-sm ring-1 ring-[#0d9488]/20"
+                          : "border-[#e2edf2] bg-white hover:border-[#cbd5e1] hover:bg-[#f8fafc]/70 hover:-translate-y-0.5"
+                          }`}
                       >
                         {/* Active Accent Bar */}
                         {isSelected && (
@@ -987,9 +1207,8 @@ const Roles = () => {
 
                             <span className="inline-flex items-center gap-1">
                               <span
-                                className={`h-1.5 w-1.5 rounded-full ${
-                                  isRoleActive ? "bg-emerald-500" : "bg-slate-300"
-                                }`}
+                                className={`h-1.5 w-1.5 rounded-full ${isRoleActive ? "bg-emerald-500" : "bg-slate-300"
+                                  }`}
                               />
                               <span>{isRoleActive ? "Active" : "Inactive"}</span>
                             </span>
@@ -999,11 +1218,10 @@ const Roles = () => {
                         {/* Chevron Indicator */}
                         <ChevronRight
                           size={15}
-                          className={`transition-transform duration-200 ${
-                            isSelected
-                              ? "text-[#0d9488] translate-x-0.5"
-                              : "text-[#cbd5e1] group-hover:text-[#64748b]"
-                          }`}
+                          className={`transition-transform duration-200 ${isSelected
+                            ? "text-[#0d9488] translate-x-0.5"
+                            : "text-[#cbd5e1] group-hover:text-[#64748b]"
+                            }`}
                         />
                       </div>
                     );
@@ -1095,16 +1313,14 @@ const Roles = () => {
                               )}
 
                               <span
-                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
-                                  roleStatus
-                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                    : "bg-slate-100 text-slate-600 border border-slate-200"
-                                }`}
+                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${roleStatus
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : "bg-slate-100 text-slate-600 border border-slate-200"
+                                  }`}
                               >
                                 <span
-                                  className={`h-1.5 w-1.5 rounded-full ${
-                                    roleStatus ? "bg-emerald-500" : "bg-slate-400"
-                                  }`}
+                                  className={`h-1.5 w-1.5 rounded-full ${roleStatus ? "bg-emerald-500" : "bg-slate-400"
+                                    }`}
                                 />
                                 {roleStatus ? "Active Status" : "Inactive"}
                               </span>
@@ -1140,7 +1356,7 @@ const Roles = () => {
                       </div>
 
                       {/* ROLE STATS TILES */}
-                      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {/* <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <div className="rounded-xl border border-[#e2edf2] bg-white p-3 shadow-xs">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">
                             Role Class
@@ -1179,82 +1395,32 @@ const Roles = () => {
                           </span>
                           <div className="mt-0.5 flex items-center justify-between">
                             <p className="text-xs sm:text-sm font-bold text-blue-600">
-                              {metrics.enabledActionsCount} / {metrics.totalActionsCount}
+                              {metrics.totalGrantedActions} / {metrics.totalPossibleActions}
                             </p>
                             <span className="text-[10px] text-[#64748b]">
-                              {metrics.enabledActionsCount === metrics.totalActionsCount
+                              {metrics.totalGrantedActions === metrics.totalPossibleActions
                                 ? "Full Control"
-                                : "Restricted"}
+                                : "Customized"}
                             </span>
                           </div>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
 
-                    {/* SEGMENTED TAB NAVIGATION */}
+                    {/* SECTION NAVIGATION */}
                     <div className="border-b border-[#f1f5f9] px-5 bg-white">
-                      <div className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-thin">
+                      <div className="flex items-center py-3.5">
                         <button
-                          onClick={() => setActiveTab("Pages")}
-                          className={`relative flex items-center gap-2 py-3.5 text-xs font-bold transition ${
-                            activeTab === "Pages"
-                              ? "text-[#0d9488]"
-                              : "text-[#64748b] hover:text-[#0f172a]"
-                          }`}
+                          type="button"
+                          onClick={() => setSelectedPageId(null)}
+                          className="relative flex items-center gap-2 text-xs font-bold text-[#0d9488]"
                         >
                           <LayoutDashboard size={15} />
                           <span>Module & Page Access</span>
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                              activeTab === "Pages"
-                                ? "bg-[#e6f7f5] text-[#0d9488]"
-                                : "bg-slate-100 text-[#64748b]"
-                            }`}
-                          >
+                          <span className="rounded-full bg-[#e6f7f5] px-2 py-0.5 text-[10px] font-bold text-[#0d9488]">
                             {metrics.enabledModulesCount} Active
                           </span>
-                          {activeTab === "Pages" && (
-                            <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#0d9488]" />
-                          )}
-                        </button>
-
-                        <button
-                          onClick={() => setActiveTab("Permissions")}
-                          className={`relative flex items-center gap-2 py-3.5 text-xs font-bold transition ${
-                            activeTab === "Permissions"
-                              ? "text-[#0d9488]"
-                              : "text-[#64748b] hover:text-[#0f172a]"
-                          }`}
-                        >
-                          <ShieldCheck size={15} />
-                          <span>Action Privileges</span>
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                              activeTab === "Permissions"
-                                ? "bg-[#e6f7f5] text-[#0d9488]"
-                                : "bg-slate-100 text-[#64748b]"
-                            }`}
-                          >
-                            {metrics.enabledActionsCount} Allowed
-                          </span>
-                          {activeTab === "Permissions" && (
-                            <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#0d9488]" />
-                          )}
-                        </button>
-
-                        <button
-                          onClick={() => setActiveTab("Matrix")}
-                          className={`relative flex items-center gap-2 py-3.5 text-xs font-bold transition ${
-                            activeTab === "Matrix"
-                              ? "text-[#0d9488]"
-                              : "text-[#64748b] hover:text-[#0f172a]"
-                          }`}
-                        >
-                          <CheckSquare size={15} />
-                          <span>Security Matrix</span>
-                          {activeTab === "Matrix" && (
-                            <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#0d9488]" />
-                          )}
+                          <span className="absolute -bottom-3.5 left-0 right-0 h-0.5 rounded-full bg-[#0d9488]" />
                         </button>
                       </div>
                     </div>
@@ -1264,177 +1430,297 @@ const Roles = () => {
                     {/* =================================================== */}
                     {activeTab === "Pages" && (
                       <div className="p-5 lg:p-6 space-y-6">
-                        {/* Control Toolbar */}
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                          {/* Search & Category Filter */}
-                          <div className="flex flex-1 flex-wrap items-center gap-2 md:max-w-xl">
-                            <div className="relative min-w-[220px] flex-1">
-                              <Search
-                                size={14}
-                                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]"
-                              />
-                              <input
-                                type="text"
-                                value={searchPermission}
-                                onChange={(e) => setSearchPermission(e.target.value)}
-                                placeholder="Search modules..."
-                                className="h-9 w-full rounded-xl border border-[#e2edf2] bg-[#f8fafc] pl-9 pr-8 text-xs text-[#0f172a] placeholder-[#94a3b8] transition focus:border-[#0d9488] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/15"
-                              />
-                              {searchPermission && (
-                                <button
-                                  onClick={() => setSearchPermission("")}
-                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0f172a]"
-                                >
-                                  <X size={13} />
-                                </button>
-                              )}
-                            </div>
+                        {selectedPageObj ? (
+                          /* ========================================================= */
+                          /* INLINE GRANULAR ACTION PRIVILEGES VIEW (IN-PLACE TRANSITION) */
+                          /* ========================================================= */
+                          <div className="space-y-6 animate-in fade-in duration-200">
+                            {/* Top Navigation & Sibling Switcher Bar */}
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#f1f5f9] pb-4">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedPageId(null)}
+                                className="inline-flex items-center gap-1.5 self-start rounded-xl border border-[#e2edf2] bg-white px-3.5 py-2 text-xs font-bold text-[#0d9488] shadow-xs transition hover:border-[#0d9488]/40 hover:bg-[#e6f7f5]/40"
+                              >
+                                <ChevronLeft size={16} strokeWidth={2.5} />
+                                <span>Back to {selectedPageObj.category} Pages</span>
+                              </button>
 
-                            {/* Category Filter Pills */}
-                            <div className="flex items-center gap-1 overflow-x-auto">
-                              {categories.map((cat) => (
-                                <button
-                                  key={cat}
-                                  onClick={() => setSelectedCategory(cat)}
-                                  className={`rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${
-                                    selectedCategory === cat
-                                      ? "bg-[#0d9488] text-white shadow-xs"
-                                      : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2edf2] hover:text-[#0f172a]"
-                                  }`}
-                                >
-                                  {cat}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Quick Batch Actions */}
-                          <div className="flex items-center gap-2 self-start md:self-auto">
-                            <button
-                              onClick={() => setAllPages(true)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-3 py-1.5 text-xs font-semibold text-[#0d9488] shadow-xs transition hover:border-[#0d9488]/40 hover:bg-[#e6f7f5]/40"
-                            >
-                              <Check size={13} strokeWidth={2.5} />
-                              <span>Enable All</span>
-                            </button>
-
-                            <button
-                              onClick={() => setAllPages(false)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-xs transition hover:border-rose-300 hover:bg-rose-50"
-                            >
-                              <X size={13} strokeWidth={2.5} />
-                              <span>Disable All</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Modules Grouped Display */}
-                        {Object.entries(groupedModules).map(([category, modules]) => (
-                          <div key={category} className="space-y-3">
-                            {/* Category Banner */}
-                            <div className="flex items-center justify-between gap-3 border-b border-[#f1f5f9] pb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="rounded-md bg-[#e6f7f5] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#0d9488] border border-[#0d9488]/20">
-                                  {category}
+                              {/* Quick Switch Pills for Sibling Pages */}
+                              {/* <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
+                                <span className="text-[11px] font-bold text-[#64748b] mr-1 hidden md:inline">
+                                  Quick Switch:
                                 </span>
-                                <span className="text-xs font-semibold text-[#64748b]">
-                                  ({modules.length} {modules.length === 1 ? "module" : "modules"})
-                                </span>
-                              </div>
+                                {moduleData
+                                  .filter((m) => m.category === selectedPageObj.category)
+                                  .map((m) => {
+                                    const isCurrent = m.id === selectedPageObj.id;
+                                    const isMEnabled = !!pageAccess[m.id];
+                                    const SiblingIcon = m.icon || LayoutDashboard;
 
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => toggleCategoryPages(category, true)}
-                                  className="text-[11px] font-semibold text-[#0d9488] hover:underline"
-                                >
-                                  Enable Group
-                                </button>
-                                <span className="text-[#cbd5e1]">•</span>
-                                <button
-                                  onClick={() => toggleCategoryPages(category, false)}
-                                  className="text-[11px] font-semibold text-[#64748b] hover:text-rose-600 hover:underline"
-                                >
-                                  Disable Group
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Module Cards Grid */}
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                              {modules.map((module) => {
-                                const ModuleIcon = module.icon || LayoutDashboard;
-                                const isEnabled = !!pageAccess[module.id];
-
-                                return (
-                                  <div
-                                    key={module.id}
-                                    className={`group relative flex flex-col justify-between rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs ${
-                                      isEnabled
-                                        ? "border-[#e2edf2] bg-white hover:border-[#0d9488]/40"
-                                        : "border-[#e2edf2] bg-[#f8fafc]/70 opacity-75 hover:opacity-100"
-                                    }`}
-                                  >
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="flex items-start gap-3 min-w-0">
-                                        <div
-                                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 shadow-xs"
-                                          style={{
-                                            backgroundColor: `${module.color || "#0d9488"}1a`,
-                                            color: module.color || "#0d9488",
-                                            border: `1px solid ${module.color || "#0d9488"}33`,
-                                          }}
-                                        >
-                                          <ModuleIcon size={18} strokeWidth={2.2} />
-                                        </div>
-
-                                        <div className="min-w-0">
-                                          <h4 className="truncate text-xs sm:text-[13px] font-bold text-[#0f172a]">
-                                            {module.title}
-                                          </h4>
-                                          <p className="mt-0.5 text-[11px] text-[#64748b] line-clamp-2 leading-relaxed">
-                                            {module.description}
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      {/* Custom Toggle Switch */}
+                                    return (
                                       <button
+                                        key={m.id}
                                         type="button"
-                                        role="switch"
-                                        aria-checked={isEnabled}
-                                        onClick={() => togglePage(module.id)}
-                                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0d9488]/20 ${
-                                          isEnabled ? "bg-[#0d9488]" : "bg-slate-300"
-                                        }`}
-                                      >
-                                        <span
-                                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                                            isEnabled ? "translate-x-5" : "translate-x-0"
+                                        onClick={() => setSelectedPageId(m.id)}
+                                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${isCurrent
+                                          ? "bg-[#0d9488] text-white shadow-xs font-bold"
+                                          : "bg-white text-[#64748b] border border-[#e2edf2] hover:bg-slate-50 hover:text-[#0f172a]"
                                           }`}
+                                      >
+                                        <SiblingIcon
+                                          size={13}
+                                          style={{ color: isCurrent ? "#ffffff" : m.color || "#0d9488" }}
+                                        />
+                                        <span>{m.title}</span>
+                                        <span
+                                          className={`h-1.5 w-1.5 rounded-full ${isMEnabled
+                                            ? isCurrent
+                                              ? "bg-white"
+                                              : "bg-emerald-500"
+                                            : "bg-slate-300"
+                                            }`}
                                         />
                                       </button>
-                                    </div>
+                                    );
+                                  })}
+                              </div> */}
+                            </div>
 
-                                    {/* Bottom Status Pill */}
-                                    <div className="mt-3 flex items-center justify-between border-t border-[#f1f5f9] pt-2.5">
-                                      <span className="text-[10px] font-medium text-[#94a3b8]">
-                                        Route: /{module.id}
+                            {/* Page Identity & Master Access Banner */}
+                            <div className="rounded-2xl border border-[#e2edf2] bg-gradient-to-r from-[#f8fafc] via-white to-[#f8fafc] p-5 shadow-xs">
+                              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-start gap-4 min-w-0">
+                                  <div
+                                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-xs transition-transform duration-200"
+                                    style={{
+                                      backgroundColor: `${selectedPageObj.color || "#0d9488"}1a`,
+                                      color: selectedPageObj.color || "#0d9488",
+                                      border: `1px solid ${selectedPageObj.color || "#0d9488"}33`,
+                                    }}
+                                  >
+                                    {(() => {
+                                      const PageIcon = selectedPageObj.icon || LayoutDashboard;
+                                      return <PageIcon size={26} strokeWidth={2.2} />;
+                                    })()}
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <h3 className="text-base sm:text-lg font-bold text-[#0f172a]">
+                                        {selectedPageObj.title}
+                                      </h3>
+                                      {selectedPageObj.route && (
+                                        <span className="font-mono text-[10px] font-semibold text-[#64748b] bg-[#f1f5f9] px-2 py-0.5 rounded-md border border-[#e2edf2]">
+                                          {selectedPageObj.route}
+                                        </span>
+                                      )}
+                                      <span className="rounded-md bg-[#e6f7f5] px-2 py-0.5 text-[10px] font-bold text-[#0d9488] border border-[#0d9488]/20">
+                                        {selectedPageObj.category}
                                       </span>
-
                                       <span
-                                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-                                          isEnabled
-                                            ? "bg-[#e6f7f5] text-[#0d9488]"
-                                            : "bg-slate-100 text-slate-500"
-                                        }`}
+                                        className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${pageAccess[selectedPageObj.id]
+                                          ? "bg-[#e6f7f5] text-[#0d9488]"
+                                          : "bg-slate-100 text-slate-500"
+                                          }`}
                                       >
-                                        {isEnabled ? (
+                                        {pageAccess[selectedPageObj.id] ? (
                                           <>
-                                            <Check size={10} strokeWidth={2.5} />
+                                            <Check size={11} strokeWidth={2.5} />
                                             <span>Access Granted</span>
                                           </>
                                         ) : (
-                                          <span>Restricted</span>
+                                          <span>Access Restricted</span>
+                                        )}
+                                      </span>
+                                    </div>
+
+                                    <p className="mt-1 text-xs text-[#64748b]">
+                                      {selectedPageObj.description}
+                                    </p>
+
+                                    <div className="mt-2 flex items-center gap-2 text-[11px] text-[#64748b]">
+                                      <span>Configuring permissions for role:</span>
+                                      <span className="font-bold text-[#0f172a] inline-flex items-center gap-1.5">
+                                        <span
+                                          className="h-2 w-2 rounded-full"
+                                          style={{ backgroundColor: selectedRole.color || "#0d9488" }}
+                                        />
+                                        {selectedRole.name}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Master Page Access Switch */}
+                                <div className="flex items-center gap-3 self-start sm:self-auto rounded-xl border border-[#e2edf2] bg-white p-3 shadow-xs">
+                                  <div className="text-right">
+                                    <div className="text-xs font-bold text-[#0f172a]">Page Access</div>
+                                    <div className="text-[10px] text-[#64748b]">
+                                      {pageAccess[selectedPageObj.id] ? "Enabled" : "Disabled"}
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={!!pageAccess[selectedPageObj.id]}
+                                    onClick={() => togglePage(selectedPageObj.id)}
+                                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0d9488]/20 ${pageAccess[selectedPageObj.id] ? "bg-[#0d9488]" : "bg-slate-300"
+                                      }`}
+                                  >
+                                    <span
+                                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${pageAccess[selectedPageObj.id] ? "translate-x-5" : "translate-x-0"
+                                        }`}
+                                    />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Warning If Page Access Is Restricted */}
+                            {!pageAccess[selectedPageObj.id] && (
+                              <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-xs text-amber-800 shadow-xs">
+                                <AlertCircle size={18} className="shrink-0 text-amber-600" />
+                                <div className="flex-1">
+                                  <strong className="font-bold">
+                                    Page access is currently restricted for {selectedRole.name}.
+                                  </strong>
+                                  <p className="mt-0.5 text-amber-700">
+                                    Action privileges configured below will only be effective when page access is enabled above.
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => togglePage(selectedPageObj.id)}
+                                  className="rounded-xl bg-amber-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-amber-700 shadow-xs"
+                                >
+                                  Enable Page Access
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Action Privileges Header & Batch Action Buttons */}
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#f1f5f9] pb-3">
+                              <div>
+                                <h4 className="text-sm font-bold text-[#0f172a]">
+                                  Individual Action Privileges
+                                </h4>
+                                <p className="text-xs text-[#64748b]">
+                                  Configure specific operations authorized on <strong>{selectedPageObj.title}</strong>
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setAllPageActions(selectedPageObj.id, true)}
+                                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-3 py-1.5 text-xs font-semibold text-[#0d9488] shadow-xs transition hover:border-[#0d9488]/40 hover:bg-[#e6f7f5]/40"
+                                >
+                                  <Check size={13} strokeWidth={2.5} />
+                                  <span>Grant All</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setAllPageActions(selectedPageObj.id, false)}
+                                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-xs transition hover:border-rose-300 hover:bg-rose-50"
+                                >
+                                  <X size={13} strokeWidth={2.5} />
+                                  <span>Revoke All</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* 5 Granular Action Privilege Cards */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              {permissionActions.map((action) => {
+                                const meta = actionMeta[action] || {};
+                                const ActionIcon = meta.icon || ShieldCheck;
+                                const pagePerms = pagePermissions[selectedPageObj.id] || defaultPermissions;
+                                const isAllowed = !!pagePerms[action];
+                                const isPageOn = !!pageAccess[selectedPageObj.id];
+
+                                return (
+                                  <div
+                                    key={action}
+                                    className={`group flex flex-col justify-between rounded-2xl border p-4.5 transition-all duration-200 hover:-translate-y-0.5 ${isAllowed && isPageOn
+                                      ? "border-[#e2edf2] bg-white shadow-xs hover:border-[#0d9488]/40 hover:shadow-md"
+                                      : "border-dashed border-[#cbd5e1] bg-[#f8fafc]/80 opacity-75 hover:opacity-100"
+                                      }`}
+                                  >
+                                    <div>
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                          <div
+                                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-xs transition-transform duration-200 group-hover:scale-105"
+                                            style={{
+                                              backgroundColor: `${meta.color || "#0d9488"}1a`,
+                                              color: meta.color || "#0d9488",
+                                              border: `1px solid ${meta.color || "#0d9488"}33`,
+                                            }}
+                                          >
+                                            <ActionIcon size={20} strokeWidth={2.3} />
+                                          </div>
+
+                                          <div>
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                              <h5 className="text-sm font-bold text-[#0f172a]">
+                                                {action}
+                                              </h5>
+                                              <span
+                                                className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${meta.badgeBg}`}
+                                              >
+                                                {meta.badge}
+                                              </span>
+                                            </div>
+                                            <span
+                                              className={`mt-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${meta.riskColor}`}
+                                            >
+                                              {meta.risk}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Action Toggle Switch */}
+                                        <button
+                                          type="button"
+                                          role="switch"
+                                          aria-checked={isAllowed}
+                                          onClick={() => togglePageAction(selectedPageObj.id, action)}
+                                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0d9488]/20 ${isAllowed ? "bg-[#0d9488]" : "bg-slate-300"
+                                            }`}
+                                        >
+                                          <span
+                                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${isAllowed ? "translate-x-5" : "translate-x-0"
+                                              }`}
+                                          />
+                                        </button>
+                                      </div>
+
+                                      <p className="mt-3 text-xs text-[#64748b] leading-relaxed">
+                                        {meta.description}
+                                      </p>
+                                    </div>
+
+                                    <div className="mt-4 flex items-center justify-between border-t border-[#f1f5f9] pt-2.5">
+                                      <span className="text-[11px] font-medium text-[#94a3b8]">
+                                        Privilege status:
+                                      </span>
+
+                                      <span
+                                        className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${isAllowed && isPageOn
+                                          ? "bg-[#e6f7f5] text-[#0d9488]"
+                                          : "bg-slate-100 text-slate-500"
+                                          }`}
+                                      >
+                                        {isAllowed && isPageOn ? (
+                                          <>
+                                            <Check size={10} strokeWidth={2.5} />
+                                            <span>Authorized</span>
+                                          </>
+                                        ) : (
+                                          <span>Denied</span>
                                         )}
                                       </span>
                                     </div>
@@ -1442,237 +1728,244 @@ const Roles = () => {
                                 );
                               })}
                             </div>
-                          </div>
-                        ))}
 
-                        {filteredModules.length === 0 && (
-                          <div className="rounded-2xl border border-dashed border-[#cbd5e1] p-12 text-center">
-                            <Search size={30} className="mx-auto mb-2 text-[#94a3b8]" />
-                            <h4 className="text-sm font-bold text-[#0f172a]">No modules found</h4>
-                            <p className="mt-1 text-xs text-[#64748b]">
-                              No modules matched your search criteria. Try a different query.
-                            </p>
+                            {/* Inline Bottom Bar */}
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-[#e2edf2] bg-[#f8fafc] p-4">
+                              <div className="text-xs text-[#64748b]">
+                                <span className="font-bold text-[#0f172a]">
+                                  {
+                                    permissionActions.filter(
+                                      (a) => (pagePermissions[selectedPageObj.id] || defaultPermissions)[a]
+                                    ).length
+                                  }{" "}
+                                  of {permissionActions.length}
+                                </span>{" "}
+                                privileges authorized for <strong>{selectedPageObj.title}</strong>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedPageId(null)}
+                                  className="inline-flex items-center gap-2 rounded-xl border border-[#e2edf2] bg-white px-4 py-2 text-xs font-bold text-[#64748b] hover:text-[#0f172a] shadow-xs transition hover:bg-slate-50"
+                                >
+                                  <span>Back to Overview</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedPageId(null);
+                                    showToast(`Privileges for "${selectedPageObj.title}" saved successfully`);
+                                  }}
+                                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] px-5 py-2 text-xs font-bold text-white shadow-sm shadow-[#0d9488]/30 transition hover:from-[#0f766e] hover:to-[#0d9488]"
+                                >
+                                  <Check size={14} strokeWidth={2.5} />
+                                  <span>Done</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          /* ========================================================= */
+                          /* MODULE & PAGE CARDS GRID OVERVIEW */
+                          /* ========================================================= */
+                          <div className="space-y-6">
+                            {/* Control Toolbar */}
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                              {/* Search & Module Category Filter */}
+                              <div className="flex flex-1 flex-wrap items-center gap-2.5 md:max-w-xl">
+                                <div className="relative min-w-[200px] flex-1">
+                                  <Search
+                                    size={14}
+                                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={searchPermission}
+                                    onChange={(e) => setSearchPermission(e.target.value)}
+                                    placeholder="Search pages..."
+                                    className="h-9 w-full rounded-xl border border-[#e2edf2] bg-[#f8fafc] pl-9 pr-8 text-xs text-[#0f172a] placeholder-[#94a3b8] transition focus:border-[#0d9488] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/15"
+                                  />
+                                  {searchPermission && (
+                                    <button
+                                      onClick={() => setSearchPermission("")}
+                                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0f172a]"
+                                    >
+                                      <X size={13} />
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Module Filter Tabs (No "All" tab) */}
+                                <div className="flex items-center gap-1 rounded-xl bg-[#f1f5f9] p-1 border border-[#e2edf2]">
+                                  {categories.map((cat) => {
+                                    const isCatActive = selectedCategory === cat;
+                                    const catCount = moduleData.filter((m) => m.category === cat).length;
+                                    const catEnabledCount = moduleData.filter(
+                                      (m) => m.category === cat && !!pageAccess[m.id]
+                                    ).length;
+
+                                    return (
+                                      <button
+                                        key={cat}
+                                        type="button"
+                                        onClick={() => setSelectedCategory(cat)}
+                                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${isCatActive
+                                          ? "bg-white text-[#0d9488] shadow-xs ring-1 ring-[#0d9488]/20"
+                                          : "text-[#64748b] hover:text-[#0f172a]"
+                                          }`}
+                                      >
+                                        <span>{cat}</span>
+                                        <span
+                                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isCatActive
+                                            ? "bg-[#e6f7f5] text-[#0d9488]"
+                                            : "bg-slate-200 text-[#64748b]"
+                                            }`}
+                                        >
+                                          {catEnabledCount}/{catCount}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* Quick Batch Actions for selected module */}
+                              <div className="flex items-center gap-2 self-start md:self-auto">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCategoryPages(selectedCategory, true)}
+                                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-3 py-1.5 text-xs font-semibold text-[#0d9488] shadow-xs transition hover:border-[#0d9488]/40 hover:bg-[#e6f7f5]/40"
+                                >
+                                  <Check size={13} strokeWidth={2.5} />
+                                  <span>Enable All</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCategoryPages(selectedCategory, false)}
+                                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-xs transition hover:border-rose-300 hover:bg-rose-50"
+                                >
+                                  <X size={13} strokeWidth={2.5} />
+                                  <span>Disable All</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Module Category Banner */}
+                            <div className="flex items-center justify-between gap-3 border-b border-[#f1f5f9] pb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="rounded-md bg-[#e6f7f5] px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-[#0d9488] border border-[#0d9488]/20">
+                                  {selectedCategory}
+                                </span>
+                                <span className="text-xs font-semibold text-[#64748b]">
+                                  ({filteredModules.length} {filteredModules.length === 1 ? "page" : "pages"})
+                                </span>
+                              </div>
+
+                              {/* Create Page Button for Active Module */}
+                              <button
+                                type="button"
+                                onClick={() => openCreatePageModal(selectedCategory)}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-[#0d9488]/30 bg-[#e6f7f5] px-3.5 py-1.5 text-xs font-bold text-[#0d9488] shadow-xs transition-all duration-200 hover:bg-[#0d9488] hover:text-white hover:shadow-sm active:translate-y-0"
+                              >
+                                <Plus size={14} strokeWidth={2.5} />
+                                <span>Create Page</span>
+                              </button>
+                            </div>
+
+                            {/* Page Cards Grid Under Selected Module */}
+                            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
+                              {filteredModules.map((module) => {
+                                const ModuleIcon = module.icon || LayoutDashboard;
+                                const isEnabled = !!pageAccess[module.id];
+                                const isSelected = selectedPageId === module.id;
+
+                                return (
+                                  <div
+                                    key={module.id}
+                                    onClick={() => setSelectedPageId(module.id)}
+                                    className={`group relative flex flex-col justify-between rounded-2xl border p-4.5 transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${isSelected
+                                      ? "border-[#0d9488] bg-white shadow-md ring-2 ring-[#0d9488]/30"
+                                      : isEnabled
+                                        ? "border-[#e2edf2] bg-white hover:border-[#0d9488]/40"
+                                        : "border-[#e2edf2] bg-[#f8fafc]/70 opacity-75 hover:opacity-100 hover:border-slate-300"
+                                      }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex items-start gap-3.5 min-w-0">
+                                        <div
+                                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 shadow-xs"
+                                          style={{
+                                            backgroundColor: `${module.color || "#0d9488"}1a`,
+                                            color: module.color || "#0d9488",
+                                            border: `1px solid ${module.color || "#0d9488"}33`,
+                                          }}
+                                        >
+                                          <ModuleIcon size={20} strokeWidth={2.2} />
+                                        </div>
+
+                                        <div className="min-w-0">
+                                          <h4 className="truncate text-xs sm:text-sm font-bold text-[#0f172a]">
+                                            {module.title}
+                                          </h4>
+                                          {module.route && (
+                                            <div className="mt-1">
+                                              <span className="font-mono text-[10px] font-medium text-[#64748b] bg-[#f1f5f9] px-2 py-0.5 rounded-md border border-[#e2edf2]">
+                                                {module.route}
+                                              </span>
+                                            </div>
+                                          )}
+                                          <p className="mt-2 text-xs text-[#64748b] line-clamp-2 leading-relaxed">
+                                            {module.description}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* Main Enable / Disable Switch */}
+                                      <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={isEnabled}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          togglePage(module.id);
+                                        }}
+                                        title={
+                                          isEnabled
+                                            ? "Click to disable page access"
+                                            : "Click to enable page access"
+                                        }
+                                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0d9488]/20 ${isEnabled ? "bg-[#0d9488]" : "bg-slate-300"
+                                          }`}
+                                      >
+                                        <span
+                                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${isEnabled ? "translate-x-5" : "translate-x-0"
+                                            }`}
+                                        />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {filteredModules.length === 0 && (
+                              <div className="rounded-2xl border border-dashed border-[#cbd5e1] p-12 text-center">
+                                <Search size={30} className="mx-auto mb-2 text-[#94a3b8]" />
+                                <h4 className="text-sm font-bold text-[#0f172a]">No pages found</h4>
+                                <p className="mt-1 text-xs text-[#64748b]">
+                                  No pages matched your search criteria in "{selectedCategory}".
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
                     )}
 
-                    {/* =================================================== */}
-                    {/* TAB CONTENT: ACTION PRIVILEGES */}
-                    {/* =================================================== */}
-                    {activeTab === "Permissions" && (
-                      <div className="p-5 lg:p-6 space-y-6">
-                        {/* Control Toolbar */}
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                          <div>
-                            <h3 className="text-sm font-bold text-[#0f172a]">
-                              Functional Authorizations
-                            </h3>
-                            <p className="text-xs text-[#64748b]">
-                              Define operational permissions for data manipulation, file imports, and deletion.
-                            </p>
-                          </div>
 
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setAllPermissions(true)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-3 py-1.5 text-xs font-semibold text-[#0d9488] shadow-xs transition hover:border-[#0d9488]/40 hover:bg-[#e6f7f5]/40"
-                            >
-                              <Check size={13} strokeWidth={2.5} />
-                              <span>Grant All</span>
-                            </button>
-
-                            <button
-                              onClick={() => setAllPermissions(false)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#e2edf2] bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-xs transition hover:border-rose-300 hover:bg-rose-50"
-                            >
-                              <X size={13} strokeWidth={2.5} />
-                              <span>Revoke All</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Action Privileges Grid */}
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          {filteredActions.map((action) => {
-                            const meta = actionMeta[action] || {};
-                            const ActionIcon = meta.icon || ShieldCheck;
-                            const isAllowed = !!permissions[action];
-
-                            return (
-                              <div
-                                key={action}
-                                className={`group flex flex-col justify-between rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs ${
-                                  isAllowed
-                                    ? "border-[#e2edf2] bg-white hover:border-[#0d9488]/40"
-                                    : "border-dashed border-[#cbd5e1] bg-[#f8fafc]/80 opacity-80 hover:opacity-100"
-                                }`}
-                              >
-                                <div>
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                      <div
-                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-xs transition-transform duration-200 group-hover:scale-105"
-                                        style={{
-                                          backgroundColor: `${meta.color || "#0d9488"}1a`,
-                                          color: meta.color || "#0d9488",
-                                          border: `1px solid ${meta.color || "#0d9488"}33`,
-                                        }}
-                                      >
-                                        <ActionIcon size={20} strokeWidth={2.4} />
-                                      </div>
-
-                                      <div>
-                                        <div className="flex items-center gap-2">
-                                          <h4 className="text-sm font-bold text-[#0f172a]">
-                                            {action}
-                                          </h4>
-                                          <span
-                                            className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${meta.badgeBg}`}
-                                          >
-                                            {meta.badge}
-                                          </span>
-                                        </div>
-
-                                        <span
-                                          className={`mt-0.5 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${meta.riskColor}`}
-                                        >
-                                          {meta.risk}
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    {/* Action Toggle Switch */}
-                                    <button
-                                      type="button"
-                                      role="switch"
-                                      aria-checked={isAllowed}
-                                      onClick={() => togglePermission(action)}
-                                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0d9488]/20 ${
-                                        isAllowed ? "bg-[#0d9488]" : "bg-slate-300"
-                                      }`}
-                                    >
-                                      <span
-                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                                          isAllowed ? "translate-x-5" : "translate-x-0"
-                                        }`}
-                                      />
-                                    </button>
-                                  </div>
-
-                                  <p className="mt-3 text-xs text-[#64748b] leading-relaxed">
-                                    {meta.description}
-                                  </p>
-                                </div>
-
-                                <div className="mt-4 flex items-center justify-between border-t border-[#f1f5f9] pt-2.5">
-                                  <span className="text-[11px] font-medium text-[#94a3b8]">
-                                    Privilege status:
-                                  </span>
-
-                                  <span
-                                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold ${
-                                      isAllowed
-                                        ? "bg-[#e6f7f5] text-[#0d9488]"
-                                        : "bg-slate-100 text-slate-500"
-                                    }`}
-                                  >
-                                    {isAllowed ? "Authorized" : "Denied"}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* =================================================== */}
-                    {/* TAB CONTENT: SECURITY MATRIX (AUDIT OVERVIEW) */}
-                    {/* =================================================== */}
-                    {activeTab === "Matrix" && (
-                      <div className="p-5 lg:p-6 space-y-4">
-                        <div>
-                          <h3 className="text-sm font-bold text-[#0f172a]">
-                            Permission Audit Matrix
-                          </h3>
-                          <p className="text-xs text-[#64748b]">
-                            Complete overview of functional privileges across every system module for role:{" "}
-                            <span className="font-bold text-[#0f172a]">{selectedRole.name}</span>
-                          </p>
-                        </div>
-
-                        {/* Matrix Table */}
-                        <div className="overflow-x-auto rounded-xl border border-[#e2edf2] bg-white">
-                          <table className="w-full text-left text-xs">
-                            <thead className="border-b border-[#e2edf2] bg-[#f8fafc] text-[11px] font-bold text-[#64748b] uppercase tracking-wider">
-                              <tr>
-                                <th className="px-4 py-3">Module Resource</th>
-                                <th className="px-3 py-3">Category</th>
-                                <th className="px-3 py-3 text-center">Module Access</th>
-                                {permissionActions.map((action) => (
-                                  <th key={action} className="px-3 py-3 text-center">
-                                    {action}
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#f1f5f9]">
-                              {moduleData.map((module) => {
-                                const isPageOn = !!pageAccess[module.id];
-                                return (
-                                  <tr key={module.id} className="hover:bg-[#f8fafc]/80 transition">
-                                    <td className="px-4 py-3 font-semibold text-[#0f172a]">
-                                      <div className="flex items-center gap-2">
-                                        <div
-                                          className="h-2 w-2 rounded-full"
-                                          style={{ backgroundColor: module.color }}
-                                        />
-                                        <span>{module.title}</span>
-                                      </div>
-                                    </td>
-                                    <td className="px-3 py-3 text-[#64748b]">
-                                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">
-                                        {module.category}
-                                      </span>
-                                    </td>
-                                    <td className="px-3 py-3 text-center">
-                                      {isPageOn ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-[#e6f7f5] px-2 py-0.5 text-[10px] font-bold text-[#0d9488]">
-                                          <Check size={11} strokeWidth={2.5} />
-                                          Granted
-                                        </span>
-                                      ) : (
-                                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">
-                                          Restricted
-                                        </span>
-                                      )}
-                                    </td>
-
-                                    {permissionActions.map((act) => {
-                                      const isActOn = isPageOn && !!permissions[act];
-                                      return (
-                                        <td key={act} className="px-3 py-3 text-center">
-                                          {isActOn ? (
-                                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 mx-auto">
-                                              <Check size={11} strokeWidth={2.5} />
-                                            </span>
-                                          ) : (
-                                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-400 mx-auto">
-                                              <X size={11} strokeWidth={2.5} />
-                                            </span>
-                                          )}
-                                        </td>
-                                      );
-                                    })}
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
 
                     {/* ROLE CONFIGURATION FOOTER */}
                     <div className="flex flex-col gap-3 border-t border-[#f1f5f9] bg-[#f8fafc]/90 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1791,11 +2084,10 @@ const Roles = () => {
                         key={color}
                         type="button"
                         onClick={() => setNewRoleColor(color)}
-                        className={`h-5 w-5 rounded-full transition-transform ${
-                          newRoleColor === color
-                            ? "scale-125 ring-2 ring-[#0f172a] shadow-xs"
-                            : "hover:scale-110"
-                        }`}
+                        className={`h-5 w-5 rounded-full transition-transform ${newRoleColor === color
+                          ? "scale-125 ring-2 ring-[#0f172a] shadow-xs"
+                          : "hover:scale-110"
+                          }`}
                         style={{ backgroundColor: color }}
                       />
                     ))}
@@ -1891,11 +2183,10 @@ const Roles = () => {
                       key={color}
                       type="button"
                       onClick={() => setEditRoleColor(color)}
-                      className={`h-5 w-5 rounded-full transition-transform ${
-                        editRoleColor === color
-                          ? "scale-125 ring-2 ring-[#0f172a] shadow-xs"
-                          : "hover:scale-110"
-                      }`}
+                      className={`h-5 w-5 rounded-full transition-transform ${editRoleColor === color
+                        ? "scale-125 ring-2 ring-[#0f172a] shadow-xs"
+                        : "hover:scale-110"
+                        }`}
                       style={{ backgroundColor: color }}
                     />
                   ))}
@@ -1971,6 +2262,179 @@ const Roles = () => {
           </div>
         </div>
       )}
+
+      {/* ========================================================= */}
+      {/* MODAL: CREATE NEW PAGE FOR MODULE */}
+      {/* ========================================================= */}
+      {showCreatePageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#f1f5f9] p-5 bg-gradient-to-b from-[#f8fafc] to-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e6f7f5] text-[#0d9488] border border-[#0d9488]/20 shadow-xs">
+                  <Plus size={18} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-[#0f172a]">
+                    Create New Page
+                  </h3>
+                  <p className="text-xs text-[#64748b]">
+                    Add a new securable page under <span className="font-semibold text-[#0d9488]">{createPageCategory}</span>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowCreatePageModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#94a3b8] transition hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleCreatePage} className="p-5 space-y-4">
+              {/* Target Module Badge */}
+              <div className="rounded-xl border border-[#e2edf2] bg-[#f8fafc] p-3 flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748b]">
+                    Target Module
+                  </span>
+                  <div className="text-xs sm:text-sm font-bold text-[#0f172a] mt-0.5">
+                    {createPageCategory}
+                  </div>
+                </div>
+                <span className="rounded-lg bg-[#e6f7f5] px-2.5 py-1 text-[11px] font-bold text-[#0d9488] border border-[#0d9488]/20">
+                  Active Tab
+                </span>
+              </div>
+
+              {/* Page Title */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                  Page Title <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newPageTitle}
+                  onChange={(e) => setNewPageTitle(e.target.value)}
+                  placeholder="e.g. Skill Matrix, Manpower Analytics..."
+                  autoFocus
+                  required
+                  className="h-10 w-full rounded-xl border border-[#e2edf2] bg-[#f8fafc] px-3.5 text-xs sm:text-sm text-[#0f172a] placeholder-[#94a3b8] transition focus:border-[#0d9488] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/15"
+                />
+              </div>
+
+              {/* Route / URL Path */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                  Route / URL Path
+                </label>
+                <input
+                  type="text"
+                  value={newPageRoute}
+                  onChange={(e) => setNewPageRoute(e.target.value)}
+                  placeholder={
+                    newPageTitle.trim()
+                      ? `${createPageCategory === "Dashboard" ? "/dashboard" : "/lms"}/${newPageTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "")}`
+                      : `${createPageCategory === "Dashboard" ? "/dashboard" : "/lms"}/...`
+                  }
+                  className="h-10 w-full rounded-xl border border-[#e2edf2] bg-[#f8fafc] px-3.5 font-mono text-xs text-[#0f172a] placeholder-[#94a3b8] transition focus:border-[#0d9488] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/15"
+                />
+                <p className="mt-1 text-[11px] text-[#94a3b8]">
+                  Leave blank to auto-generate from page title.
+                </p>
+              </div>
+
+              {/* Page Description */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                  Description
+                </label>
+                <textarea
+                  value={newPageDescription}
+                  onChange={(e) => setNewPageDescription(e.target.value)}
+                  placeholder="Outline page purpose, metrics or operational duties..."
+                  rows={2}
+                  className="w-full resize-none rounded-xl border border-[#e2edf2] bg-[#f8fafc] p-3 text-xs sm:text-sm text-[#0f172a] placeholder-[#94a3b8] transition focus:border-[#0d9488] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/15"
+                />
+              </div>
+
+              {/* Icon Picker & Theme Color */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                    Page Icon
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-[#e2edf2] bg-[#f8fafc] p-2">
+                    {AVAILABLE_PAGE_ICONS.map((item) => {
+                      const IconComp = item.icon;
+                      const isSelected = newPageIcon === item.name;
+                      return (
+                        <button
+                          key={item.name}
+                          type="button"
+                          onClick={() => setNewPageIcon(item.name)}
+                          title={item.label}
+                          className={`flex h-8 items-center justify-center rounded-lg border transition ${
+                            isSelected
+                              ? "border-[#0d9488] bg-white text-[#0d9488] shadow-xs ring-1 ring-[#0d9488]/30"
+                              : "border-transparent bg-transparent text-[#64748b] hover:bg-white hover:text-[#0f172a]"
+                          }`}
+                        >
+                          <IconComp size={16} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                    Accent Color
+                  </label>
+                  <div className="flex h-[46px] items-center gap-2 rounded-xl border border-[#e2edf2] bg-[#f8fafc] px-3">
+                    {PRESET_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setNewPageColor(color)}
+                        className={`h-5 w-5 rounded-full transition-transform ${
+                          newPageColor === color
+                            ? "scale-125 ring-2 ring-[#0f172a] shadow-xs"
+                            : "hover:scale-110"
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Buttons */}
+              <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-[#f1f5f9] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreatePageModal(false)}
+                  className="rounded-xl border border-[#e2edf2] bg-white px-4 py-2 text-xs font-semibold text-[#64748b] transition hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] px-5 py-2 text-xs font-bold text-white shadow-sm shadow-[#0d9488]/30 transition hover:from-[#0f766e] hover:to-[#0d9488]"
+                >
+                  Create Page
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+
 
       {/* ========================================================= */}
       {/* FLOATING SUCCESS TOAST NOTIFICATION */}
