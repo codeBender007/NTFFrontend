@@ -45,7 +45,7 @@ const kpiData = [
 const LMSDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("Dashboard");
+  const [activeMenu, setActiveMenu] = useState("Overview");
 
   return (
     <div className="flex h-screen bg-[#F7F7F5] overflow-hidden">

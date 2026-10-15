@@ -5,7 +5,7 @@ const defaultTabs = [
   "Day 1",
   "Day 2",
   "Training Schedule",
-  "Practice Evaluation Sheet",
+  "Practical Evaluation Sheet",
   "Training Feedback",
 ];
 

@@ -7,7 +7,7 @@ import { lmsMenus } from "../data/LMSMenu";
 const TrainingEffectivenessPage = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("Training Effectiveness Form");
+  const [activeMenu, setActiveMenu] = useState("Training Effectiveness");
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F7F7F5]">

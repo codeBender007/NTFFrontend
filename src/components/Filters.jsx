@@ -175,16 +175,16 @@ const menuProps = {
   },
 };
 
-const DEFAULT_SHIFT_OPTIONS = ["Shift A", "Shift B", "Shift C"];
+const DEFAULT_SHIFT_OPTIONS = ["A", "B", "GEN"];
 
 const normalizeList = (data, nameKeys = ["name"]) => {
   const list = Array.isArray(data)
     ? data
     : Array.isArray(data?.data)
-    ? data.data
-    : Array.isArray(data?.items)
-    ? data.items
-    : [];
+      ? data.data
+      : Array.isArray(data?.items)
+        ? data.items
+        : [];
 
   return list
     .map((item) => {
@@ -450,8 +450,24 @@ const Filters = ({
   }, [propMachineOptions, machines]);
 
   const activeShiftOptions = useMemo(() => {
-    if (propShiftOptions && propShiftOptions.length > 0) return propShiftOptions;
-    return DEFAULT_SHIFT_OPTIONS;
+    const removed = new Set([
+      "shifta",
+      "shift a",
+      "shiftb",
+      "shift b",
+      "shiftc",
+      "shift c",
+      "general",
+    ]);
+
+    const source =
+      propShiftOptions && propShiftOptions.length > 0
+        ? propShiftOptions
+        : DEFAULT_SHIFT_OPTIONS;
+
+    return source
+      .map((opt) => (typeof opt === "string" ? opt : opt?.name))
+      .filter((opt) => opt && !removed.has(String(opt).trim().toLowerCase()));
   }, [propShiftOptions]);
 
   // Hierarchical cascading: if a parent value is selected, filter children when IDs match
@@ -1047,9 +1063,8 @@ const Filters = ({
                 />
 
                 <span
-                  className={`truncate text-xs ${
-                    hasDate ? "text-[#171717] font-medium" : "text-[#8A8A8A]"
-                  }`}
+                  className={`truncate text-xs ${hasDate ? "text-[#171717] font-medium" : "text-[#8A8A8A]"
+                    }`}
                 >
                   {displayLabel}
                 </span>
@@ -1144,16 +1159,15 @@ const Filters = ({
                               onClick={() => handleDayClick(day)}
                               onMouseEnter={() => setHoverDate(day)}
                               onMouseLeave={() => setHoverDate(null)}
-                              className={`${getDayClass(day)} ${
-                                isToday &&
+                              className={`${getDayClass(day)} ${isToday &&
                                 !(
                                   (fromDate && iso === fromDate) ||
                                   (hoveredToDate &&
                                     iso === hoveredToDate)
                                 )
-                                  ? "ring-1 ring-inset ring-[#0d9488]"
-                                  : ""
-                              }`}
+                                ? "ring-1 ring-inset ring-[#0d9488]"
+                                : ""
+                                }`}
                             >
                               {day.getDate()}
                             </button>

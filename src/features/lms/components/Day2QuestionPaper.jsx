@@ -278,137 +278,137 @@ const Day2QuestionPaper = () => {
           >
             <div className="h-full w-full bg-white text-black">
               <div className="flex min-h-[1120px] flex-col px-[35px] py-[35px]">
-          {/* =================================================
+                {/* =================================================
               HEADER
           ================================================== */}
-          <div className="relative">
-            {/* NTF LOGO */}
-            <div className="absolute left-[25px] top-0">
-              <img
-                src={logo}
-                alt="NTF Logo"
-                className="h-[55px] w-auto object-contain"
-              />
-            </div>
+                <div className="relative">
+                  {/* NTF LOGO */}
+                  <div className="absolute left-[25px] top-0">
+                    <img
+                      src={logo}
+                      alt="NTF Logo"
+                      className="h-[55px] w-auto object-contain"
+                    />
+                  </div>
 
-            {/* TITLE */}
-            <div className="pt-[42px] text-center">
-              <h1 className="text-[16px] font-bold uppercase">
-                DOJO TEST PAPER-DAY-2
-              </h1>
-            </div>
-          </div>
+                  {/* TITLE */}
+                  <div className="pt-[42px] text-center">
+                    <h1 className="text-[16px] font-bold uppercase">
+                      DOJO TEST PAPER-DAY-2
+                    </h1>
+                  </div>
+                </div>
 
-          {/* =================================================
+                {/* =================================================
               INFORMATION BOX
           ================================================== */}
-          <div className="mt-3 border border-black px-4 py-3">
-            {/* MARKS */}
-            <div className="text-[11px]">अंक - &nbsp;&nbsp; / 20</div>
+                <div className="mt-3 border border-black px-4 py-3">
+                  {/* MARKS */}
+                  <div className="text-[11px]">अंक - &nbsp;&nbsp; / 20</div>
 
-            {/* PASSING INFORMATION */}
-            <p className="mt-4 text-[11px]">
-              (संकेत- टेस्ट में पास होने के लिए 80% अंक लाना अनिवार्य है।)
-            </p>
+                  {/* PASSING INFORMATION */}
+                  <p className="mt-4 text-[11px]">
+                    (संकेत- टेस्ट में पास होने के लिए 80% अंक लाना अनिवार्य है।)
+                  </p>
 
-            {/* TIME + DATE */}
-            <div className="mt-4 grid grid-cols-2 text-[11px]">
-              {/* TIME */}
-              <div className="flex items-center">
-                <span>समय - 30 मिनिट्स</span>
-              </div>
+                  {/* TIME + DATE */}
+                  <div className="mt-4 grid grid-cols-2 text-[11px]">
+                    {/* TIME */}
+                    <div className="flex items-center">
+                      <span>समय - 30 मिनिट्स</span>
+                    </div>
 
-              {/* DATE */}
-              <div className="flex items-center">
-                <span>दिनांक-</span>
+                    {/* DATE */}
+                    <div className="flex items-center">
+                      <span>दिनांक-</span>
 
-                <input
-                  type="text"
-                  value={info.date}
-                  onChange={handleChange("date")}
-                  className="ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
-                />
-              </div>
-            </div>
+                      <input
+                        type="text"
+                        value={info.date}
+                        onChange={handleChange("date")}
+                        className="ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                      />
+                    </div>
+                  </div>
 
-            {/* NAME / QUALIFICATION / UNIT */}
-            <div className="mt-4 flex items-center text-[11px]">
-              <span className="whitespace-nowrap">सदस्य का नाम</span>
+                  {/* NAME / QUALIFICATION / UNIT */}
+                  <div className="mt-4 flex items-center text-[11px]">
+                    <span className="whitespace-nowrap">सदस्य का नाम</span>
 
-              <input
-                type="text"
-                value={info.name}
-                onChange={handleChange("name")}
-                className="mx-2 w-[240px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
-              />
+                    <input
+                      type="text"
+                      value={info.name}
+                      onChange={handleChange("name")}
+                      className="mx-2 w-[240px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                    />
 
-              <span className="whitespace-nowrap">क्वालिफिकेशन</span>
+                    <span className="whitespace-nowrap">क्वालिफिकेशन</span>
 
-              <input
-                type="text"
-                value={info.qualification}
-                onChange={handleChange("qualification")}
-                className="mx-2 w-[220px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
-              />
+                    <input
+                      type="text"
+                      value={info.qualification}
+                      onChange={handleChange("qualification")}
+                      className="mx-2 w-[220px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                    />
 
-              <span className="whitespace-nowrap">यूनिट नाम</span>
+                    <span className="whitespace-nowrap">यूनिट नाम</span>
 
-              <input
-                type="text"
-                value={info.unit}
-                onChange={handleChange("unit")}
-                className="ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
-              />
-            </div>
-          </div>
+                    <input
+                      type="text"
+                      value={info.unit}
+                      onChange={handleChange("unit")}
+                      className="ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                    />
+                  </div>
+                </div>
 
-          {/* =================================================
+                {/* =================================================
               QUESTIONS
           ================================================== */}
-          <div className="mt-14 grid grid-cols-2 gap-x-[80px]">
-            {/* =================================================
+                <div className="mt-14 grid grid-cols-2 gap-x-[80px]">
+                  {/* =================================================
                 LEFT COLUMN
             ================================================== */}
-            <div>
-              {/* QUALITY */}
-              <SectionHeading>Process Questions: (Quality)</SectionHeading>
+                  <div>
+                    {/* QUALITY */}
+                    <SectionHeading>Process Questions: (Quality)</SectionHeading>
 
-              <Question number={1} />
+                    <Question number={1} />
 
-              <Question number={2} />
+                    <Question number={2} />
 
-              <Question number={3} />
+                    <Question number={3} />
 
-              {/* PLASTIC INJECTION */}
-              <SectionHeading>
-                Process Questions: (Plastic Injection Moulding)s
-              </SectionHeading>
+                    {/* PLASTIC INJECTION */}
+                    <SectionHeading>
+                      Process Questions: (Plastic Injection Moulding)s
+                    </SectionHeading>
 
-              <Question number={4} />
-            </div>
+                    <Question number={4} />
+                  </div>
 
-            {/* =================================================
+                  {/* =================================================
                 RIGHT COLUMN
             ================================================== */}
-            <div>
-              {/* EMPTY SPACE TO ALIGN QUESTION 5 */}
-              <div className="h-[35px]" />
+                  <div>
+                    {/* EMPTY SPACE TO ALIGN QUESTION 5 */}
+                    <div className="h-[35px]" />
 
-              <Question number={5} />
+                    <Question number={5} />
 
-              <Question number={6} />
+                    <Question number={6} />
 
-              <Question number={7} />
+                    <Question number={7} />
 
-              <Question number={8} />
+                    <Question number={8} />
+                  </div>
+                </div>
+
+                {/* FOOTER */}
+                <Footer />
+              </div>
             </div>
           </div>
-
-          {/* FOOTER */}
-              <Footer />
-            </div>
-          </div>
-        </div>
 
           {/* =====================================================
               PAGE 2
@@ -419,67 +419,67 @@ const Day2QuestionPaper = () => {
           >
             <div className="h-full w-full bg-white text-black">
               <div className="flex min-h-[1120px] flex-col px-[35px] py-[35px]">
-          {/* =================================================
+                {/* =================================================
               QUESTIONS
           ================================================== */}
-          <div className="grid grid-cols-2 gap-x-[80px]">
-            {/* =================================================
+                <div className="grid grid-cols-2 gap-x-[80px]">
+                  {/* =================================================
                 LEFT COLUMN
             ================================================== */}
-            <div>
-              {/* PAINT SHOP */}
-              <SectionHeading>Process Questions: (Paint Shop)</SectionHeading>
+                  <div>
+                    {/* PAINT SHOP */}
+                    <SectionHeading>Process Questions: (Paint Shop)</SectionHeading>
 
-              <Question number={9} />
+                    <Question number={9} />
 
-              <Question number={10} />
+                    <Question number={10} />
 
-              <Question number={11} />
+                    <Question number={11} />
 
-              {/* PU RIM */}
-              <SectionHeading>Process Questions: ( PU Rim )</SectionHeading>
+                    {/* PU RIM */}
+                    <SectionHeading>Process Questions: ( PU Rim )</SectionHeading>
 
-              <Question number={12} />
+                    <Question number={12} />
 
-              <Question number={13} />
+                    <Question number={13} />
 
-              {/* TCM */}
-              <SectionHeading>Process Questions: (TCM)</SectionHeading>
+                    {/* TCM */}
+                    <SectionHeading>Process Questions: (TCM)</SectionHeading>
 
-              <Question number={14} />
-            </div>
+                    <Question number={14} />
+                  </div>
 
-            {/* =================================================
+                  {/* =================================================
                 RIGHT COLUMN
             ================================================== */}
-            <div>
-              {/* TOP SPACE */}
-              <div className="h-[25px]" />
+                  <div>
+                    {/* TOP SPACE */}
+                    <div className="h-[25px]" />
 
-              {/* QUESTION 15 */}
-              <Question number={15} />
+                    {/* QUESTION 15 */}
+                    <Question number={15} />
 
-              {/* QUESTION 16 */}
-              <Question number={16} />
+                    {/* QUESTION 16 */}
+                    <Question number={16} />
 
-              {/* LB */}
-              <SectionHeading>Process Questions: (LB)</SectionHeading>
+                    {/* LB */}
+                    <SectionHeading>Process Questions: (LB)</SectionHeading>
 
-              <Question number={17} />
+                    <Question number={17} />
 
-              <Question number={18} />
+                    <Question number={18} />
 
-              <Question number={19} />
+                    <Question number={19} />
 
-              <Question number={20} />
+                    <Question number={20} />
+                  </div>
+                </div>
+
+                {/* FOOTER */}
+                <Footer />
+              </div>
             </div>
           </div>
-
-          {/* FOOTER */}
-              <Footer />
-            </div>
-          </div>
-        </div>
         </div>
       </div>
 

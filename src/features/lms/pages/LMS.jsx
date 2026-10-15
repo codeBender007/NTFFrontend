@@ -15,7 +15,7 @@ const LMS = () => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("LMS");
+  const [activeMenu, setActiveMenu] = useState("DOJO Hiring");
 
   const [activeTab, setActiveTab] = useState("Test Papers");
 
@@ -71,7 +71,7 @@ const LMS = () => {
 
           {activeTab === "Day 2" && <Day2QuestionPaper />}
 
-          {activeTab === "Practice Evaluation Sheet" && (
+          {activeTab === "Practical Evaluation Sheet" && (
             <PracticeEvaluationSheet />
           )}
 

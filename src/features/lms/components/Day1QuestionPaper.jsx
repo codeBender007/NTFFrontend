@@ -1,4 +1,4 @@
-﻿import { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import logo from "../../../assets/images/NTF_logo_black.png";
 
 const QUESTIONS = {
@@ -274,150 +274,150 @@ const Day1QuestionPaper = () => {
           >
             <div className="h-full w-full bg-white text-black">
               <div className="min-h-[1120px] px-[35px] py-[35px]">
-          {/* =====================================================
+                {/* =====================================================
               HEADER
           ====================================================== */}
-          <div className="relative">
-            {/* NTF LOGO */}
-            <div className="absolute left-0 top-0">
-              <img
-                src={logo}
-                alt="NTF Logo"
-                className="h-[58px] w-auto object-contain"
-              />
-            </div>
+                <div className="relative">
+                  {/* NTF LOGO */}
+                  <div className="absolute left-0 top-0">
+                    <img
+                      src={logo}
+                      alt="NTF Logo"
+                      className="h-[58px] w-auto object-contain"
+                    />
+                  </div>
 
-            {/* TITLE */}
-            <div className="pt-[40px] text-center">
-              <h1 className="text-[16px] font-bold">DOJO TEST PAPER- DAY-1</h1>
-            </div>
-          </div>
+                  {/* TITLE */}
+                  <div className="pt-[40px] text-center">
+                    <h1 className="text-[16px] font-bold">DOJO TEST PAPER- DAY-1</h1>
+                  </div>
+                </div>
 
-          {/* =====================================================
+                {/* =====================================================
               INFORMATION BOX
           ====================================================== */}
-          <div className="mt-4 border border-black px-5 py-4">
-            {/* MARKS */}
-            <div className="flex items-center text-[12px]">
-              <span>अंक -</span>
+                <div className="mt-4 border border-black px-5 py-4">
+                  {/* MARKS */}
+                  <div className="flex items-center text-[12px]">
+                    <span>अंक -</span>
 
-              <span className="ml-2">/ 20</span>
-            </div>
+                    <span className="ml-2">/ 20</span>
+                  </div>
 
-            {/* PASSING INFORMATION */}
-            <p className="mt-4 text-[11px]">
-              (ऑब्जेक्टिव टेस्ट में पास होने के लिए 80% अंक लाना अनिवार्य है।)
-            </p>
+                  {/* PASSING INFORMATION */}
+                  <p className="mt-4 text-[11px]">
+                    (ऑब्जेक्टिव टेस्ट में पास होने के लिए 80% अंक लाना अनिवार्य है।)
+                  </p>
 
-            {/* TIME + DATE */}
-            <div className="mt-4 grid grid-cols-2 text-[12px]">
-              {/* TIME */}
-              <div className="flex items-center">
-                <span>समय -</span>
+                  {/* TIME + DATE */}
+                  <div className="mt-4 grid grid-cols-2 text-[12px]">
+                    {/* TIME */}
+                    <div className="flex items-center">
+                      <span>समय -</span>
 
-                <input
-                  type="text"
-                  value={info.time}
-                  onChange={handleInfoChange("time")}
-                  className="ml-2 w-[130px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
-                />
-              </div>
+                      <input
+                        type="text"
+                        value={info.time}
+                        onChange={handleInfoChange("time")}
+                        className="ml-2 w-[130px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                      />
+                    </div>
 
-              {/* DATE */}
-              <div className="flex items-center">
-                <span>दिनांक-</span>
+                    {/* DATE */}
+                    <div className="flex items-center">
+                      <span>दिनांक-</span>
 
-                <input
-                  type="text"
-                  value={info.date}
-                  onChange={handleInfoChange("date")}
-                  className="ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
-                />
-              </div>
-            </div>
+                      <input
+                        type="text"
+                        value={info.date}
+                        onChange={handleInfoChange("date")}
+                        className="ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                      />
+                    </div>
+                  </div>
 
-            {/* NAME / DESIGNATION / UNIT */}
-            <div className="mt-5 flex items-center text-[12px]">
-              <span className="whitespace-nowrap">सदस्य का नाम</span>
+                  {/* NAME / DESIGNATION / UNIT */}
+                  <div className="mt-5 flex items-center text-[12px]">
+                    <span className="whitespace-nowrap">सदस्य का नाम</span>
 
-              <input
-                type="text"
-                value={info.name}
-                onChange={handleInfoChange("name")}
-                className="mx-2 w-[250px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
-              />
+                    <input
+                      type="text"
+                      value={info.name}
+                      onChange={handleInfoChange("name")}
+                      className="mx-2 w-[250px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                    />
 
-              <span className="whitespace-nowrap">क्वालिफिकेशन</span>
+                    <span className="whitespace-nowrap">क्वालिफिकेशन</span>
 
-              <input
-                type="text"
-                value={info.designation}
-                onChange={handleInfoChange("designation")}
-                className="mx-2 w-[220px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
-              />
+                    <input
+                      type="text"
+                      value={info.designation}
+                      onChange={handleInfoChange("designation")}
+                      className="mx-2 w-[220px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                    />
 
-              <span className="whitespace-nowrap">यूनिट नाम</span>
+                    <span className="whitespace-nowrap">यूनिट नाम</span>
 
-              <input
-                type="text"
-                value={info.unit}
-                onChange={handleInfoChange("unit")}
-                className="ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
-              />
-            </div>
-          </div>
+                    <input
+                      type="text"
+                      value={info.unit}
+                      onChange={handleInfoChange("unit")}
+                      className="ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                    />
+                  </div>
+                </div>
 
-          {/* =====================================================
+                {/* =====================================================
               QUESTIONS
           ====================================================== */}
-          <div className="mt-8 grid grid-cols-2 gap-x-[80px]">
-            {/* =================================================
+                <div className="mt-8 grid grid-cols-2 gap-x-[80px]">
+                  {/* =================================================
                 LEFT COLUMN
             ================================================== */}
-            <div>
-              {/* GENERAL QUESTIONS */}
-              <h2 className="mb-5 text-[16px] font-bold">General Questions:</h2>
+                  <div>
+                    {/* GENERAL QUESTIONS */}
+                    <h2 className="mb-5 text-[16px] font-bold">General Questions:</h2>
 
-              <Question number={1} question={QUESTIONS.general[0]} />
+                    <Question number={1} question={QUESTIONS.general[0]} />
 
-              <Question number={2} question={QUESTIONS.general[1]} />
+                    <Question number={2} question={QUESTIONS.general[1]} />
 
-              <Question number={3} question={QUESTIONS.general[2]} />
+                    <Question number={3} question={QUESTIONS.general[2]} />
 
-              <Question number={4} question={QUESTIONS.general[3]} />
+                    <Question number={4} question={QUESTIONS.general[3]} />
 
-              <Question number={5} question={QUESTIONS.general[4]} />
+                    <Question number={5} question={QUESTIONS.general[4]} />
 
-              <Question number={6} question={QUESTIONS.general[5]} />
-            </div>
+                    <Question number={6} question={QUESTIONS.general[5]} />
+                  </div>
 
-            {/* =================================================
+                  {/* =================================================
                 RIGHT COLUMN
             ================================================== */}
-            <div>
-              {/* SPACE TO ALIGN QUESTION 7 */}
-              <div className="h-[40px]" />
+                  <div>
+                    {/* SPACE TO ALIGN QUESTION 7 */}
+                    <div className="h-[40px]" />
 
-              <Question number={7} question={QUESTIONS.general[6]} />
+                    <Question number={7} question={QUESTIONS.general[6]} />
 
-              <Question number={8} question={QUESTIONS.general[7]} />
+                    <Question number={8} question={QUESTIONS.general[7]} />
 
-              {/* SAFETY QUESTIONS */}
-              <h2 className="mb-5 mt-10 text-[16px] font-bold">
-                Safety Questions:
-              </h2>
+                    {/* SAFETY QUESTIONS */}
+                    <h2 className="mb-5 mt-10 text-[16px] font-bold">
+                      Safety Questions:
+                    </h2>
 
-              <Question number={9} question={QUESTIONS.safety[0]} />
+                    <Question number={9} question={QUESTIONS.safety[0]} />
 
-              <Question number={10} question={QUESTIONS.safety[1]} />
+                    <Question number={10} question={QUESTIONS.safety[1]} />
+                  </div>
+                </div>
+
+                {/* FOOTER */}
+                <Footer />
+              </div>
             </div>
           </div>
-
-          {/* FOOTER */}
-              <Footer />
-            </div>
-          </div>
-        </div>
 
           {/* =====================================================
               PAGE 2
@@ -428,63 +428,63 @@ const Day1QuestionPaper = () => {
           >
             <div className="h-full w-full bg-white text-black">
               <div className="flex min-h-[1120px] flex-col px-[35px] py-[35px]">
-          {/* =====================================================
+                {/* =====================================================
               QUESTIONS PAGE 2
           ====================================================== */}
-          <div className="grid grid-cols-2 gap-x-[80px]">
-            {/* =================================================
+                <div className="grid grid-cols-2 gap-x-[80px]">
+                  {/* =================================================
                 LEFT COLUMN
             ================================================== */}
-            <div>
-              {/* QUESTION 11 */}
-              <Question number={11} question={QUESTIONS.safety[2]} />
+                  <div>
+                    {/* QUESTION 11 */}
+                    <Question number={11} question={QUESTIONS.safety[2]} />
 
-              {/* QUESTION 12 */}
-              <Question number={12} question={QUESTIONS.safety[3]} />
+                    {/* QUESTION 12 */}
+                    <Question number={12} question={QUESTIONS.safety[3]} />
 
-              {/* QUESTION 13 */}
-              <Question number={13} question={QUESTIONS.safety[4]} />
+                    {/* QUESTION 13 */}
+                    <Question number={13} question={QUESTIONS.safety[4]} />
 
-              {/* MAINTENANCE QUESTIONS */}
-              <h2 className="mb-5 mt-10 text-[16px] font-bold">
-                Maintenance Questions:
-              </h2>
+                    {/* MAINTENANCE QUESTIONS */}
+                    <h2 className="mb-5 mt-10 text-[16px] font-bold">
+                      Maintenance Questions:
+                    </h2>
 
-              <Question number={14} question={QUESTIONS.maintenance[0]} />
+                    <Question number={14} question={QUESTIONS.maintenance[0]} />
 
-              <Question number={15} question={QUESTIONS.maintenance[1]} />
+                    <Question number={15} question={QUESTIONS.maintenance[1]} />
 
-              <Question number={16} question={QUESTIONS.maintenance[2]} />
-            </div>
+                    <Question number={16} question={QUESTIONS.maintenance[2]} />
+                  </div>
 
-            {/* =================================================
+                  {/* =================================================
                 RIGHT COLUMN
             ================================================== */}
-            <div>
-              {/* STORES QUESTIONS */}
-              <h2 className="mb-5 text-[16px] font-bold">Stores Questions:</h2>
+                  <div>
+                    {/* STORES QUESTIONS */}
+                    <h2 className="mb-5 text-[16px] font-bold">Stores Questions:</h2>
 
-              <Question number={17} question={QUESTIONS.stores[0]} />
+                    <Question number={17} question={QUESTIONS.stores[0]} />
 
-              <Question number={18} question={QUESTIONS.stores[1]} />
+                    <Question number={18} question={QUESTIONS.stores[1]} />
 
-              {/* ABNORMALITY HANDLING */}
-              <h2 className="mb-5 mt-12 text-[16px] font-bold">
-                Abnormality Handling:
-              </h2>
+                    {/* ABNORMALITY HANDLING */}
+                    <h2 className="mb-5 mt-12 text-[16px] font-bold">
+                      Abnormality Handling:
+                    </h2>
 
-              <Question number={19} question={QUESTIONS.abnormality[0]} />
+                    <Question number={19} question={QUESTIONS.abnormality[0]} />
 
-              <Question number={20} question={QUESTIONS.abnormality[1]} />
-            </div>
-          </div>
+                    <Question number={20} question={QUESTIONS.abnormality[1]} />
+                  </div>
+                </div>
 
-          {/* FOOTER */}
-              <Footer />
+                {/* FOOTER */}
+                <Footer />
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
 
       {/* =====================================================

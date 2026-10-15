@@ -151,7 +151,11 @@ const Operators = ({ operators: propOperators, setOperators: propSetOperators })
     const value = form[field.key] || "";
 
     if (field.type === "select") {
-      const options = field.department ? departmentOptions : field.options;
+      const rawOptions = (field.department ? departmentOptions : field.options) || [];
+      const options =
+        value && !rawOptions.includes(value)
+          ? [value, ...rawOptions]
+          : rawOptions;
 
       return (
         <select

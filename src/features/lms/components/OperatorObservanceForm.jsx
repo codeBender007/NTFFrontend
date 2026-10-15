@@ -27,6 +27,18 @@ const OCS_CELL_WIDTH = OCS_DAY_WIDTH / OCS_CYCLES;
 const OCS_ROW_HEIGHTS = Array(21).fill(28);
 const OCS_SHEETS = ["L-4", "L-3", "L-2"];
 
+const OCS_L2_GRID_COLS =
+  "grid-cols-[repeat(9,minmax(0,1fr))_minmax(0,2.4fr)_repeat(2,minmax(0,2.4fr))_repeat(58,minmax(0,1fr))]";
+const OCS_L3_GRID_COLS =
+  "grid-cols-[repeat(10,minmax(0,1.5fr))_repeat(2,minmax(0,3fr))_repeat(58,minmax(0,1fr))]";
+const OCS_DEFAULT_GRID_COLS = "grid-cols-[repeat(70,minmax(0,1fr))]";
+
+function getOcsGridCols(sheet) {
+  if (sheet === "L-2") return OCS_L2_GRID_COLS;
+  if (sheet === "L-3") return OCS_L3_GRID_COLS;
+  return OCS_DEFAULT_GRID_COLS;
+}
+
 const OCS_DEFAULT_ROWS = [
   { sno: "1", description: "Is process started after Job-set up approval?", cycle: "→", method: "Working procedure" },
   { sno: "2", description: "Machine cleaning, filling start up check sheet and set the process parameter.", cycle: "→", method: "" },
@@ -557,10 +569,10 @@ function OCSHeader({ ws, sheet }) {
       {/* =====================================================
           DAY NAMES
       ===================================================== */}
-      <div className={`absolute left-[565px] top-[139px] w-[1301px] h-[24px] box-border ${sheet === "L-3" ? "grid grid-cols-[repeat(10,minmax(0,1.5fr))_repeat(2,minmax(0,3fr))_repeat(58,minmax(0,1fr))]" : "flex"} bg-white`}>
+      <div className={`absolute left-[565px] top-[139px] w-[1301px] h-[24px] box-border grid ${getOcsGridCols(sheet)} bg-white`}>
         {Array.from({ length: OCS_DAYS }).map((_, dayIndex) => (
           <div
-            className={`${sheet === "L-3" ? "col-span-10" : "flex-1"} h-[24px] flex items-center justify-center gap-[4px] px-[4px] border-r-2 border-[#111111] last:border-r-0 text-[9px] font-bold leading-[24px] whitespace-nowrap overflow-hidden box-border`}
+            className="col-span-10 h-[24px] flex items-center justify-center gap-[4px] px-[4px] border-r-2 border-[#111111] last:border-r-0 text-[9px] font-bold leading-[24px] whitespace-nowrap overflow-hidden box-border"
             key={dayIndex}
           >
             <span>Day {dayIndex + 1}- Date-</span>
@@ -587,53 +599,27 @@ function OCSTableHeader({ sheet }) {
         <div className="h-[30px] flex items-center justify-center border-r border-[#111111] text-[11px] font-bold overflow-hidden">Method</div>
       </div>
 
-      {sheet === "L-3" ? (
-        <div className="w-[1301px] h-[30px] shrink-0 grid grid-cols-[repeat(10,minmax(0,1.5fr))_repeat(2,minmax(0,3fr))_repeat(58,minmax(0,1fr))] overflow-hidden box-border">
-          {Array.from({ length: OCS_DAYS * OCS_CYCLES }).map((_, cycleIndexOverall) => {
-            const cycleIndex = cycleIndexOverall % OCS_CYCLES;
-            const dayIndex = Math.floor(cycleIndexOverall / OCS_CYCLES);
-            const isDayEnd = cycleIndex === OCS_CYCLES - 1;
-            const isLastCycleOverall = isDayEnd && dayIndex === OCS_DAYS - 1;
-            return (
-              <div
-                className={`w-full h-[30px] flex items-center justify-center border-b border-[#111111] text-[9px] font-bold leading-[30px] min-w-0 box-border ${isLastCycleOverall
-                  ? "border-r-0"
-                  : isDayEnd
-                    ? "border-r-2 border-r-[#111111]"
-                    : "border-r border-[#111111]"
-                  }`}
-                key={cycleIndexOverall}
-              >
-                {cycleIndex + 1}
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="w-[1301px] h-[30px] shrink-0 flex flex-row overflow-hidden box-border">
-          {Array.from({ length: OCS_DAYS }).map((_, dayIndex) => (
-            <div className="w-[calc(1301px/7)] shrink-0 h-[30px] grid grid-cols-10 box-border" key={dayIndex}>
-              {Array.from({ length: OCS_CYCLES }).map((_, cycleIndex) => {
-                const isDayEnd = cycleIndex === OCS_CYCLES - 1;
-                const isLastCycleOverall = isDayEnd && dayIndex === OCS_DAYS - 1;
-                return (
-                  <div
-                    className={`w-full h-[30px] flex items-center justify-center border-b border-[#111111] text-[9px] font-bold leading-[30px] min-w-0 box-border ${isLastCycleOverall
-                      ? "border-r-0"
-                      : isDayEnd
-                        ? "border-r-2 border-r-[#111111]"
-                        : "border-r border-[#111111]"
-                      }`}
-                    key={cycleIndex}
-                  >
-                    {cycleIndex + 1}
-                  </div>
-                );
-              })}
+      <div className={`w-[1301px] h-[30px] shrink-0 grid ${getOcsGridCols(sheet)} overflow-hidden box-border`}>
+        {Array.from({ length: OCS_DAYS * OCS_CYCLES }).map((_, cycleIndexOverall) => {
+          const cycleIndex = cycleIndexOverall % OCS_CYCLES;
+          const dayIndex = Math.floor(cycleIndexOverall / OCS_CYCLES);
+          const isDayEnd = cycleIndex === OCS_CYCLES - 1;
+          const isLastCycleOverall = isDayEnd && dayIndex === OCS_DAYS - 1;
+          return (
+            <div
+              className={`w-full h-[30px] flex items-center justify-center border-b border-[#111111] text-[9px] font-bold leading-[30px] min-w-0 box-border ${isLastCycleOverall
+                ? "border-r-0"
+                : isDayEnd
+                  ? "border-r-2 border-r-[#111111]"
+                  : "border-r border-[#111111]"
+                }`}
+              key={cycleIndexOverall}
+            >
+              {cycleIndex + 1}
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -783,11 +769,11 @@ function OCSTableBody({ ws, sheet }) {
         {rows.slice(0, -1).map((row, rowIndex) => {
           const isBoxed = config.boxedRows.has(rowIndex);
 
-          // L3 rows 13 & 14: each Day is one plain full-width cell
-          if (sheet === "L-3" && (rowIndex === 12 || rowIndex === 13)) {
+          // Plain/normal rows across Day 1 to Day 7: utilize full width of each day cell
+          if (!isBoxed) {
             return (
               <div
-                className={`w-[1301px] grid box-border ${sheet === "L-3" ? "grid-cols-[repeat(10,minmax(0,1.5fr))_repeat(2,minmax(0,3fr))_repeat(58,minmax(0,1fr))]" : "grid-cols-[repeat(70,minmax(0,1fr))]"}`}
+                className={`w-[1301px] grid box-border ${getOcsGridCols(sheet)}`}
                 style={{
                   height: config.rowHeights[rowIndex],
                 }}
@@ -799,7 +785,12 @@ function OCSTableBody({ ws, sheet }) {
                     contentEditable
                     suppressContentEditableWarning
                     spellCheck={false}
-                    className={`col-span-10 h-full flex items-center justify-center px-[2px] border-b border-[#111111] bg-white text-[10px] text-center overflow-hidden outline-none cursor-text box-border ${dayIndex === OCS_DAYS - 1 ? "border-r-0" : "border-r-2 border-r-[#111111]"}`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                      }
+                    }}
+                    className={`col-span-10 w-full h-full min-w-0 flex items-center justify-start px-[6px] py-[2px] border-b border-[#111111] bg-white text-[10px] text-left text-[#111111] whitespace-nowrap overflow-hidden text-ellipsis focus:overflow-x-auto outline-none cursor-text box-border ${dayIndex === OCS_DAYS - 1 ? "border-r-0" : "border-r-2 border-r-[#111111]"}`}
                     aria-label={`Day ${dayIndex + 1}`}
                   />
                 ))}
@@ -807,9 +798,10 @@ function OCSTableBody({ ws, sheet }) {
             );
           }
 
+          // Structured grid cells: cycle-by-cycle cells (1 to 10 per day)
           return (
             <div
-              className={`w-[1301px] grid box-border ${sheet === "L-3" ? "grid-cols-[repeat(10,minmax(0,1.5fr))_repeat(2,minmax(0,3fr))_repeat(58,minmax(0,1fr))]" : "grid-cols-[repeat(70,minmax(0,1fr))]"}`}
+              className={`w-[1301px] grid box-border ${getOcsGridCols(sheet)}`}
               style={{
                 height: config.rowHeights[rowIndex],
               }}
@@ -819,20 +811,13 @@ function OCSTableBody({ ws, sheet }) {
                 length: OCS_OBS_COLS,
               }).map((_, columnIndex) => {
                 const cycleNumber = (columnIndex % OCS_CYCLES) + 1;
-                const dayNumber =
-                  Math.floor(columnIndex / OCS_CYCLES) + 1;
-                const isDayEnd =
-                  cycleNumber === OCS_CYCLES;
+                const dayNumber = Math.floor(columnIndex / OCS_CYCLES) + 1;
+                const isDayEnd = cycleNumber === OCS_CYCLES;
                 const isLastCellInRow = columnIndex === OCS_OBS_COLS - 1;
 
-                let borderRightClass = "";
-                if (isDayEnd) {
-                  borderRightClass = isLastCellInRow ? "border-r-0" : "border-r-2 border-r-[#111111]";
-                } else if (isBoxed || (config.day1EmptyRows.has(rowIndex) && dayNumber !== 1)) {
-                  borderRightClass = isLastCellInRow ? "border-r-0" : "border-r border-[#111111]";
-                } else {
-                  borderRightClass = "border-r-0";
-                }
+                const borderRightClass = isDayEnd
+                  ? (isLastCellInRow ? "border-r-0" : "border-r-2 border-r-[#111111]")
+                  : (isLastCellInRow ? "border-r-0" : "border-r border-[#111111]");
 
                 return (
                   <div

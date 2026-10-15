@@ -1,9 +1,61 @@
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import { Menu } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-const Navbar = ({ activeMenu = "Overview", setMobileOpen }) => {
+// Resolve dynamic title based on current route or activeMenu
+const resolveTitle = (pathname, activeMenu) => {
+  const cleanPath = pathname?.replace(/\/+$/, "") || "";
+
+  // 1. LMS navigation routes
+  if (cleanPath === "/lms/dashboard") return "Overview";
+  if (cleanPath === "/lms") return "DOJO Hiring";
+  if (
+    cleanPath.startsWith("/lms/l0") ||
+    cleanPath.startsWith("/lms/l1") ||
+    cleanPath.startsWith("/lms/paper")
+  ) {
+    return "DOJO Hiring";
+  }
+  if (cleanPath === "/lms/roles") return "Roles & Permissions";
+  if (cleanPath === "/lms/users" || cleanPath.startsWith("/lms/user/")) return "Users";
+  if (cleanPath === "/lms/training") return "Training Effectiveness";
+  if (cleanPath === "/lms/operator-observance") return "10 Cycle Operator";
+  if (cleanPath === "/lms/operators" || cleanPath.startsWith("/lms/operator/")) return "Operators";
+  if (
+    cleanPath === "/lms/plant" ||
+    cleanPath.startsWith("/lms/plant/") ||
+    cleanPath.startsWith("/lms/department") ||
+    cleanPath.startsWith("/lms/subdepartment") ||
+    cleanPath.startsWith("/lms/line") ||
+    cleanPath.startsWith("/lms/machine")
+  ) {
+    if (activeMenu && activeMenu !== "LMS" && activeMenu !== "Dashboard") {
+      return activeMenu;
+    }
+    return "Plant";
+  }
+
+  // 2. Dashboard navigation routes
+  if (cleanPath === "/dashboard") return "Dashboard";
+  if (cleanPath === "/dashboard/attendance") return "Attendance";
+  if (cleanPath === "/dashboard/requirement") return "Requirement";
+  if (cleanPath === "/home") return "Home Portal";
+
+  // 3. Fallback based on activeMenu or default
+  if (activeMenu) {
+    if (activeMenu === "LMS") return "DOJO Hiring";
+    if (activeMenu === "Dashboard" && cleanPath.startsWith("/lms")) return "Overview";
+    return activeMenu;
+  }
+
+  return "Overview";
+};
+
+const Navbar = ({ activeMenu, setMobileOpen }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const title = resolveTitle(location.pathname, activeMenu);
 
   return (
     <nav className="bg-white/85 backdrop-blur-md h-16 border-b border-[#e2edf2] flex items-center justify-between px-4 sm:px-6">
@@ -33,7 +85,7 @@ const Navbar = ({ activeMenu = "Overview", setMobileOpen }) => {
         {/* Breadcrumb / Title */}
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-base sm:text-lg font-bold text-[#0f172a] truncate">
-            {activeMenu}
+            {title}
           </h1>
         </div>
       </div>

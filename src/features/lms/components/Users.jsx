@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CirclePlus,
@@ -28,6 +29,11 @@ import {
   getUserDisplayStatus,
 } from "../utils/userUtils";
 import { formatDate } from "../utils/operatorUtils";
+import DepartmentApi from "../services/DepartmentApi";
+import SubDepartmentApi from "../services/SubDepartmentApi";
+import LinesApi from "../services/LinesApi";
+import MachinesApi from "../services/MachinesApi";
+import PlantApi from "../services/PlantApi";
 import UserApi from "../services/UserApi";
 import { isAuthenticated, clearSession } from "../../auth/utils/authStorage";
 
@@ -120,7 +126,46 @@ const USER_TABLE_COLUMNS = [
   ...USER_COLUMNS.filter((column) => column.key !== "sno" && column.key !== "status"),
 ];
 
-const buildCreatePayload = (form) => {
+const normalizeList = (data, nameKeys = ["name"]) => {
+  const list = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.items)
+        ? data.items
+        : [];
+
+  return list
+    .map((item) => {
+      if (!item) return null;
+      if (typeof item === "string") {
+        const trimmed = item.trim();
+        return trimmed ? { id: trimmed, name: trimmed, raw: item } : null;
+      }
+      let name = "";
+      for (const key of nameKeys) {
+        if (item[key]) {
+          name = String(item[key]).trim();
+          break;
+        }
+      }
+      if (!name && item.id != null) name = `ID #${item.id}`;
+      if (!name) return null;
+
+      return {
+        id: item.id ?? name,
+        name,
+        plantId: item.plantId ?? item.plant_id,
+        departmentId: item.departmentId ?? item.department_id,
+        subDepartmentId: item.subDepartmentId ?? item.sub_department_id,
+        lineId: item.lineId ?? item.line_id,
+        raw: item,
+      };
+    })
+    .filter(Boolean);
+};
+
+const buildCreatePayload = (form, lookups = {}) => {
   const isInactive = isUserInactive(form);
   const payload = {
     payCode: String(form.payCode || "").trim(),
@@ -159,6 +204,43 @@ const buildCreatePayload = (form) => {
   const plantId = Number(form.plant);
   if (asNullable(form.plant) !== null && Number.isFinite(plantId)) {
     payload.plantId = plantId;
+  } else if (form.plantLocation) {
+    const matchedPlant = lookups.plants?.find(
+      (p) =>
+        p.name === form.plantLocation ||
+        p.raw?.plantName === form.plantLocation,
+    );
+    if (matchedPlant?.id != null && Number.isFinite(Number(matchedPlant.id))) {
+      payload.plantId = Number(matchedPlant.id);
+    }
+  }
+
+  const deptId =
+    form.departmentId ??
+    lookups.departments?.find((d) => d.name === form.department)?.id;
+  if (deptId != null && Number.isFinite(Number(deptId))) {
+    payload.departmentId = Number(deptId);
+  }
+
+  const subDeptId =
+    form.subDepartmentId ??
+    lookups.subDepartments?.find((sd) => sd.name === form.subDepartment)?.id;
+  if (subDeptId != null && Number.isFinite(Number(subDeptId))) {
+    payload.subDepartmentId = Number(subDeptId);
+  }
+
+  const lineId =
+    form.lineId ??
+    lookups.lines?.find((l) => l.name === form.line)?.id;
+  if (lineId != null && Number.isFinite(Number(lineId))) {
+    payload.lineId = Number(lineId);
+  }
+
+  const machineId =
+    form.machineId ??
+    lookups.machines?.find((m) => m.name === form.machine)?.id;
+  if (machineId != null && Number.isFinite(Number(machineId))) {
+    payload.machineId = Number(machineId);
   }
 
   const password = asNullable(form.password);
@@ -167,7 +249,7 @@ const buildCreatePayload = (form) => {
   return payload;
 };
 
-const buildUpdatePayload = (form) => {
+const buildUpdatePayload = (form, lookups = {}) => {
   const isInactive = isUserInactive(form);
   const payload = {
     payCode: asNullable(form.payCode),
@@ -206,6 +288,43 @@ const buildUpdatePayload = (form) => {
   const plantId = Number(form.plant);
   if (asNullable(form.plant) !== null && Number.isFinite(plantId)) {
     payload.plantId = plantId;
+  } else if (form.plantLocation) {
+    const matchedPlant = lookups.plants?.find(
+      (p) =>
+        p.name === form.plantLocation ||
+        p.raw?.plantName === form.plantLocation,
+    );
+    if (matchedPlant?.id != null && Number.isFinite(Number(matchedPlant.id))) {
+      payload.plantId = Number(matchedPlant.id);
+    }
+  }
+
+  const deptId =
+    form.departmentId ??
+    lookups.departments?.find((d) => d.name === form.department)?.id;
+  if (deptId != null && Number.isFinite(Number(deptId))) {
+    payload.departmentId = Number(deptId);
+  }
+
+  const subDeptId =
+    form.subDepartmentId ??
+    lookups.subDepartments?.find((sd) => sd.name === form.subDepartment)?.id;
+  if (subDeptId != null && Number.isFinite(Number(subDeptId))) {
+    payload.subDepartmentId = Number(subDeptId);
+  }
+
+  const lineId =
+    form.lineId ??
+    lookups.lines?.find((l) => l.name === form.line)?.id;
+  if (lineId != null && Number.isFinite(Number(lineId))) {
+    payload.lineId = Number(lineId);
+  }
+
+  const machineId =
+    form.machineId ??
+    lookups.machines?.find((m) => m.name === form.machine)?.id;
+  if (machineId != null && Number.isFinite(Number(machineId))) {
+    payload.machineId = Number(machineId);
   }
 
   const password = asNullable(form.password);
@@ -242,6 +361,110 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
   const [toast, setToast] = useState("");
   const fileInputRef = useRef(null);
+
+  const [departments, setDepartments] = useState([]);
+  const [subDepartments, setSubDepartments] = useState([]);
+  const [lines, setLines] = useState([]);
+  const [machines, setMachines] = useState([]);
+  const [plants, setPlants] = useState([]);
+  const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+
+  /* ===================== LOAD DROPDOWNS FROM API ===================== */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchDropdowns = async () => {
+      setLoadingDropdowns(true);
+      try {
+        const [deptRes, subDeptRes, lineRes, machRes, plantRes] =
+          await Promise.allSettled([
+            DepartmentApi.getDepartments(),
+            SubDepartmentApi.getSubDepartments(),
+            LinesApi.getLines(),
+            MachinesApi.getMachines(),
+            PlantApi.getPlants(),
+          ]);
+
+        if (!cancelled) {
+          if (deptRes.status === "fulfilled") {
+            setDepartments(
+              normalizeList(deptRes.value?.data, [
+                "departmentName",
+                "name",
+                "department_name",
+              ]),
+            );
+          }
+          if (subDeptRes.status === "fulfilled") {
+            setSubDepartments(
+              normalizeList(subDeptRes.value?.data, [
+                "subDepartmentName",
+                "name",
+                "sub_department_name",
+              ]),
+            );
+          }
+          if (lineRes.status === "fulfilled") {
+            setLines(
+              normalizeList(lineRes.value?.data, [
+                "lineName",
+                "name",
+                "line_name",
+              ]),
+            );
+          }
+          if (machRes.status === "fulfilled") {
+            setMachines(
+              normalizeList(machRes.value?.data, [
+                "machineName",
+                "name",
+                "machine_name",
+              ]),
+            );
+          }
+          if (plantRes.status === "fulfilled") {
+            setPlants(
+              normalizeList(plantRes.value?.data, [
+                "plantLocation",
+                "plantName",
+                "name",
+                "plant_name",
+                "location",
+              ]),
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load form dropdown data:", err);
+      } finally {
+        if (!cancelled) setLoadingDropdowns(false);
+      }
+    };
+
+    fetchDropdowns();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const shiftOptions = useMemo(() => {
+    const removed = new Set([
+      "shifta",
+      "shift a",
+      "shiftb",
+      "shift b",
+      "shiftc",
+      "shift c",
+      "general",
+    ]);
+    const fromUsers = (users || [])
+      .map((u) => u.shift)
+      .filter((s) => s && !removed.has(String(s).trim().toLowerCase()));
+    const standard = ["A", "B", "GEN"];
+    return Array.from(new Set([...standard, ...fromUsers]));
+  }, [users]);
 
   const showToast = (message) => {
     setToast(message);
@@ -453,6 +676,15 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       email: "",
       status: "Active",
       active: true,
+      department: "",
+      departmentId: null,
+      subDepartment: "",
+      subDepartmentId: null,
+      line: "",
+      lineId: null,
+      machine: "",
+      machineId: null,
+      shift: "",
     };
 
     setForm(formWithSno);
@@ -475,6 +707,10 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       status: currentStatus,
       active: !isInactive,
       is_active: !isInactive,
+      departmentId: user.departmentId ?? null,
+      subDepartmentId: user.subDepartmentId ?? null,
+      lineId: user.lineId ?? null,
+      machineId: user.machineId ?? null,
       password: "",
     });
     setShowPassword(false);
@@ -512,8 +748,16 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     setSaving(true);
 
     try {
+      const lookups = {
+        departments,
+        subDepartments,
+        lines,
+        machines,
+        plants,
+      };
+
       if (editingUser) {
-        const payload = buildUpdatePayload(nextForm);
+        const payload = buildUpdatePayload(nextForm, lookups);
         const response = await UserApi.updateUser(
           editingUser.id,
           payload,
@@ -542,9 +786,13 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
           leavingDate: nextForm.leavingDate ?? apiUser.leavingDate ?? editingUser.leavingDate,
           companyName: nextForm.companyName ?? apiUser.companyName ?? editingUser.companyName,
           department: nextForm.department ?? apiUser.department ?? editingUser.department,
+          departmentId: nextForm.departmentId ?? apiUser.departmentId ?? editingUser.departmentId,
           subDepartment: nextForm.subDepartment ?? apiUser.subDepartment ?? editingUser.subDepartment,
+          subDepartmentId: nextForm.subDepartmentId ?? apiUser.subDepartmentId ?? editingUser.subDepartmentId,
           line: nextForm.line ?? apiUser.line ?? editingUser.line,
+          lineId: nextForm.lineId ?? apiUser.lineId ?? editingUser.lineId,
           machine: nextForm.machine ?? apiUser.machine ?? editingUser.machine,
+          machineId: nextForm.machineId ?? apiUser.machineId ?? editingUser.machineId,
           shift: nextForm.shift ?? apiUser.shift ?? editingUser.shift,
           plant: nextForm.plant ?? apiUser.plant ?? editingUser.plant,
           plantLocation: nextForm.plantLocation ?? apiUser.plantLocation ?? editingUser.plantLocation,
@@ -582,7 +830,7 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
         // Fetch fresh server state while preserving our latest merged edits
         await refreshUsers(updatedRow);
       } else {
-        const payload = buildCreatePayload(nextForm);
+        const payload = buildCreatePayload(nextForm, lookups);
         const response = await UserApi.createUser(payload);
         const isInactive = isUserInactive(nextForm);
         const finalStatus = isInactive ? "Inactive" : "Active";
@@ -716,8 +964,8 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
           <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
             <span
               className={`h-2.5 w-2.5 rounded-full ${statusValue === "Active"
-                  ? "bg-emerald-500 animate-pulse"
-                  : "bg-gray-400"
+                ? "bg-emerald-500 animate-pulse"
+                : "bg-gray-400"
                 }`}
             />
           </div>
@@ -725,29 +973,431 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       );
     }
 
-    if (field.type === "select") {
-      const rawOptions = field.department
-        ? departmentOptions
-        : field.options || [];
+    if (field.key === "department") {
+      const rawOptions = departments.map((d) => d.name);
       const options =
         value && !rawOptions.includes(value)
           ? [value, ...rawOptions]
           : rawOptions;
 
       return (
-        <select
-          value={value}
-          onChange={setFormField(field.key)}
-          className={inputClass}
-        >
-          <option value="">Select {field.label.toLowerCase()}</option>
-
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
+        <div className="relative">
+          <select
+            value={value}
+            onChange={(event) => {
+              const selectedName = event.target.value;
+              const deptObj = departments.find((d) => d.name === selectedName);
+              setForm((previous) => {
+                const next = {
+                  ...previous,
+                  department: selectedName,
+                  departmentId: deptObj?.id ?? null,
+                };
+                if (
+                  previous.subDepartment &&
+                  deptObj?.id &&
+                  subDepartments.some(
+                    (sd) =>
+                      sd.name === previous.subDepartment &&
+                      sd.departmentId &&
+                      String(sd.departmentId) !== String(deptObj.id),
+                  )
+                ) {
+                  next.subDepartment = "";
+                  next.subDepartmentId = null;
+                  next.line = "";
+                  next.lineId = null;
+                  next.machine = "";
+                  next.machineId = null;
+                }
+                return next;
+              });
+            }}
+            className={`${inputClass} appearance-none pr-9 bg-white cursor-pointer`}
+          >
+            <option value="">
+              {loadingDropdowns && departments.length === 0
+                ? "Loading departments..."
+                : "Select department"}
             </option>
-          ))}
-        </select>
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b]">
+            <ChevronDown size={16} />
+          </div>
+        </div>
+      );
+    }
+
+    if (field.key === "subDepartment") {
+      const selectedDept = departments.find((d) => d.name === form.department);
+      const filtered = selectedDept?.id
+        ? subDepartments.filter(
+          (sd) =>
+            !sd.departmentId ||
+            String(sd.departmentId) === String(selectedDept.id),
+        )
+        : subDepartments;
+      const activeList = filtered.length > 0 ? filtered : subDepartments;
+      const rawOptions = activeList.map((sd) => sd.name);
+      const options =
+        value && !rawOptions.includes(value)
+          ? [value, ...rawOptions]
+          : rawOptions;
+
+      return (
+        <div className="relative">
+          <select
+            value={value}
+            onChange={(event) => {
+              const selectedName = event.target.value;
+              const subDeptObj = subDepartments.find(
+                (sd) => sd.name === selectedName,
+              );
+              setForm((previous) => {
+                const next = {
+                  ...previous,
+                  subDepartment: selectedName,
+                  subDepartmentId: subDeptObj?.id ?? null,
+                };
+                if (subDeptObj?.departmentId && !previous.department) {
+                  const parentDept = departments.find(
+                    (d) => String(d.id) === String(subDeptObj.departmentId),
+                  );
+                  if (parentDept) {
+                    next.department = parentDept.name;
+                    next.departmentId = parentDept.id;
+                  }
+                }
+                if (
+                  previous.line &&
+                  subDeptObj?.id &&
+                  lines.some(
+                    (l) =>
+                      l.name === previous.line &&
+                      l.subDepartmentId &&
+                      String(l.subDepartmentId) !== String(subDeptObj.id),
+                  )
+                ) {
+                  next.line = "";
+                  next.lineId = null;
+                  next.machine = "";
+                  next.machineId = null;
+                }
+                return next;
+              });
+            }}
+            className={`${inputClass} appearance-none pr-9 bg-white cursor-pointer`}
+          >
+            <option value="">
+              {loadingDropdowns && subDepartments.length === 0
+                ? "Loading sub-departments..."
+                : "Select sub-department"}
+            </option>
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b]">
+            <ChevronDown size={16} />
+          </div>
+        </div>
+      );
+    }
+
+    if (field.key === "line") {
+      const selectedSubDept = subDepartments.find(
+        (sd) => sd.name === form.subDepartment,
+      );
+      const selectedDept = departments.find((d) => d.name === form.department);
+
+      let filtered = lines;
+      if (selectedSubDept?.id) {
+        filtered = lines.filter(
+          (l) =>
+            !l.subDepartmentId ||
+            String(l.subDepartmentId) === String(selectedSubDept.id),
+        );
+      } else if (selectedDept?.id) {
+        filtered = lines.filter(
+          (l) =>
+            !l.departmentId ||
+            String(l.departmentId) === String(selectedDept.id),
+        );
+      }
+
+      const activeList = filtered.length > 0 ? filtered : lines;
+      const rawOptions = activeList.map((l) => l.name);
+      const options =
+        value && !rawOptions.includes(value)
+          ? [value, ...rawOptions]
+          : rawOptions;
+
+      return (
+        <div className="relative">
+          <select
+            value={value}
+            onChange={(event) => {
+              const selectedName = event.target.value;
+              const lineObj = lines.find((l) => l.name === selectedName);
+              setForm((previous) => {
+                const next = {
+                  ...previous,
+                  line: selectedName,
+                  lineId: lineObj?.id ?? null,
+                };
+                if (lineObj?.subDepartmentId && !previous.subDepartment) {
+                  const parentSub = subDepartments.find(
+                    (sd) => String(sd.id) === String(lineObj.subDepartmentId),
+                  );
+                  if (parentSub) {
+                    next.subDepartment = parentSub.name;
+                    next.subDepartmentId = parentSub.id;
+                    if (parentSub.departmentId && !previous.department) {
+                      const parentDept = departments.find(
+                        (d) => String(d.id) === String(parentSub.departmentId),
+                      );
+                      if (parentDept) {
+                        next.department = parentDept.name;
+                        next.departmentId = parentDept.id;
+                      }
+                    }
+                  }
+                }
+                if (
+                  previous.machine &&
+                  lineObj?.id &&
+                  machines.some(
+                    (m) =>
+                      m.name === previous.machine &&
+                      m.lineId &&
+                      String(m.lineId) !== String(lineObj.id),
+                  )
+                ) {
+                  next.machine = "";
+                  next.machineId = null;
+                }
+                return next;
+              });
+            }}
+            className={`${inputClass} appearance-none pr-9 bg-white cursor-pointer`}
+          >
+            <option value="">
+              {loadingDropdowns && lines.length === 0
+                ? "Loading lines..."
+                : "Select line"}
+            </option>
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b]">
+            <ChevronDown size={16} />
+          </div>
+        </div>
+      );
+    }
+
+    if (field.key === "machine") {
+      const selectedLine = lines.find((l) => l.name === form.line);
+      const filtered = selectedLine?.id
+        ? machines.filter(
+          (m) =>
+            !m.lineId || String(m.lineId) === String(selectedLine.id),
+        )
+        : machines;
+      const activeList = filtered.length > 0 ? filtered : machines;
+      const rawOptions = activeList.map((m) => m.name);
+      const options =
+        value && !rawOptions.includes(value)
+          ? [value, ...rawOptions]
+          : rawOptions;
+
+      return (
+        <div className="relative">
+          <select
+            value={value}
+            onChange={(event) => {
+              const selectedName = event.target.value;
+              const machObj = machines.find((m) => m.name === selectedName);
+              setForm((previous) => {
+                const next = {
+                  ...previous,
+                  machine: selectedName,
+                  machineId: machObj?.id ?? null,
+                };
+                if (machObj?.lineId && !previous.line) {
+                  const parentLine = lines.find(
+                    (l) => String(l.id) === String(machObj.lineId),
+                  );
+                  if (parentLine) {
+                    next.line = parentLine.name;
+                    next.lineId = parentLine.id;
+                    if (parentLine.subDepartmentId && !previous.subDepartment) {
+                      const parentSub = subDepartments.find(
+                        (sd) =>
+                          String(sd.id) === String(parentLine.subDepartmentId),
+                      );
+                      if (parentSub) {
+                        next.subDepartment = parentSub.name;
+                        next.subDepartmentId = parentSub.id;
+                        if (parentSub.departmentId && !previous.department) {
+                          const parentDept = departments.find(
+                            (d) =>
+                              String(d.id) === String(parentSub.departmentId),
+                          );
+                          if (parentDept) {
+                            next.department = parentDept.name;
+                            next.departmentId = parentDept.id;
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                return next;
+              });
+            }}
+            className={`${inputClass} appearance-none pr-9 bg-white cursor-pointer`}
+          >
+            <option value="">
+              {loadingDropdowns && machines.length === 0
+                ? "Loading machines..."
+                : "Select machine"}
+            </option>
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b]">
+            <ChevronDown size={16} />
+          </div>
+        </div>
+      );
+    }
+
+    if (field.key === "shift") {
+      const removed = new Set([
+        "shifta",
+        "shift a",
+        "shiftb",
+        "shift b",
+        "shiftc",
+        "shift c",
+        "general",
+      ]);
+      const rawOptions = shiftOptions.filter(
+        (opt) => !removed.has(String(opt).trim().toLowerCase()),
+      );
+      const isRemovedValue =
+        value && removed.has(String(value).trim().toLowerCase());
+      const options =
+        value && !rawOptions.includes(value) && !isRemovedValue
+          ? [value, ...rawOptions]
+          : rawOptions;
+
+      return (
+        <div className="relative">
+          <select
+            value={value}
+            onChange={setFormField("shift")}
+            className={`${inputClass} appearance-none pr-9 bg-white cursor-pointer`}
+          >
+            <option value="">Select shift</option>
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b]">
+            <ChevronDown size={16} />
+          </div>
+        </div>
+      );
+    }
+
+    if (field.key === "plantLocation") {
+      const rawOptions = Array.from(
+        new Set([
+          ...plants.map((p) => p.name),
+          ...(users || []).map((u) => u.plantLocation).filter(Boolean),
+        ]),
+      );
+      const options =
+        value && !rawOptions.includes(value)
+          ? [value, ...rawOptions]
+          : rawOptions;
+
+      return (
+        <div className="relative">
+          <select
+            value={value}
+            onChange={(event) => {
+              const selectedLocation = event.target.value;
+              const matchedPlant = plants.find((p) => p.name === selectedLocation);
+              setForm((previous) => ({
+                ...previous,
+                plantLocation: selectedLocation,
+                ...(matchedPlant?.id ? { plantId: matchedPlant.id } : {}),
+              }));
+            }}
+            className={`${inputClass} appearance-none pr-9 bg-white cursor-pointer`}
+          >
+            <option value="">
+              {loadingDropdowns && plants.length === 0
+                ? "Loading plant locations..."
+                : "Select plant location"}
+            </option>
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b]">
+            <ChevronDown size={16} />
+          </div>
+        </div>
+      );
+    }
+
+    if (field.type === "select") {
+      const rawOptions = field.options || [];
+      const options =
+        value && !rawOptions.includes(value)
+          ? [value, ...rawOptions]
+          : rawOptions;
+
+      return (
+        <div className="relative">
+          <select
+            value={value}
+            onChange={setFormField(field.key)}
+            className={`${inputClass} appearance-none pr-9 bg-white cursor-pointer`}
+          >
+            <option value="">Select {field.label.toLowerCase()}</option>
+
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b]">
+            <ChevronDown size={16} />
+          </div>
+        </div>
       );
     }
 
@@ -849,6 +1499,11 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                 setFilterValues(values);
                 setCurrentPage(1);
               }}
+              departmentOptions={departments}
+              subDepartmentOptions={subDepartments}
+              lineOptions={lines}
+              machineOptions={machines}
+              shiftOptions={shiftOptions}
             />
           </div>
 
@@ -952,8 +1607,8 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                         <tr
                           key={user.id ?? user.payCode ?? index}
                           className={`group border-b border-[#edf0f2] last:border-0 transition-colors ${isInactive
-                              ? "bg-[#f8f9fa] opacity-80 hover:bg-[#f1f3f5]"
-                              : "hover:bg-[#fafaff]"
+                            ? "bg-[#f8f9fa] opacity-80 hover:bg-[#f1f3f5]"
+                            : "hover:bg-[#fafaff]"
                             }`}
                         >
                           {USER_TABLE_COLUMNS.map((column) => (
@@ -987,8 +1642,8 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                                     type="button"
                                     onClick={() => handleViewUser(user)}
                                     className={`font-semibold transition hover:underline ${isInactive
-                                        ? "text-gray-500 hover:text-gray-700"
-                                        : "text-[#0f172a] hover:text-[#0d9488]"
+                                      ? "text-gray-500 hover:text-gray-700"
+                                      : "text-[#0f172a] hover:text-[#0d9488]"
                                       }`}
                                   >
                                     {user[column.key]}
@@ -1022,8 +1677,8 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                                 disabled={isInactive}
                                 onClick={() => openDeleteModal(user)}
                                 className={`flex h-[34px] w-[34px] items-center justify-center rounded-lg transition ${isInactive
-                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 opacity-60"
-                                    : "bg-[#fff0ee] text-[#e74c3c] hover:bg-[#ffe3df]"
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 opacity-60"
+                                  : "bg-[#fff0ee] text-[#e74c3c] hover:bg-[#ffe3df]"
                                   }`}
                               >
                                 <Trash2 size={15} />
@@ -1083,8 +1738,8 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                       type="button"
                       onClick={() => setCurrentPage(page)}
                       className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold transition ${safeCurrentPage === page
-                          ? "bg-[#0d9488] text-white shadow-xs"
-                          : "border border-[#e2edf2] text-[#64748b] hover:bg-[#f0f9f8] hover:border-[#0d9488] hover:text-[#0d9488]"
+                        ? "bg-[#0d9488] text-white shadow-xs"
+                        : "border border-[#e2edf2] text-[#64748b] hover:bg-[#f0f9f8] hover:border-[#0d9488] hover:text-[#0d9488]"
                         }`}
                     >
                       {page}
@@ -1145,7 +1800,6 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                           <span className="ml-0.5 text-[#e74c3c]">*</span>
                         )}
                       </span>
-
                     </label>
 
                     {field.key === "empName" ? (

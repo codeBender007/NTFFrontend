@@ -54,7 +54,7 @@ const TrainingSchedule = () => {
         <button
           type="button"
           onClick={addRow}
-          className="flex items-center gap-2 border border-gray-400 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="flex cursor-pointer items-center gap-2 border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs transition-colors hover:bg-gray-50"
         >
           <AddOutlinedIcon sx={{ fontSize: 18 }} />
           Add Participant
@@ -63,7 +63,7 @@ const TrainingSchedule = () => {
         <button
           type="button"
           onClick={() => window.print()}
-          className="flex items-center gap-2 bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          className="flex cursor-pointer items-center gap-2 bg-[#0f172a] px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors hover:bg-black"
         >
           <PrintOutlinedIcon sx={{ fontSize: 18 }} />
           Print
@@ -71,7 +71,7 @@ const TrainingSchedule = () => {
       </div>
 
       {/* MAIN FORM */}
-      <div className="mx-auto w-full max-w-[1100px] bg-white p-3 text-black sm:p-5 print:max-w-none print:p-0">
+      <div className="w-full bg-white p-4 text-black shadow-xs sm:p-6 print:p-0 print:shadow-none">
         {/* OUTER BORDER */}
         <div className="border border-black">
           {/* HEADER*/}

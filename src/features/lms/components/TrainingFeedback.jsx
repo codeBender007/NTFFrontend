@@ -104,21 +104,9 @@ const TrainingFeedback = () => {
         <button
           type="button"
           onClick={() => window.print()}
-          className="
-            flex
-            items-center
-            gap-2
-            bg-black
-            px-5
-            py-2.5
-            text-sm
-            font-medium
-            text-white
-            transition
-            hover:bg-gray-800
-          "
+          className="flex cursor-pointer items-center gap-2 bg-[#0f172a] px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors hover:bg-black"
         >
-          <PrintOutlinedIcon sx={{ fontSize: 19 }} />
+          <PrintOutlinedIcon sx={{ fontSize: 18 }} />
           Print
         </button>
       </div>
@@ -127,19 +115,7 @@ const TrainingFeedback = () => {
           MAIN FORM
       ======================================================= */}
 
-      <div
-        className="
-          mx-auto
-          w-full
-          max-w-[1100px]
-          bg-white
-          p-3
-          text-black
-          sm:p-5
-          print:max-w-none
-          print:p-0
-        "
-      >
+      <div className="w-full bg-white p-4 text-black shadow-xs sm:p-6 print:p-0 print:shadow-none">
         {/* ====================================================
             OUTER BORDER
         ===================================================== */}

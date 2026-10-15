@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   FileText,
   Edit3,
+  Pencil,
   Eye,
   Trash2,
   Upload,
@@ -393,6 +394,20 @@ const Roles = () => {
   const [newPageDescription, setNewPageDescription] = useState("");
   const [newPageIcon, setNewPageIcon] = useState("LayoutDashboard");
   const [newPageColor, setNewPageColor] = useState(PRESET_COLORS[0]);
+
+  // Edit Page Modal state
+  const [showEditPageModal, setShowEditPageModal] = useState(false);
+  const [editingPage, setEditingPage] = useState(null);
+  const [editPageTitle, setEditPageTitle] = useState("");
+  const [editPageRoute, setEditPageRoute] = useState("");
+  const [editPageCategory, setEditPageCategory] = useState("Dashboard");
+  const [editPageDescription, setEditPageDescription] = useState("");
+  const [editPageIcon, setEditPageIcon] = useState("LayoutDashboard");
+  const [editPageColor, setEditPageColor] = useState(PRESET_COLORS[0]);
+
+  // Delete Page Modal state
+  const [showDeletePageModal, setShowDeletePageModal] = useState(false);
+  const [deleteTargetPage, setDeleteTargetPage] = useState(null);
 
   // Role permissions mapping (roleId -> { pageAccess, permissions, pagePermissions, status })
   const [roleSettings, setRoleSettings] = useState(INITIAL_ROLE_SETTINGS);
@@ -929,6 +944,96 @@ const Roles = () => {
     showToast(`Page "${title}" created successfully under ${createPageCategory}!`);
   };
 
+  // Edit Page handlers
+  const openEditPageModal = (page) => {
+    setEditingPage(page);
+    setEditPageTitle(page.title || "");
+    setEditPageRoute(page.route || "");
+    setEditPageCategory(page.category || selectedCategory);
+    setEditPageDescription(page.description || "");
+
+    const matchedIcon = AVAILABLE_PAGE_ICONS.find(
+      (i) => i.icon === page.icon || i.name === page.iconName,
+    );
+    setEditPageIcon(matchedIcon ? matchedIcon.name : "LayoutDashboard");
+    setEditPageColor(page.color || PRESET_COLORS[0]);
+    setShowEditPageModal(true);
+  };
+
+  const handleUpdatePage = (e) => {
+    e.preventDefault();
+    if (!editingPage) return;
+    const title = editPageTitle.trim();
+    if (!title) return;
+
+    let route = editPageRoute.trim();
+    if (route && !route.startsWith("/")) {
+      route = `/${route}`;
+    }
+
+    const iconEntry = AVAILABLE_PAGE_ICONS.find((i) => i.name === editPageIcon);
+    const resolvedIcon = iconEntry ? iconEntry.icon : LayoutDashboard;
+
+    setModuleData((prev) =>
+      prev.map((m) =>
+        m.id === editingPage.id
+          ? {
+              ...m,
+              title,
+              route: route || m.route,
+              category: editPageCategory,
+              description: editPageDescription.trim() || m.description,
+              icon: resolvedIcon,
+              color: editPageColor,
+            }
+          : m,
+      ),
+    );
+
+    setShowEditPageModal(false);
+    showToast(`Page "${title}" updated successfully!`);
+  };
+
+  // Delete Page handlers
+  const openDeletePageModal = (page) => {
+    setDeleteTargetPage(page);
+    setShowDeletePageModal(true);
+  };
+
+  const handleDeletePage = () => {
+    if (!deleteTargetPage) return;
+    const pageId = deleteTargetPage.id;
+    const pageTitle = deleteTargetPage.title;
+
+    setModuleData((prev) => prev.filter((m) => m.id !== pageId));
+
+    setRoleSettings((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((roleId) => {
+        const cur = next[roleId];
+        if (cur) {
+          const nextAccess = { ...cur.pageAccess };
+          delete nextAccess[pageId];
+          const nextPagePerms = { ...cur.pagePermissions };
+          delete nextPagePerms[pageId];
+          next[roleId] = {
+            ...cur,
+            pageAccess: nextAccess,
+            pagePermissions: nextPagePerms,
+          };
+        }
+      });
+      return next;
+    });
+
+    if (selectedPageId === pageId) {
+      setSelectedPageId(null);
+    }
+
+    setShowDeletePageModal(false);
+    showToast(`Page "${pageTitle}" deleted successfully!`);
+  };
+
   // Edit Role handlers
   const openEditModal = () => {
     if (!selectedRole) return;
@@ -1407,24 +1512,6 @@ const Roles = () => {
                       </div> */}
                     </div>
 
-                    {/* SECTION NAVIGATION */}
-                    <div className="border-b border-[#f1f5f9] px-5 bg-white">
-                      <div className="flex items-center py-3.5">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedPageId(null)}
-                          className="relative flex items-center gap-2 text-xs font-bold text-[#0d9488]"
-                        >
-                          <LayoutDashboard size={15} />
-                          <span>Module & Page Access</span>
-                          <span className="rounded-full bg-[#e6f7f5] px-2 py-0.5 text-[10px] font-bold text-[#0d9488]">
-                            {metrics.enabledModulesCount} Active
-                          </span>
-                          <span className="absolute -bottom-3.5 left-0 right-0 h-0.5 rounded-full bg-[#0d9488]" />
-                        </button>
-                      </div>
-                    </div>
-
                     {/* =================================================== */}
                     {/* TAB CONTENT: MODULE & PAGE ACCESS */}
                     {/* =================================================== */}
@@ -1553,7 +1640,7 @@ const Roles = () => {
                                 </div>
 
                                 {/* Master Page Access Switch */}
-                                <div className="flex items-center gap-3 self-start sm:self-auto rounded-xl border border-[#e2edf2] bg-white p-3 shadow-xs">
+                                <div className="flex items-center gap-3 self-start sm:self-auto rounded-xl border border-[#e2edf2] bg-white p-2 sm:p-2.5 shadow-xs">
                                   <div className="text-right">
                                     <div className="text-xs font-bold text-[#0f172a]">Page Access</div>
                                     <div className="text-[10px] text-[#64748b]">
@@ -1945,6 +2032,39 @@ const Roles = () => {
                                             }`}
                                         />
                                       </button>
+                                    </div>
+
+                                    {/* Card Footer Bar */}
+                                    <div className="mt-3.5 pt-2.5 border-t border-[#f1f5f9] flex items-center justify-between text-xs">
+                                      <span className="text-[11px] font-semibold text-[#64748b] group-hover:text-[#0d9488] transition-colors flex items-center gap-1">
+                                        Configure Rights
+                                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                                      </span>
+
+                                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEditPageModal(module);
+                                          }}
+                                          className="inline-flex items-center gap-1 rounded-lg border border-[#e2edf2] bg-white px-2 py-0.5 text-[11px] font-semibold text-[#64748b] transition hover:border-[#0d9488] hover:bg-[#e6f7f5] hover:text-[#0d9488] shadow-2xs"
+                                        >
+                                          <Pencil size={11} />
+                                          <span>Edit</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openDeletePageModal(module);
+                                          }}
+                                          className="inline-flex items-center gap-1 rounded-lg border border-[#e2edf2] bg-white px-2 py-0.5 text-[11px] font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 shadow-2xs"
+                                        >
+                                          <Trash2 size={11} />
+                                          <span>Delete</span>
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 );
@@ -2430,6 +2550,268 @@ const Roles = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* EDIT PAGE MODAL */}
+      {/* ========================================================= */}
+      {showEditPageModal && editingPage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-2xl md:rounded-3xl border border-[#e2edf2] bg-white shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#f1f5f9] p-5 bg-gradient-to-b from-[#f8fafc] to-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e6f7f5] text-[#0d9488] border border-[#0d9488]/20 shadow-xs">
+                  <Pencil size={18} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-[#0f172a]">
+                    Edit Page Details
+                  </h3>
+                  <p className="text-xs text-[#64748b]">
+                    Update configuration for <span className="font-semibold text-[#0d9488]">{editingPage.title}</span>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowEditPageModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#94a3b8] transition hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleUpdatePage} className="p-5 space-y-4">
+              {/* Target Module / Category Selector */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                  Module Category
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {["Dashboard", "Learning Management System"].map((cat) => {
+                    const isSelected = editPageCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setEditPageCategory(cat)}
+                        className={`rounded-xl border p-2.5 text-xs font-bold transition text-center ${
+                          isSelected
+                            ? "border-[#0d9488] bg-[#e6f7f5] text-[#0d9488] shadow-xs"
+                            : "border-[#e2edf2] bg-[#f8fafc] text-[#64748b] hover:bg-white hover:text-[#0f172a]"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Page Title */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                  Page Name / Title <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editPageTitle}
+                  onChange={(e) => setEditPageTitle(e.target.value)}
+                  placeholder="e.g. Attendance Tracker, Skill Matrix..."
+                  required
+                  className="h-10 w-full rounded-xl border border-[#e2edf2] bg-[#f8fafc] px-3.5 text-xs sm:text-sm text-[#0f172a] placeholder-[#94a3b8] transition focus:border-[#0d9488] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/15"
+                />
+              </div>
+
+              {/* Route / URL Path */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                  Route / URL Path
+                </label>
+                <input
+                  type="text"
+                  value={editPageRoute}
+                  onChange={(e) => setEditPageRoute(e.target.value)}
+                  placeholder="/dashboard/... or /lms/..."
+                  className="h-10 w-full rounded-xl border border-[#e2edf2] bg-[#f8fafc] px-3.5 font-mono text-xs text-[#0f172a] placeholder-[#94a3b8] transition focus:border-[#0d9488] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/15"
+                />
+              </div>
+
+              {/* Page Description */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                  Description
+                </label>
+                <textarea
+                  value={editPageDescription}
+                  onChange={(e) => setEditPageDescription(e.target.value)}
+                  placeholder="Outline page purpose, metrics or operational duties..."
+                  rows={2}
+                  className="w-full resize-none rounded-xl border border-[#e2edf2] bg-[#f8fafc] p-3 text-xs sm:text-sm text-[#0f172a] placeholder-[#94a3b8] transition focus:border-[#0d9488] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/15"
+                />
+              </div>
+
+              {/* Icon Picker & Theme Color */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                    Page Icon
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-[#e2edf2] bg-[#f8fafc] p-2">
+                    {AVAILABLE_PAGE_ICONS.map((item) => {
+                      const IconComp = item.icon;
+                      const isSelected = editPageIcon === item.name;
+                      return (
+                        <button
+                          key={item.name}
+                          type="button"
+                          onClick={() => setEditPageIcon(item.name)}
+                          title={item.label}
+                          className={`flex h-8 items-center justify-center rounded-lg border transition ${
+                            isSelected
+                              ? "border-[#0d9488] bg-white text-[#0d9488] shadow-xs ring-1 ring-[#0d9488]/30"
+                              : "border-transparent bg-transparent text-[#64748b] hover:bg-white hover:text-[#0f172a]"
+                          }`}
+                        >
+                          <IconComp size={16} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-[#0f172a]">
+                    Accent Color
+                  </label>
+                  <div className="flex h-[46px] items-center gap-2 rounded-xl border border-[#e2edf2] bg-[#f8fafc] px-3">
+                    {PRESET_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setEditPageColor(color)}
+                        className={`h-5 w-5 rounded-full transition-transform ${
+                          editPageColor === color
+                            ? "scale-125 ring-2 ring-[#0f172a] shadow-xs"
+                            : "hover:scale-110"
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Buttons */}
+              <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-[#f1f5f9] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditPageModal(false)}
+                  className="rounded-xl border border-[#e2edf2] bg-white px-4 py-2 text-xs font-semibold text-[#64748b] transition hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-gradient-to-r from-[#0d9488] to-[#14b8a6] px-5 py-2 text-xs font-bold text-white shadow-sm shadow-[#0d9488]/30 transition hover:from-[#0f766e] hover:to-[#0d9488]"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* DELETE PAGE CONFIRMATION MODAL */}
+      {/* ========================================================= */}
+      {showDeletePageModal && deleteTargetPage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl md:rounded-3xl border border-rose-200 bg-white shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#f1f5f9] p-5 bg-gradient-to-b from-rose-50/50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 border border-rose-200 shadow-xs">
+                  <Trash2 size={18} strokeWidth={2.2} />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-[#0f172a]">
+                    Delete Page
+                  </h3>
+                  <p className="text-xs text-[#64748b]">
+                    Confirm deletion of page card
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowDeletePageModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#94a3b8] transition hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4">
+              <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
+                Are you sure you want to delete the page card{" "}
+                <strong className="text-[#0f172a]">"{deleteTargetPage.title}"</strong>?
+              </p>
+
+              {/* Page Preview Box */}
+              <div className="rounded-xl border border-[#e2edf2] bg-[#f8fafc] p-3 flex items-center gap-3">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg shadow-xs"
+                  style={{
+                    backgroundColor: `${deleteTargetPage.color || "#0d9488"}1a`,
+                    color: deleteTargetPage.color || "#0d9488",
+                  }}
+                >
+                  {(() => {
+                    const TargetIcon = deleteTargetPage.icon || LayoutDashboard;
+                    return <TargetIcon size={18} strokeWidth={2.2} />;
+                  })()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-[#0f172a] truncate">
+                    {deleteTargetPage.title}
+                  </div>
+                  <div className="text-[11px] font-mono text-[#64748b] truncate">
+                    {deleteTargetPage.route} • {deleteTargetPage.category}
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-rose-600 font-medium">
+                This action will remove the page card and its permission settings for all roles from the UI.
+              </p>
+
+              {/* Modal Buttons */}
+              <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-[#f1f5f9] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowDeletePageModal(false)}
+                  className="rounded-xl border border-[#e2edf2] bg-white px-4 py-2 text-xs font-semibold text-[#64748b] transition hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeletePage}
+                  className="rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 px-5 py-2 text-xs font-bold text-white shadow-sm shadow-rose-600/30 transition hover:from-rose-700 hover:to-rose-600"
+                >
+                  Delete Page
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -49,13 +49,32 @@ export const getUserMachineOptions = (users) =>
     "M/C 04",
   ]);
 
-export const getUserShiftOptions = (users) =>
-  unique([
-    ...users.map((user) => user.shift),
-    "Shift A",
-    "Shift B",
-    "Shift C",
-  ]);
+const REMOVED_SHIFTS = new Set([
+  "shifta",
+  "shift a",
+  "shiftb",
+  "shift b",
+  "shiftc",
+  "shift c",
+  "general",
+]);
+
+export const normalizeShiftValue = (s) => {
+  if (!s) return "";
+  const trimmed = String(s).trim().toLowerCase();
+  if (trimmed === "shift a" || trimmed === "shifta" || trimmed === "a") return "a";
+  if (trimmed === "shift b" || trimmed === "shiftb" || trimmed === "b") return "b";
+  if (trimmed === "shift c" || trimmed === "shiftc" || trimmed === "c") return "c";
+  if (trimmed === "general" || trimmed === "gen") return "gen";
+  return trimmed;
+};
+
+export const getUserShiftOptions = (users) => {
+  const fromUsers = (users || [])
+    .map((user) => user.shift)
+    .filter((s) => s && !REMOVED_SHIFTS.has(String(s).trim().toLowerCase()));
+  return unique(["A", "B", "GEN", ...fromUsers]);
+};
 
 export const isUserInactive = (user) => {
   if (!user) return false;
@@ -109,7 +128,10 @@ export const filterUsers = (
       !subDepartment || user.subDepartment === subDepartment;
     const matchesLine = !line || user.line === line;
     const matchesMachine = !machine || user.machine === machine;
-    const matchesShift = !shift || user.shift === shift;
+    const matchesShift =
+      !shift ||
+      user.shift === shift ||
+      normalizeShiftValue(user.shift) === normalizeShiftValue(shift);
 
     return (
       matchesText &&
