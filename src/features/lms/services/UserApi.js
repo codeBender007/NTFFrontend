@@ -26,6 +26,18 @@ const UserApi = {
       },
       onUploadProgress,
     }),
+
+  // PUT - /api/v1/lms/users/{user_id}/role - Assign Role to User
+  assignUserRole: (userId, roleData) =>
+    api.put(`/lms/users/${userId}/role`, roleData),
+
+  // GET - /api/v1/lms/users/{user_id}/permissions - Get User Permissions
+  getUserPermissions: (userId) =>
+    api.get(`/lms/users/${userId}/permissions`),
+
+  // GET - /api/v1/lms/me/permissions - Get Current User ("Me") Permissions
+  getMyPermissions: () =>
+    api.get("/lms/me/permissions"),
 };
 
 export default UserApi;

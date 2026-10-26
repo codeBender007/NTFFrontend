@@ -1,6 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import logo from "../assets/images/NTF_logo_black.png";
-import sidebarBg from "../assets/images/sidebar_bg.png";
 import { ChevronsLeft, ChevronsRight, LayoutGrid, LogOut, Sparkles } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AuthApi from "../features/auth/services/AuthApi";
@@ -51,6 +50,97 @@ const Sidebar = ({
     };
   }, [setCollapsed]);
 
+  const currentPath = location.pathname.replace(/\/+$/, "") || "/";
+
+  // Determine the single active menu item dynamically
+  const activeItemName = useMemo(() => {
+    // 1. Root /lms route defaults to the 1st menu item (Overview)
+    if (currentPath === "/lms") {
+      const overviewItem = menuItems.find(
+        (item) => item.name === "Overview" || item.path === "/lms/dashboard"
+      );
+      if (overviewItem) return overviewItem.name;
+    }
+
+    // 2. Exact match on path
+    const exactMatch = menuItems.find(
+      (item) => item.path && item.path.replace(/\/+$/, "") === currentPath
+    );
+    if (exactMatch) return exactMatch.name;
+
+    // 3. Known hierarchical LMS child routes
+    if (
+      currentPath.startsWith("/lms/plant") ||
+      currentPath.startsWith("/lms/department") ||
+      currentPath.startsWith("/lms/subdepartment") ||
+      currentPath.startsWith("/lms/line") ||
+      currentPath.startsWith("/lms/machine") ||
+      currentPath.startsWith("/lms/operators") ||
+      currentPath.startsWith("/lms/operator/")
+    ) {
+      const plantItem = menuItems.find(
+        (item) => item.name === "Plant" || item.path === "/lms/plant"
+      );
+      if (plantItem) return plantItem.name;
+    }
+
+    if (currentPath.startsWith("/lms/user/")) {
+      const usersItem = menuItems.find(
+        (item) => item.name === "Users" || item.path === "/lms/users"
+      );
+      if (usersItem) return usersItem.name;
+    }
+
+    if (
+      currentPath.startsWith("/lms/l0") ||
+      currentPath.startsWith("/lms/l1") ||
+      currentPath.startsWith("/lms/paper")
+    ) {
+      const dojoItem = menuItems.find(
+        (item) =>
+          item.name === "DOJO Hiring" ||
+          item.path === "/lms/dojo-hiring" ||
+          item.path === "/lms"
+      );
+      if (dojoItem) return dojoItem.name;
+    }
+
+    // 4. Longest prefix match for any other nested routes (avoiding generic "/" or "/dashboard" matching sibling routes)
+    const prefixMatches = menuItems.filter((item) => {
+      if (!item.path) return false;
+      const cleanItemPath = item.path.replace(/\/+$/, "");
+      if (
+        cleanItemPath === "/" ||
+        cleanItemPath === "/dashboard" ||
+        cleanItemPath === "/lms"
+      ) {
+        return false;
+      }
+      return currentPath.startsWith(cleanItemPath + "/");
+    });
+    if (prefixMatches.length > 0) {
+      const bestMatch = prefixMatches.reduce((longest, current) =>
+        current.path.length > longest.path.length ? current : longest
+      );
+      return bestMatch.name;
+    }
+
+    // 5. If activeMenu matches an item in menuItems, use it
+    if (activeMenu && menuItems.some((item) => item.name === activeMenu)) {
+      return activeMenu;
+    }
+
+    // 6. Default fallback to 1st menu item
+    return menuItems[0]?.name || "";
+  }, [currentPath, menuItems, activeMenu]);
+
+  // Synchronize parent activeMenu state if it diverges from activeItemName
+  useEffect(() => {
+    if (activeItemName && setActiveMenu && activeMenu !== activeItemName) {
+      setActiveMenu(activeItemName);
+    }
+  }, [activeItemName, setActiveMenu, activeMenu]);
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -66,19 +156,12 @@ const Sidebar = ({
 
       {/* Sidebar */}
       <aside
-        className={`relative flex h-screen flex-col overflow-hidden border-r border-[#e2edf2] bg-white/90 backdrop-blur-md transition-all duration-300 ${collapsed ? "w-20" : "w-64"
-          }`}
+        className={`relative flex h-screen flex-col border-r border-[#e2edf2] bg-white transition-all duration-300 ${
+          collapsed ? "w-20" : "w-64"
+        }`}
       >
-        {/* Sidebar Background Image - Subtle overlay */}
-        <div
-          className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
-          style={{
-            backgroundImage: `url(${sidebarBg})`,
-          }}
-        />
-
         {/* Sidebar Content */}
-        <div className="relative z-10 flex h-full flex-col">
+        <div className="flex h-full flex-col">
           {/* Header */}
           <div
             className={`flex h-16 shrink-0 items-center border-b border-[#e2edf2] ${collapsed ? "justify-center px-2" : "justify-between px-4"
@@ -155,19 +238,16 @@ const Sidebar = ({
           {/* Navigation */}
           <nav className="mt-3 flex-1 space-y-1 overflow-y-auto px-3">
             {menuItems.map((item) => {
-              const active =
-                activeMenu === item.name ||
-                (item.path && location.pathname === item.path) ||
-                (item.path &&
-                  item.path !== "/lms" &&
-                  location.pathname.startsWith(item.path));
+              const active = item.name === activeItemName;
 
               return (
                 <div key={item.name} className="group relative">
                   {/* Menu Button */}
                   <button
                     onClick={() => {
-                      setActiveMenu(item.name);
+                      if (setActiveMenu) {
+                        setActiveMenu(item.name);
+                      }
 
                       if (item.path) {
                         navigate(item.path);

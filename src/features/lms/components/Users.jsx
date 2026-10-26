@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronDown,
@@ -38,9 +38,6 @@ import UserApi from "../services/UserApi";
 import { isAuthenticated, clearSession } from "../../auth/utils/authStorage";
 
 const ITEMS_PER_PAGE = 10;
-
-// The backend caps a page at 1000 rows by default (100). The existing UI does
-// its own search/pagination across the full list, so request the maximum page.
 const MAX_USERS_PAGE = 1000;
 
 const inputClass =
@@ -201,18 +198,34 @@ const buildCreatePayload = (form, lookups = {}) => {
     payload.email = emailStr;
   }
 
-  const plantId = Number(form.plant);
-  if (asNullable(form.plant) !== null && Number.isFinite(plantId)) {
+  const plantId =
+    form.plantId != null && form.plantId !== ""
+      ? Number(form.plantId)
+      : Number(form.plant);
+  if (asNullable(form.plantId ?? form.plant) !== null && Number.isFinite(plantId)) {
     payload.plantId = plantId;
   } else if (form.plantLocation) {
     const matchedPlant = lookups.plants?.find(
       (p) =>
+        String(p.id) === String(form.plantLocation) ||
         p.name === form.plantLocation ||
         p.raw?.plantName === form.plantLocation,
     );
     if (matchedPlant?.id != null && Number.isFinite(Number(matchedPlant.id))) {
       payload.plantId = Number(matchedPlant.id);
     }
+  }
+
+  const matchedPlantLoc = lookups.plants?.find(
+    (p) =>
+      String(p.id) === String(payload.plantId) ||
+      String(p.id) === String(form.plantLocation) ||
+      p.name === form.plantLocation ||
+      p.raw?.plantName === form.plantLocation,
+  );
+  if (matchedPlantLoc) {
+    payload.plantLocation =
+      matchedPlantLoc.raw?.plantLocation || matchedPlantLoc.name;
   }
 
   const deptId =
@@ -285,18 +298,34 @@ const buildUpdatePayload = (form, lookups = {}) => {
     payload.email = emailStr;
   }
 
-  const plantId = Number(form.plant);
-  if (asNullable(form.plant) !== null && Number.isFinite(plantId)) {
+  const plantId =
+    form.plantId != null && form.plantId !== ""
+      ? Number(form.plantId)
+      : Number(form.plant);
+  if (asNullable(form.plantId ?? form.plant) !== null && Number.isFinite(plantId)) {
     payload.plantId = plantId;
   } else if (form.plantLocation) {
     const matchedPlant = lookups.plants?.find(
       (p) =>
+        String(p.id) === String(form.plantLocation) ||
         p.name === form.plantLocation ||
         p.raw?.plantName === form.plantLocation,
     );
     if (matchedPlant?.id != null && Number.isFinite(Number(matchedPlant.id))) {
       payload.plantId = Number(matchedPlant.id);
     }
+  }
+
+  const matchedPlantLoc = lookups.plants?.find(
+    (p) =>
+      String(p.id) === String(payload.plantId) ||
+      String(p.id) === String(form.plantLocation) ||
+      p.name === form.plantLocation ||
+      p.raw?.plantName === form.plantLocation,
+  );
+  if (matchedPlantLoc) {
+    payload.plantLocation =
+      matchedPlantLoc.raw?.plantLocation || matchedPlantLoc.name;
   }
 
   const deptId =
@@ -367,9 +396,39 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
   const [lines, setLines] = useState([]);
   const [machines, setMachines] = useState([]);
   const [plants, setPlants] = useState([]);
+  const [shifts, setShifts] = useState([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+  const [loadingPlants, setLoadingPlants] = useState(false);
+  const [plantsError, setPlantsError] = useState("");
 
   /* ===================== LOAD DROPDOWNS FROM API ===================== */
+
+  const fetchPlants = useCallback(async () => {
+    setLoadingPlants(true);
+    setPlantsError("");
+    try {
+      const res = await PlantApi.getPlants();
+      const list = normalizeList(res?.data, [
+        "plantLocation",
+        "plantName",
+        "name",
+        "plant_name",
+        "location",
+      ]);
+      setPlants(list);
+      return list;
+    } catch (err) {
+      const message =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        "Failed to load plants";
+      setPlantsError(message);
+      console.error("Failed to load plants:", err);
+      return [];
+    } finally {
+      setLoadingPlants(false);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -433,12 +492,23 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
                 "location",
               ]),
             );
+            setPlantsError("");
+          } else {
+            console.error("Failed to load plants:", plantRes.reason);
+            setPlantsError(
+              plantRes.reason?.response?.data?.detail ||
+              plantRes.reason?.response?.data?.message ||
+              "Failed to load plant locations",
+            );
           }
         }
       } catch (err) {
         console.error("Failed to load form dropdown data:", err);
       } finally {
-        if (!cancelled) setLoadingDropdowns(false);
+        if (!cancelled) {
+          setLoadingDropdowns(false);
+          setLoadingPlants(false);
+        }
       }
     };
 
@@ -449,22 +519,23 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     };
   }, []);
 
+  // Fetch plants when form modal opens if they have not yet been loaded or if errored
+  useEffect(() => {
+    if (
+      formModalOpen &&
+      plants.length === 0 &&
+      !loadingPlants &&
+      !loadingDropdowns
+    ) {
+      fetchPlants();
+    }
+  }, [formModalOpen, plants.length, loadingPlants, loadingDropdowns, fetchPlants]);
+
   const shiftOptions = useMemo(() => {
-    const removed = new Set([
-      "shifta",
-      "shift a",
-      "shiftb",
-      "shift b",
-      "shiftc",
-      "shift c",
-      "general",
-    ]);
-    const fromUsers = (users || [])
-      .map((u) => u.shift)
-      .filter((s) => s && !removed.has(String(s).trim().toLowerCase()));
-    const standard = ["A", "B", "GEN"];
-    return Array.from(new Set([...standard, ...fromUsers]));
-  }, [users]);
+    return shifts
+      .map((s) => (typeof s === "string" ? s : s.name ?? s.shiftName ?? ""))
+      .filter(Boolean);
+  }, [shifts]);
 
   const showToast = (message) => {
     setToast(message);
@@ -685,11 +756,18 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       machine: "",
       machineId: null,
       shift: "",
+      shiftId: null,
+      plant: "",
+      plantId: null,
+      plantLocation: "",
     };
 
     setForm(formWithSno);
     setShowPassword(false);
     setFormModalOpen(true);
+    if (plants.length === 0 && !loadingPlants && !loadingDropdowns) {
+      fetchPlants();
+    }
   };
 
   const openEditModal = (user) => {
@@ -711,10 +789,16 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       subDepartmentId: user.subDepartmentId ?? null,
       lineId: user.lineId ?? null,
       machineId: user.machineId ?? null,
+      shiftId: user.shiftId ?? null,
+      plantId: user.plantId ?? null,
+      plantLocation: user.plantLocation ?? "",
       password: "",
     });
     setShowPassword(false);
     setFormModalOpen(true);
+    if (plants.length === 0 && !loadingPlants && !loadingDropdowns) {
+      fetchPlants();
+    }
   };
 
   const handleViewUser = (user) => {
@@ -754,6 +838,7 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
         lines,
         machines,
         plants,
+        shifts,
       };
 
       if (editingUser) {
@@ -1287,22 +1372,11 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     }
 
     if (field.key === "shift") {
-      const removed = new Set([
-        "shifta",
-        "shift a",
-        "shiftb",
-        "shift b",
-        "shiftc",
-        "shift c",
-        "general",
-      ]);
-      const rawOptions = shiftOptions.filter(
-        (opt) => !removed.has(String(opt).trim().toLowerCase()),
-      );
-      const isRemovedValue =
-        value && removed.has(String(value).trim().toLowerCase());
+      const rawOptions = shifts
+        .map((s) => (typeof s === "string" ? s : s.name ?? s.shiftName ?? s.id ?? ""))
+        .filter(Boolean);
       const options =
-        value && !rawOptions.includes(value) && !isRemovedValue
+        value && !rawOptions.includes(value)
           ? [value, ...rawOptions]
           : rawOptions;
 
@@ -1310,7 +1384,20 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
         <div className="relative">
           <select
             value={value}
-            onChange={setFormField("shift")}
+            onChange={(event) => {
+              const selectedName = event.target.value;
+              const shiftObj = shifts.find(
+                (s) =>
+                  (typeof s === "string" && s === selectedName) ||
+                  s.name === selectedName ||
+                  String(s.id) === String(selectedName),
+              );
+              setForm((previous) => ({
+                ...previous,
+                shift: selectedName,
+                shiftId: shiftObj?.id ?? null,
+              }));
+            }}
             className={`${inputClass} appearance-none pr-9 bg-white cursor-pointer`}
           >
             <option value="">Select shift</option>
@@ -1328,46 +1415,107 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     }
 
     if (field.key === "plantLocation") {
-      const rawOptions = Array.from(
-        new Set([
-          ...plants.map((p) => p.name),
-          ...(users || []).map((u) => u.plantLocation).filter(Boolean),
-        ]),
-      );
-      const options =
-        value && !rawOptions.includes(value)
-          ? [value, ...rawOptions]
-          : rawOptions;
+      let plantSelectValue = "";
+      if (form.plantId != null && form.plantId !== "") {
+        plantSelectValue = String(form.plantId);
+      } else if (form.plantLocation) {
+        const matched = plants.find(
+          (p) =>
+            String(p.id) === String(form.plantLocation) ||
+            p.name === form.plantLocation ||
+            p.raw?.plantName === form.plantLocation ||
+            p.raw?.plantLocation === form.plantLocation,
+        );
+        if (matched) plantSelectValue = String(matched.id);
+      } else if (form.plant) {
+        const matched = plants.find(
+          (p) => String(p.id) === String(form.plant) || p.name === form.plant,
+        );
+        if (matched) plantSelectValue = String(matched.id);
+      }
+
+      const isUnknownValue =
+        plantSelectValue &&
+        !plants.some((p) => String(p.id) === String(plantSelectValue));
 
       return (
-        <div className="relative">
-          <select
-            value={value}
-            onChange={(event) => {
-              const selectedLocation = event.target.value;
-              const matchedPlant = plants.find((p) => p.name === selectedLocation);
-              setForm((previous) => ({
-                ...previous,
-                plantLocation: selectedLocation,
-                ...(matchedPlant?.id ? { plantId: matchedPlant.id } : {}),
-              }));
-            }}
-            className={`${inputClass} appearance-none pr-9 bg-white cursor-pointer`}
-          >
-            <option value="">
-              {loadingDropdowns && plants.length === 0
-                ? "Loading plant locations..."
-                : "Select plant location"}
-            </option>
-            {options.map((option) => (
-              <option key={option} value={option}>
-                {option}
+        <div>
+          <div className="relative">
+            <select
+              value={plantSelectValue}
+              onChange={(event) => {
+                const selectedId = event.target.value;
+                if (!selectedId) {
+                  setForm((previous) => ({
+                    ...previous,
+                    plantLocation: "",
+                    plantId: null,
+                    plant: "",
+                  }));
+                  return;
+                }
+                const matchedPlant = plants.find(
+                  (p) => String(p.id) === String(selectedId),
+                );
+                const plantLabel =
+                  matchedPlant?.raw?.plantLocation ||
+                  matchedPlant?.name ||
+                  matchedPlant?.raw?.plantName ||
+                  `Plant #${selectedId}`;
+
+                setForm((previous) => ({
+                  ...previous,
+                  plantLocation: plantLabel,
+                  plantId: matchedPlant?.id ?? (Number(selectedId) || selectedId),
+                  plant: String(matchedPlant?.id ?? selectedId),
+                }));
+              }}
+              className={`${inputClass} appearance-none pr-9 bg-white cursor-pointer ${plantsError
+                  ? "border-rose-300 focus:border-rose-500 focus:ring-rose-200"
+                  : ""
+                }`}
+            >
+              <option value="">
+                {plantsError
+                  ? "Failed to load plants — click to retry"
+                  : (loadingDropdowns || loadingPlants) && plants.length === 0
+                    ? "Loading plant locations..."
+                    : "Select plant location"}
               </option>
-            ))}
-          </select>
-          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b]">
-            <ChevronDown size={16} />
+              {plants.map((plant) => {
+                const label =
+                  plant.raw?.plantLocation ||
+                  plant.name ||
+                  plant.raw?.plantName ||
+                  `Plant #${plant.id}`;
+                return (
+                  <option key={plant.id} value={plant.id}>
+                    {label}
+                  </option>
+                );
+              })}
+              {isUnknownValue && (
+                <option value={plantSelectValue}>
+                  {form.plantLocation || `Plant #${plantSelectValue}`}
+                </option>
+              )}
+            </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b]">
+              <ChevronDown size={16} />
+            </div>
           </div>
+          {plantsError && (
+            <div className="mt-1.5 flex items-center justify-between text-xs text-rose-500">
+              <span>{plantsError}</span>
+              <button
+                type="button"
+                onClick={() => fetchPlants()}
+                className="underline hover:text-rose-700 cursor-pointer font-medium"
+              >
+                Retry
+              </button>
+            </div>
+          )}
         </div>
       );
     }

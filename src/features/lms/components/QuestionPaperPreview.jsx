@@ -117,7 +117,7 @@ const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
-              onClick={() => navigate("/lms")}
+              onClick={() => navigate("/lms/dojo-hiring")}
               className="h-9 w-9 rounded-xl bg-gray-100 text-gray-600 hover:bg-[#e6f7f5] hover:text-[#0d9488] transition flex items-center justify-center shrink-0"
               title="Back to Dojo Hiring"
             >

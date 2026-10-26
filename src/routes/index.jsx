@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { BASE_URL } from "../config";
 import Login from "../pages/Login";
 import Home from "../pages/Home";
@@ -37,8 +37,10 @@ const App = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/attendance" element={<Attendance />} />
         <Route path="/dashboard/requirement" element={<Requirement />} />
-        <Route path="/lms" element={<LMS />} />
+        <Route path="/lms" element={<Navigate to="/lms/dashboard" replace />} />
         <Route path="/lms/dashboard" element={<LMSDashboard />} />
+        <Route path="/lms/dojo-hiring" element={<LMS />} />
+        <Route path="/lms/hiring" element={<LMS />} />
         {/* Plant & LMS Hierarchy */}
         <Route path="/lms/plant" element={<PlantPage />} />
         <Route

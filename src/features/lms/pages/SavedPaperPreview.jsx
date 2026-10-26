@@ -16,7 +16,7 @@ const SavedPaperPreview = () => {
           </p>
           <button
             type="button"
-            onClick={() => navigate("/lms")}
+            onClick={() => navigate("/lms/dojo-hiring")}
             className="mt-4 inline-flex h-10 items-center rounded-xl bg-primary px-5 text-xs font-semibold text-white shadow-sm"
           >
             Back to Dojo Hiring

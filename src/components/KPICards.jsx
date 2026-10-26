@@ -10,9 +10,8 @@ const colorStyles = {
 const KPICards = ({ data = [], gridClass }) => {
   return (
     <div
-      className={`mb-6 grid gap-4 ${
-        gridClass || "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
-      }`}
+      className={`mb-6 grid gap-4 ${gridClass || "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
+        }`}
     >
       {data.map((item, index) => {
         const iconStyle = colorStyles[item.color] || colorStyles.teal;
@@ -37,7 +36,6 @@ const KPICards = ({ data = [], gridClass }) => {
                 <p className="text-xs font-medium text-[#64748b] truncate">
                   {item.title}
                 </p>
-
                 {/* Value */}
                 <h2 className="mt-0.5 text-2xl font-bold tracking-tight text-[#0f172a]">
                   {item.value}

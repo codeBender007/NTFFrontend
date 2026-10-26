@@ -67,7 +67,7 @@ export const USER_FORM_FIELDS = [
   { label: "Sub Department", key: "subDepartment", type: "select", options: [] },
   { label: "Line", key: "line", type: "select", options: [] },
   { label: "Machine", key: "machine", type: "select", options: [] },
-  { label: "Shift", key: "shift", type: "select", options: ["A", "B", "GEN"] },
+  { label: "Shift", key: "shift", type: "select", options: [] },
   { label: "Plant", key: "plant", placeholder: "Enter plant" },
   { label: "Plant Location", key: "plantLocation", type: "select", options: [] },
   { label: "Grade", key: "grade", placeholder: "Enter grade" },

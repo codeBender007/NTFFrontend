@@ -23,14 +23,45 @@ export const saveSession = ({ access_token, token, user } = {}) => {
  */
 export const getToken = () => {
   try {
-    return (
+    let raw =
       localStorage.getItem(TOKEN_KEY) ||
       localStorage.getItem(ACCESS_TOKEN_KEY) ||
       localStorage.getItem("accessToken") ||
+      localStorage.getItem("jwt") ||
+      localStorage.getItem("authToken") ||
       sessionStorage.getItem(TOKEN_KEY) ||
       sessionStorage.getItem(ACCESS_TOKEN_KEY) ||
-      null
-    );
+      sessionStorage.getItem("accessToken") ||
+      null;
+
+    if (!raw) {
+      const userRaw =
+        localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY);
+      if (userRaw) {
+        try {
+          const userObj = JSON.parse(userRaw);
+          raw =
+            userObj?.token ||
+            userObj?.access_token ||
+            userObj?.accessToken ||
+            null;
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+
+    if (!raw) return null;
+
+    let token = String(raw).trim();
+    if (token.startsWith('"') && token.endsWith('"')) {
+      try {
+        token = JSON.parse(token);
+      } catch {
+        token = token.slice(1, -1).trim();
+      }
+    }
+    return token || null;
   } catch {
     return null;
   }
@@ -68,7 +99,38 @@ export const isTokenExpired = (token = getToken()) => {
 
 export const getUser = () => {
   try {
-    return JSON.parse(localStorage.getItem(USER_KEY));
+    const raw =
+      localStorage.getItem(USER_KEY) ||
+      sessionStorage.getItem(USER_KEY);
+    if (raw) return JSON.parse(raw);
+
+    const token = getToken();
+    if (token && typeof token === "string") {
+      const parts = token.split(".");
+      if (parts.length === 3) {
+        const base64Url = parts[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split("")
+            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+            .join("")
+        );
+        const payload = JSON.parse(jsonPayload);
+        if (payload?.user) return payload.user;
+        if (payload?.sub || payload?.username || payload?.email) {
+          return {
+            id: payload.id || payload.sub,
+            username: payload.username,
+            email: payload.email,
+            role: payload.role,
+            empName: payload.empName,
+            payCode: payload.payCode,
+          };
+        }
+      }
+    }
+    return null;
   } catch {
     return null;
   }

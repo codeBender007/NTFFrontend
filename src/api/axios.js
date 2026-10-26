@@ -13,9 +13,11 @@ api.interceptors.request.use(
   (config) => {
     const token = getToken();
     if (token) {
-      const authHeader = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+      const cleanToken = token.startsWith("Bearer ")
+        ? token.replace(/^Bearer\s+/i, "").trim()
+        : token.trim();
       config.headers = config.headers || {};
-      config.headers.Authorization = authHeader;
+      config.headers.Authorization = `Bearer ${cleanToken}`;
     }
 
     // Allow axios and the browser to set the multipart boundary automatically for FormData

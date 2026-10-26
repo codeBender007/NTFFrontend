@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import GridViewRoundedIcon from "@mui/icons-material/GridViewRounded";
@@ -6,10 +7,50 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import LogOutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import ntfBlackLogo from "../assets/images/NTF_logo_black.png";
 import AuthApi from "../features/auth/services/AuthApi";
-import { clearSession } from "../features/auth/utils/authStorage";
+import { clearSession, getUser } from "../features/auth/utils/authStorage";
+
+const getInitials = (name) => {
+  if (!name || typeof name !== "string") return "U";
+  const trimmed = name.trim();
+  if (!trimmed) return "U";
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+const formatRole = (role) => {
+  if (!role || typeof role !== "string") return "";
+  return role
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
 
 const Home = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  useEffect(() => {
+    try {
+      setUser(getUser());
+    } catch (err) {
+      console.error("Failed to load user in Home:", err);
+    } finally {
+      setLoadingUser(false);
+    }
+  }, []);
+
+  const userName =
+    user?.empName?.trim() ||
+    user?.name?.trim() ||
+    user?.username?.trim() ||
+    (user?.email ? user.email.split("@")[0] : "") ||
+    "User";
+
+  const userInitials = getInitials(userName);
+  const userRole = formatRole(user?.role) || user?.role || "NTF Operations";
 
   const handleLogout = async () => {
     try {
@@ -33,7 +74,7 @@ const Home = () => {
     {
       title: "LMS",
       description: "Manage learning content, operator evaluations, and training pipelines.",
-      path: "/lms",
+      path: "/lms/dashboard",
       icon: SchoolOutlinedIcon,
       tag: "Training",
     },
@@ -64,12 +105,38 @@ const Home = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/90 border border-[#e2edf2] shadow-xs">
-              <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-[#0d9488] to-[#14b8a6] text-white flex items-center justify-center text-xs font-semibold shadow-xs">
-                TA
+            {loadingUser ? (
+              <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/90 border border-[#e2edf2] shadow-xs animate-pulse">
+                <div className="h-7 w-7 rounded-full bg-gray-200" />
+                <div className="hidden sm:flex flex-col gap-1 text-left">
+                  <div className="h-2.5 w-16 rounded bg-gray-200" />
+                  <div className="h-2 w-12 rounded bg-gray-100" />
+                </div>
               </div>
-              <span className="text-xs font-semibold text-[#0f172a]">Admin</span>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/90 border border-[#e2edf2] shadow-xs">
+                <div
+                  className="h-7 w-7 rounded-full bg-gradient-to-tr from-[#0d9488] to-[#14b8a6] text-white flex items-center justify-center text-xs font-semibold shadow-xs select-none"
+                  title={userName}
+                >
+                  {userInitials}
+                </div>
+                <div className="hidden sm:flex flex-col text-left">
+                  <span
+                    className="text-xs font-semibold text-[#0f172a] leading-none truncate max-w-[140px]"
+                    title={userName}
+                  >
+                    {userName}
+                  </span>
+                  <span
+                    className="text-[10px] text-[#64748b] leading-none mt-1 truncate max-w-[140px]"
+                    title={userRole}
+                  >
+                    {userRole}
+                  </span>
+                </div>
+              </div>
+            )}
 
             <button
               onClick={handleLogout}

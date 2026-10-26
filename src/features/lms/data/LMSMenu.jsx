@@ -16,7 +16,7 @@ export const lmsMenus = [
   {
     name: "DOJO Hiring",
     icon: <SchoolOutlinedIcon />,
-    path: "/lms",
+    path: "/lms/dojo-hiring",
   },
   {
     name: "Plant",
