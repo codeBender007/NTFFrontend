@@ -1,0 +1,46 @@
+import React, { useState } from 'react'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import Navbar from '@/components/Navbar.jsx'
+import Sidebar from '@/components/Sidebar.jsx'
+import { lmsMenus } from '@/features/lms/data/LMSMenu.jsx'
+import { clearSession } from '@/features/auth/utils/authStorage.js'
+import InLMSLayoutContext from './LMSLayoutContext.js'
+
+export default function LMSLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const handleLogout = () => {
+    clearSession()
+    navigate('/login', { replace: true })
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f1f5f9] flex flex-col font-sans text-slate-800">
+      {/* Top LMS Navigation */}
+      <Navbar
+        onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+        isSidebarOpen={sidebarOpen}
+      />
+
+      {/* Main LMS Container */}
+      <div className="flex flex-1 relative">
+        {/* Left LMS Sidebar */}
+        <Sidebar
+          menu={lmsMenus}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          onLogout={handleLogout}
+        />
+
+        {/* Right Main LMS Content */}
+        <main className="flex-1 ml-0 lg:ml-48 p-3 sm:p-4 md:p-5 min-h-[calc(100vh-53px)] overflow-x-hidden">
+          <InLMSLayoutContext.Provider value={true}>
+            <Outlet key={location.pathname} />
+          </InLMSLayoutContext.Provider>
+        </main>
+      </div>
+    </div>
+  )
+}
