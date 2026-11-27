@@ -278,6 +278,30 @@ const QuestionPaperApi = {
   // GET /api/v1/lms/question-papers/submissions/{submission_id}
   getSubmissionById: (submissionId, config = {}) =>
     api.get(`/lms/question-papers/submissions/${submissionId}`, config),
+
+  // PUT /api/v1/lms/question-papers/submissions/{submission_id}/grade
+  gradeSubmission: (submissionId, payload) =>
+    api.put(`/lms/question-papers/submissions/${submissionId}/grade`, payload),
+
+  // POST /api/v1/lms/question-papers/assignments
+  assignQuestionPapers: (payload) =>
+    api.post("/lms/question-papers/assignments", payload),
+
+  // GET /api/v1/lms/question-papers/assignments
+  getAssignments: (params = {}, config = {}) =>
+    api.get("/lms/question-papers/assignments", { params, ...config }),
+
+  // DELETE /api/v1/lms/question-papers/assignments/{assignment_id}
+  unassignQuestionPaper: (assignmentId) =>
+    api.delete(`/lms/question-papers/assignments/${assignmentId}`),
+
+  // GET /api/v1/lms/question-papers/operator/upcoming
+  getOperatorUpcomingPapers: (params = {}, config = {}) =>
+    api.get("/lms/question-papers/operator/upcoming", { params, ...config }),
+
+  // GET /api/v1/lms/question-papers/operator/past
+  getOperatorPastPapers: (params = {}, config = {}) =>
+    api.get("/lms/question-papers/operator/past", { params, ...config }),
 };
 
 /**
@@ -489,10 +513,48 @@ export const calculatePaperScore = (sections = [], answers = {}, passPercentage 
 };
 
 /**
- * Normalizes a backend QuestionPaperSubmissionResponse into a clean UI model.
+ * Normalizes a backend OperatorUpcomingPaperResponse into a clean UI model.
+ */
+export const mapOperatorUpcomingToPaper = (item) => {
+  if (!item || typeof item !== "object") return null;
+  const paperObj = item.question_paper ? mapApiResponseToPaper(item.question_paper) : null;
+  if (!paperObj) return null;
+
+  return {
+    assignmentId: item.assignment_id ?? null,
+    status: item.status || "ASSIGNED",
+    assignedBy: item.assigned_by ?? null,
+    assignedByName: item.assigned_by_name || "Supervisor",
+    assignedAt: item.assigned_at || null,
+    dueAt: item.due_at || null,
+    notes: item.notes || "",
+    paperId: paperObj.id,
+    title: paperObj.title,
+    description: paperObj.description,
+    dayType: paperObj.dayType,
+    level: paperObj.level,
+    totalMarks: paperObj.totalMarks,
+    totalQuestions: paperObj.totalQuestions,
+    duration: paperObj.meta?.duration || 60,
+    passPercentage: paperObj.meta?.passPercentage || 80,
+    paper: paperObj,
+    raw: item,
+  };
+};
+
+/**
+ * Normalizes a backend QuestionPaperSubmissionResponse into a clean UI model,
+ * including backend-persisted Supervisor grading & evaluation fields.
  */
 export const mapApiSubmissionToModel = (apiSub) => {
   if (!apiSub || typeof apiSub !== "object") return null;
+
+  const evalStatusRaw = String(apiSub.evaluation_status || "").trim();
+  const statusRaw = String(apiSub.status || "SUBMITTED").trim();
+  const isGraded =
+    apiSub.is_graded === true ||
+    evalStatusRaw.toLowerCase() === "graded" ||
+    statusRaw.toUpperCase() === "GRADED";
 
   return {
     id: apiSub.id,
@@ -522,8 +584,20 @@ export const mapApiSubmissionToModel = (apiSub) => {
     maxScore: apiSub.max_score,
     percentage: apiSub.percentage,
     passed: apiSub.passed,
-    status: apiSub.status || "SUBMITTED",
+    status: statusRaw,
     remarks: apiSub.remarks || "",
+    questionMarks:
+      apiSub.question_marks && typeof apiSub.question_marks === "object"
+        ? apiSub.question_marks
+        : {},
+    isGraded,
+    evaluationStatus: evalStatusRaw || (isGraded ? "Graded" : "Pending Review"),
+    gradedBy: apiSub.graded_by ?? null,
+    gradedByName: apiSub.graded_by_name || "",
+    gradedAt: apiSub.graded_at || null,
+    assignmentId: apiSub.assignment_id ?? null,
+    assignedAt: apiSub.assigned_at || null,
+    assignedByName: apiSub.assigned_by_name || "",
     submittedAt: apiSub.submitted_at || null,
     updatedAt: apiSub.updated_at || null,
     raw: apiSub,

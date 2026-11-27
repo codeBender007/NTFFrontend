@@ -19,7 +19,6 @@ import QuestionPaperApi, {
   mapApiSubmissionToModel,
 } from "@/features/lms/services/QuestionPaperApi.js";
 import { getDefaultDayPaper } from "@/features/lms/utils/defaultDayPapers.js";
-import { mergeSubmissionWithGrade } from "@/features/supervisor/utils/submissionGradingStorage.js";
 import {
   getEmployeeStorageKey,
   doesSubmissionBelongToEmployee,
@@ -50,14 +49,13 @@ export default function PastQuestionPapers() {
           ? Number(user.id)
           : undefined;
 
-      const res = await QuestionPaperApi.getSubmissions(
-        numericUserId !== undefined ? { user_id: numericUserId } : {}
+      const res = await QuestionPaperApi.getOperatorPastPapers(
+        numericUserId !== undefined ? { operator_id: numericUserId } : {}
       );
       const rawList = Array.isArray(res?.data) ? res.data : [];
       const mapped = rawList
         .map(mapApiSubmissionToModel)
-        .filter((s) => s && doesSubmissionBelongToEmployee(s, user))
-        .map(mergeSubmissionWithGrade);
+        .filter((s) => s && doesSubmissionBelongToEmployee(s, user));
 
       setSubmissions(mapped);
     } catch (err) {
@@ -87,9 +85,7 @@ export default function PastQuestionPapers() {
           : Promise.resolve(null),
       ]);
 
-      const detailedSubmission = mergeSubmissionWithGrade(
-        mapApiSubmissionToModel(subRes?.data) || sub
-      );
+      const detailedSubmission = mapApiSubmissionToModel(subRes?.data) || sub;
       const detailedPaper = paperRes?.data
         ? mapApiResponseToPaper(paperRes.data)
         : getDefaultDayPaper(detailedSubmission.dayType || "DAY_1");

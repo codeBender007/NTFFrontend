@@ -31,6 +31,7 @@ const QuestionPaperTable = ({
   const [loading, setLoading] = useState(!isControlled);
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [filterValues, setFilterValues] = useState({});
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -122,15 +123,63 @@ const QuestionPaperTable = ({
     setPage(0);
   };
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
+  const filteredRows = rows.filter((row) => {
+    const raw = row?.raw || {};
+    const meta = row?.meta || {};
+
+    if (filterValues.plant) {
+      const f = String(filterValues.plant).toLowerCase();
+      const match =
+        String(raw.plant_id ?? meta.plantId ?? "").toLowerCase() === f ||
+        String(raw.plant_name ?? meta.plantName ?? "").toLowerCase() === f;
+      if (!match) return false;
+    }
+
+    if (filterValues.department) {
+      const f = String(filterValues.department).toLowerCase();
+      const match =
+        String(raw.department_id ?? meta.departmentId ?? "").toLowerCase() === f ||
+        String(raw.department_name ?? meta.departments ?? row.course ?? "")
+          .toLowerCase() === f;
+      if (!match) return false;
+    }
+
+    if (filterValues.subDepartment) {
+      const f = String(filterValues.subDepartment).toLowerCase();
+      const match =
+        String(raw.sub_department_id ?? meta.subDepartmentId ?? "").toLowerCase() === f ||
+        String(raw.sub_department_name ?? meta.sections ?? "").toLowerCase() === f;
+      if (!match) return false;
+    }
+
+    if (filterValues.line) {
+      const f = String(filterValues.line).toLowerCase();
+      const match =
+        String(raw.line_id ?? meta.lineId ?? "").toLowerCase() === f ||
+        String(raw.line_name ?? meta.lines ?? "").toLowerCase() === f;
+      if (!match) return false;
+    }
+
+    if (filterValues.machine) {
+      const f = String(filterValues.machine).toLowerCase();
+      const match =
+        String(raw.machine_id ?? meta.machineId ?? "").toLowerCase() === f ||
+        String(raw.machine_name ?? meta.machines ?? "").toLowerCase() === f;
+      if (!match) return false;
+    }
+
+    return true;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
   const safePage = Math.min(page, totalPages - 1);
-  const displayedRows = rows.slice(
+  const displayedRows = filteredRows.slice(
     safePage * rowsPerPage,
     safePage * rowsPerPage + rowsPerPage
   );
 
-  const from = rows.length === 0 ? 0 : safePage * rowsPerPage + 1;
-  const to = Math.min(rows.length, (safePage + 1) * rowsPerPage);
+  const from = filteredRows.length === 0 ? 0 : safePage * rowsPerPage + 1;
+  const to = Math.min(filteredRows.length, (safePage + 1) * rowsPerPage);
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
@@ -179,7 +228,17 @@ const QuestionPaperTable = ({
       </div>
 
       <div className="px-5 pb-4 pt-4">
-        <Filters />
+        <Filters
+          values={filterValues}
+          onChange={(vals) => {
+            setFilterValues(vals);
+            setPage(0);
+          }}
+          onResetFilters={() => {
+            setFilterValues({});
+            setPage(0);
+          }}
+        />
       </div>
 
       {error && (
@@ -368,7 +427,7 @@ const QuestionPaperTable = ({
 
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-slate-500">
-                {from}-{to} of {rows.length}
+                {from}-{to} of {filteredRows.length}
               </span>
 
               <button

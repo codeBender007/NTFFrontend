@@ -9,18 +9,13 @@ import {
   FileText,
   ArrowLeft,
   UserCheck,
+  Trash2,
 } from "lucide-react";
 import UserApi from "@/features/lms/services/UserApi.js";
-import { SEED_EMPLOYEES } from "@/features/lms/utils/userSchema.js";
-import {
-  applyRoleDesignationOverrides,
-  applyUserLocalOverrides,
-} from "@/features/lms/utils/userUtils.js";
-import {
-  assignPaperToOperators,
-  getAssignedOperatorKeysForPaper,
-  getOperatorAssignmentKey,
-} from "../utils/supervisorAssignmentStorage.js";
+import QuestionPaperApi, {
+  getApiErrorMessage,
+} from "@/features/lms/services/QuestionPaperApi.js";
+import { getUser } from "@/features/auth/utils/authStorage.js";
 
 const formatJoiningDate = (dateVal) => {
   if (!dateVal) return "—";
@@ -44,92 +39,96 @@ export default function OperatorAssignmentPanel({
   onAssignmentComplete,
   onBack,
 }) {
-  const [operators, setOperators] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedKeys, setSelectedKeys] = useState(() => new Set());
-  const [assignedKeys, setAssignedKeys] = useState(() =>
-    getAssignedOperatorKeysForPaper(selectedPaper?.id)
-  );
-  const [lastSentSummary, setLastSentSummary] = useState(null);
-
+  const currentUser = getUser();
   const activePaper = selectedPaper || savedPapers[0] || null;
 
-  useEffect(() => {
-    setAssignedKeys(getAssignedOperatorKeysForPaper(activePaper?.id));
-    setSelectedKeys(new Set());
-    setLastSentSummary(null);
-  }, [activePaper?.id]);
+  const [operators, setOperators] = useState([]);
+  const [loadingOperators, setLoadingOperators] = useState(true);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [unassigningId, setUnassigningId] = useState(null);
 
+  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+
+  // Map of operator_id (string) -> assignment object from GET /api/v1/lms/question-papers/assignments
+  const [assignmentsByOperatorId, setAssignmentsByOperatorId] = useState({});
+  const [lastSentSummary, setLastSentSummary] = useState(null);
+
+  // 1. Fetch live Operators from LMS Users API (designation === "Operator")
   const fetchOperators = useCallback(async () => {
-    setLoading(true);
+    setLoadingOperators(true);
     setError(null);
     try {
-      let rawList = [];
-      try {
-        const res = await UserApi.getUsers({ limit: 1000 });
-        rawList = Array.isArray(res?.data)
-          ? res.data
-          : Array.isArray(res?.data?.data)
-            ? res.data.data
-            : [];
-      } catch (apiErr) {
-        console.warn("Could not fetch users from UserApi:", apiErr?.message);
-        setError(
-          "Could not reach LMS Users API; showing available synced operators."
-        );
-      }
-
-      let normalized = rawList.map((u) => ({
-        id: u.id,
-        empName: u.empName ?? u.name ?? u.username ?? "",
-        payCode: u.payCode ?? u.paycode ?? "",
-        department: u.departmentName ?? u.department ?? "",
-        subDepartment: u.subDepartmentName ?? u.subDepartment ?? "",
-        line: u.lineName ?? u.line ?? "",
-        machine: u.machineName ?? u.machine ?? "",
-        joiningDate: u.dateOfJoining ?? u.joiningDate ?? "",
-        designation: u.designation ?? u.role ?? "",
-        email: u.email ?? "",
-      }));
-
-      if (normalized.length === 0) {
-        normalized = SEED_EMPLOYEES.map((u) => ({
+      const allUsers = await UserApi.getAllUsers();
+      const onlyOperators = allUsers
+        .filter((u) => {
+          const desig = String(u?.designation || "").trim().toLowerCase();
+          return desig === "operator";
+        })
+        .map((u) => ({
           id: u.id,
-          empName: u.empName ?? u.name ?? "",
+          empName: u.empName ?? u.name ?? u.username ?? "",
           payCode: u.payCode ?? u.paycode ?? "",
-          department: u.department ?? "",
-          subDepartment: u.subDepartment ?? "",
-          line: u.line ?? "",
-          machine: u.machine ?? "",
-          joiningDate: u.joiningDate ?? u.dateOfJoining ?? "",
-          designation: u.designation ?? "",
+          department: u.departmentName ?? u.department ?? "",
+          subDepartment: u.subDepartmentName ?? u.subDepartment ?? "",
+          line: u.lineName ?? u.line ?? "",
+          machine: u.machineName ?? u.machine ?? "",
+          joiningDate: u.dateOfJoining ?? u.joiningDate ?? "",
+          designation: u.designation ?? "Operator",
           email: u.email ?? "",
         }));
-      }
-
-      // Sync with any LMS Users / Roles designation overrides
-      const withLocal = applyUserLocalOverrides(normalized);
-      const synced = applyRoleDesignationOverrides(withLocal);
-
-      // Strictly filter for Designation === "Operator" (case-insensitive)
-      const onlyOperators = synced.filter((u) => {
-        const desig = String(u.designation || "").trim().toLowerCase();
-        return desig === "operator";
-      });
 
       setOperators(onlyOperators);
     } catch (err) {
-      setError(err?.message || "Failed to load operators list.");
+      setError(
+        getApiErrorMessage(err, "Failed to load operators list from LMS Users API.")
+      );
     } finally {
-      setLoading(false);
+      setLoadingOperators(false);
+    }
+  }, []);
+
+  // 2. Fetch active assignments for the selected paper from GET /api/v1/lms/question-papers/assignments
+  const fetchAssignments = useCallback(async (paperId) => {
+    if (paperId == null) {
+      setAssignmentsByOperatorId({});
+      return;
+    }
+    setLoadingAssignments(true);
+    try {
+      const res = await QuestionPaperApi.getAssignments({
+        question_paper_id: Number(paperId),
+        is_active: true,
+        limit: 1000,
+      });
+      const list = Array.isArray(res?.data) ? res.data : [];
+      const map = {};
+      list.forEach((a) => {
+        if (a?.operator_id != null && a?.is_active !== false) {
+          map[String(a.operator_id)] = a;
+        }
+      });
+      setAssignmentsByOperatorId(map);
+    } catch (err) {
+      setError(
+        getApiErrorMessage(err, "Failed to load existing paper assignments.")
+      );
+    } finally {
+      setLoadingAssignments(false);
     }
   }, []);
 
   useEffect(() => {
     fetchOperators();
   }, [fetchOperators]);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setLastSentSummary(null);
+    fetchAssignments(activePaper?.id);
+  }, [activePaper?.id, fetchAssignments]);
 
   const filteredOperators = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -150,18 +149,16 @@ export default function OperatorAssignmentPanel({
 
   const allFilteredSelected =
     filteredOperators.length > 0 &&
-    filteredOperators.every((op) =>
-      selectedKeys.has(getOperatorAssignmentKey(op))
-    );
+    filteredOperators.every((op) => selectedIds.has(String(op.id)));
 
   const toggleSelectOne = (op) => {
-    const key = getOperatorAssignmentKey(op);
-    setSelectedKeys((prev) => {
+    const idKey = String(op.id);
+    setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
+      if (next.has(idKey)) {
+        next.delete(idKey);
       } else {
-        next.add(key);
+        next.add(idKey);
       }
       return next;
     });
@@ -169,66 +166,124 @@ export default function OperatorAssignmentPanel({
 
   const toggleSelectAll = () => {
     if (allFilteredSelected) {
-      setSelectedKeys((prev) => {
+      setSelectedIds((prev) => {
         const next = new Set(prev);
-        filteredOperators.forEach((op) =>
-          next.delete(getOperatorAssignmentKey(op))
-        );
+        filteredOperators.forEach((op) => next.delete(String(op.id)));
         return next;
       });
     } else {
-      setSelectedKeys((prev) => {
+      setSelectedIds((prev) => {
         const next = new Set(prev);
-        filteredOperators.forEach((op) =>
-          next.add(getOperatorAssignmentKey(op))
-        );
+        filteredOperators.forEach((op) => next.add(String(op.id)));
         return next;
       });
     }
   };
 
-  const executeSend = (targetOperators) => {
-    if (!activePaper || targetOperators.length === 0) return;
+  // POST /api/v1/lms/question-papers/assignments
+  const executeAssign = async (targetOperators) => {
+    if (!activePaper?.id || targetOperators.length === 0 || assigning) return;
 
-    const result = assignPaperToOperators(
-      activePaper,
-      targetOperators,
-      supervisorName
-    );
-    const updatedAssigned = getAssignedOperatorKeysForPaper(activePaper.id);
-    setAssignedKeys(updatedAssigned);
-    setSelectedKeys(new Set());
+    const operatorIds = targetOperators
+      .map((op) => Number(op.id))
+      .filter((id) => !Number.isNaN(id));
 
-    const namesPreview = targetOperators
-      .slice(0, 3)
-      .map((op) => op.empName || op.payCode || "Operator")
-      .join(", ");
-    const extraCount =
-      targetOperators.length > 3 ? ` +${targetOperators.length - 3} more` : "";
+    if (operatorIds.length === 0) {
+      setError("Selected operators do not have valid numeric user IDs.");
+      return;
+    }
 
-    const summaryText = `Sent "${activePaper.title}" to ${result.assignedCount} operator${
-      result.assignedCount === 1 ? "" : "s"
-    } (${namesPreview}${extraCount}).`;
+    setAssigning(true);
+    setError(null);
+    try {
+      const supervisorId =
+        currentUser?.id != null && !Number.isNaN(Number(currentUser.id))
+          ? Number(currentUser.id)
+          : null;
 
-    setLastSentSummary(summaryText);
-    if (onAssignmentComplete) {
-      onAssignmentComplete({
-        ...result,
-        summaryText,
+      await QuestionPaperApi.assignQuestionPapers({
+        question_paper_id: Number(activePaper.id),
+        operator_ids: operatorIds,
+        assigned_by: supervisorId,
+        assigned_by_name: supervisorName,
       });
+
+      await fetchAssignments(activePaper.id);
+      setSelectedIds(new Set());
+
+      const namesPreview = targetOperators
+        .slice(0, 3)
+        .map((op) => op.empName || op.payCode || "Operator")
+        .join(", ");
+      const extraCount =
+        targetOperators.length > 3 ? ` +${targetOperators.length - 3} more` : "";
+
+      const summaryText = `Assigned "${activePaper.title}" to ${operatorIds.length} operator${
+        operatorIds.length === 1 ? "" : "s"
+      } (${namesPreview}${extraCount}).`;
+
+      setLastSentSummary(summaryText);
+      if (onAssignmentComplete) {
+        onAssignmentComplete({
+          assignedCount: operatorIds.length,
+          assignedOperators: targetOperators,
+          paper: activePaper,
+          summaryText,
+        });
+      }
+    } catch (err) {
+      setError(
+        getApiErrorMessage(err, "Failed to assign question paper to operators.")
+      );
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  // DELETE /api/v1/lms/question-papers/assignments/{assignment_id}
+  const handleUnassign = async (e, op, assignment) => {
+    e.stopPropagation();
+    if (!assignment?.id || unassigningId != null) return;
+
+    const confirmed = window.confirm(
+      `Unassign "${activePaper?.title || "this paper"}" from ${op.empName || op.payCode}?`
+    );
+    if (!confirmed) return;
+
+    setUnassigningId(assignment.id);
+    setError(null);
+    try {
+      await QuestionPaperApi.unassignQuestionPaper(assignment.id);
+      setAssignmentsByOperatorId((prev) => {
+        const next = { ...prev };
+        delete next[String(op.id)];
+        return next;
+      });
+      const msg = `Unassigned "${activePaper?.title}" from ${op.empName || op.payCode}.`;
+      setLastSentSummary(msg);
+      if (onAssignmentComplete) {
+        onAssignmentComplete({ summaryText: msg });
+      }
+    } catch (err) {
+      setError(
+        getApiErrorMessage(err, "Failed to unassign question paper.")
+      );
+    } finally {
+      setUnassigningId(null);
     }
   };
 
   const handleSendSelected = () => {
-    const chosen = operators.filter((op) =>
-      selectedKeys.has(getOperatorAssignmentKey(op))
-    );
-    executeSend(chosen);
+    const chosen = operators.filter((op) => selectedIds.has(String(op.id)));
+    executeAssign(chosen);
   };
 
   const handleSendToAll = () => {
-    executeSend(operators);
+    executeAssign(operators);
   };
+
+  const assignedCount = Object.keys(assignmentsByOperatorId).length;
+  const isLoading = loadingOperators || loadingAssignments;
 
   return (
     <div className="space-y-4">
@@ -250,19 +305,22 @@ export default function OperatorAssignmentPanel({
               Assign Question Paper to Operators
             </h2>
             <p className="text-xs text-sky-100/80">
-              Select individual operators or send to all operators from LMS Users
+              Assign or unassign test papers for live Operators via backend API
             </p>
           </div>
         </div>
 
         <button
           type="button"
-          onClick={fetchOperators}
-          disabled={loading}
+          onClick={() => {
+            fetchOperators();
+            fetchAssignments(activePaper?.id);
+          }}
+          disabled={isLoading}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition disabled:opacity-50 cursor-pointer"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          <span>Refresh Operators</span>
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+          <span>Refresh</span>
         </button>
       </div>
 
@@ -274,7 +332,7 @@ export default function OperatorAssignmentPanel({
           </div>
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Selected Test Paper to Send
+              Selected Test Paper to Assign
             </p>
             {activePaper ? (
               <div className="flex items-center gap-2 flex-wrap mt-0.5">
@@ -285,7 +343,7 @@ export default function OperatorAssignmentPanel({
                   {activePaper.marks || `${activePaper.totalMarks ?? 0} Marks`}
                 </span>
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  {assignedKeys.size} Assigned
+                  {assignedCount} Assigned
                 </span>
               </div>
             ) : (
@@ -329,17 +387,20 @@ export default function OperatorAssignmentPanel({
         </div>
       )}
 
-      {/* Warning / Error Banner */}
+      {/* Error Banner */}
       {error && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800 flex items-center justify-between gap-3">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
           <button
             type="button"
-            onClick={fetchOperators}
-            className="px-3 py-1 rounded-md bg-amber-600 text-white hover:bg-amber-700 text-[11px] font-semibold cursor-pointer"
+            onClick={() => {
+              fetchOperators();
+              fetchAssignments(activePaper?.id);
+            }}
+            className="px-3 py-1 rounded-md bg-rose-600 text-white hover:bg-rose-700 text-[11px] font-semibold cursor-pointer"
           >
             Retry
           </button>
@@ -377,7 +438,7 @@ export default function OperatorAssignmentPanel({
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
-              disabled={!activePaper || operators.length === 0}
+              disabled={!activePaper?.id || operators.length === 0 || assigning}
               onClick={handleSendToAll}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 hover:bg-sky-100 px-3.5 text-xs font-semibold text-[#0284c7] transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
@@ -387,22 +448,31 @@ export default function OperatorAssignmentPanel({
 
             <button
               type="button"
-              disabled={!activePaper || selectedKeys.size === 0}
+              disabled={!activePaper?.id || selectedIds.size === 0 || assigning}
               onClick={handleSendSelected}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-              <Send className="w-3.5 h-3.5" />
-              <span>
-                Send Question Paper
-                {selectedKeys.size > 0 ? ` (${selectedKeys.size})` : ""}
-              </span>
+              {assigning ? (
+                <>
+                  <span className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  <span>Assigning...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>
+                    Send Question Paper
+                    {selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+                  </span>
+                </>
+              )}
             </button>
           </div>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[780px] border-collapse">
+          <table className="w-full min-w-[820px] border-collapse">
             <thead>
               <tr className="bg-[#0b295c] text-white">
                 <th className="w-12 px-4 py-2.5 text-center border-r border-[#153e7e]">
@@ -428,12 +498,12 @@ export default function OperatorAssignmentPanel({
                   Joining Date
                 </th>
                 <th className="px-4 py-2.5 text-center text-[11px] font-semibold uppercase tracking-wider">
-                  Status
+                  Assignment
                 </th>
               </tr>
             </thead>
             <tbody>
-              {loading && (
+              {loadingOperators && (
                 <tr>
                   <td
                     colSpan={6}
@@ -441,13 +511,13 @@ export default function OperatorAssignmentPanel({
                   >
                     <div className="inline-flex items-center gap-2.5">
                       <span className="h-4 w-4 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
-                      <span>Loading operators from LMS Users...</span>
+                      <span>Loading operators from LMS Users API...</span>
                     </div>
                   </td>
                 </tr>
               )}
 
-              {!loading && filteredOperators.length === 0 && (
+              {!loadingOperators && filteredOperators.length === 0 && (
                 <tr>
                   <td
                     colSpan={6}
@@ -458,18 +528,19 @@ export default function OperatorAssignmentPanel({
                 </tr>
               )}
 
-              {!loading &&
+              {!loadingOperators &&
                 filteredOperators.map((op, idx) => {
-                  const key = getOperatorAssignmentKey(op);
-                  const isChecked = selectedKeys.has(key);
-                  const isAlreadySent = assignedKeys.has(key);
+                  const idKey = String(op.id);
+                  const isChecked = selectedIds.has(idKey);
+                  const assignment = assignmentsByOperatorId[idKey];
+                  const isUnassigning = unassigningId === assignment?.id;
                   const deptLine = [op.department, op.line]
                     .filter(Boolean)
                     .join(" / ");
 
                   return (
                     <tr
-                      key={key}
+                      key={idKey}
                       onClick={() => toggleSelectOne(op)}
                       className={`border-b border-slate-100 transition cursor-pointer ${
                         isChecked
@@ -515,14 +586,29 @@ export default function OperatorAssignmentPanel({
                       </td>
 
                       <td className="px-4 py-3 text-center">
-                        {isAlreadySent ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Sent</span>
-                          </span>
+                        {assignment ? (
+                          <div className="inline-flex items-center justify-center gap-2">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>{assignment.status || "Assigned"}</span>
+                            </span>
+                            <button
+                              type="button"
+                              disabled={isUnassigning}
+                              onClick={(e) => handleUnassign(e, op, assignment)}
+                              title="Unassign paper from this operator"
+                              className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition disabled:opacity-40 cursor-pointer"
+                            >
+                              {isUnassigning ? (
+                                <span className="block h-3.5 w-3.5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
                         ) : (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
-                            Not Sent
+                            Not Assigned
                           </span>
                         )}
                       </td>

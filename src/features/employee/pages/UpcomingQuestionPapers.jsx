@@ -20,9 +20,9 @@ import QuestionPaperApi, {
   getApiErrorMessage,
   mapApiResponseToPaper,
   mapApiSubmissionToModel,
+  mapOperatorUpcomingToPaper,
 } from "@/features/lms/services/QuestionPaperApi.js";
 import { getDefaultDayPaper } from "@/features/lms/utils/defaultDayPapers.js";
-import { getAssignedPapersForOperator } from "@/features/supervisor/utils/supervisorAssignmentStorage.js";
 import {
   fetchEmployeeJoiningDate,
   getCalendarDayDifference,
@@ -86,17 +86,19 @@ export default function UpcomingQuestionPapers() {
         user?.id != null && !Number.isNaN(Number(user.id))
           ? Number(user.id)
           : undefined;
+      const operatorParams =
+        numericUserId !== undefined ? { operator_id: numericUserId } : {};
 
-      const [dateStr, papersRes, submissionsRes] = await Promise.all([
+      const [dateStr, papersRes, upcomingRes, pastRes] = await Promise.all([
         fetchEmployeeJoiningDate(user),
         QuestionPaperApi.getQuestionPapers({ is_active: true }),
-        QuestionPaperApi.getSubmissions(
-          numericUserId !== undefined ? { user_id: numericUserId } : {}
-        ),
+        QuestionPaperApi.getOperatorUpcomingPapers(operatorParams),
+        QuestionPaperApi.getOperatorPastPapers(operatorParams),
       ]);
 
       setJoiningDate(dateStr);
-      setDiffDays(getCalendarDayDifference(dateStr));
+      const calculatedDiff = getCalendarDayDifference(dateStr);
+      setDiffDays(calculatedDiff);
 
       const rawPapers = Array.isArray(papersRes?.data) ? papersRes.data : [];
       const mappedPapers = rawPapers.map(mapApiResponseToPaper).filter(Boolean);
@@ -106,9 +108,7 @@ export default function UpcomingQuestionPapers() {
       setDay1Paper(d1 || getDefaultDayPaper("DAY_1"));
       setDay2Paper(d2 || getDefaultDayPaper("DAY_2"));
 
-      const rawSubs = Array.isArray(submissionsRes?.data)
-        ? submissionsRes.data
-        : [];
+      const rawSubs = Array.isArray(pastRes?.data) ? pastRes.data : [];
       const employeeSubs = rawSubs
         .map(mapApiSubmissionToModel)
         .filter((s) => s && doesSubmissionBelongToEmployee(s, user));
@@ -128,11 +128,30 @@ export default function UpcomingQuestionPapers() {
       setSubmittedMap(nextSubmittedMap);
       setSubmittedPaperIds(nextSubmittedIds);
 
-      // Load Supervisor-assigned papers strictly for this employee
-      const rawAssigned = getAssignedPapersForOperator(user);
-      const pendingAssigned = rawAssigned.filter(
-        (ap) => !nextSubmittedIds.has(String(ap.paperId))
-      );
+      // Load Supervisor-assigned papers directly from GET /api/v1/lms/question-papers/operator/upcoming
+      const rawUpcoming = Array.isArray(upcomingRes?.data)
+        ? upcomingRes.data
+        : [];
+      const mappedUpcoming = rawUpcoming
+        .map(mapOperatorUpcomingToPaper)
+        .filter(Boolean);
+
+      const shownDay1Id =
+        calculatedDiff === 0 && !nextSubmittedMap.day1 && d1?.id != null
+          ? String(d1.id)
+          : null;
+      const shownDay2Id =
+        calculatedDiff === 1 && !nextSubmittedMap.day2 && d2?.id != null
+          ? String(d2.id)
+          : null;
+
+      const pendingAssigned = mappedUpcoming.filter((item) => {
+        const pid = String(item.paperId);
+        if (nextSubmittedIds.has(pid)) return false;
+        if (shownDay1Id && pid === shownDay1Id) return false;
+        if (shownDay2Id && pid === shownDay2Id) return false;
+        return true;
+      });
       setAssignedPapers(pendingAssigned);
     } catch (err) {
       setLoadError(

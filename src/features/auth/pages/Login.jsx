@@ -9,7 +9,6 @@ import {
   isAuthenticated,
   isEmployee,
   isSupervisor,
-  saveSupervisorSession,
 } from "../utils/authStorage";
 import ntfLogo from "@/assets/images/NTF_logo_black.png";
 import loginBg from "@/assets/images/login-bg.png";
@@ -57,23 +56,7 @@ export default function Login() {
     try {
       const normalizedInput = trimmedInput.toLowerCase();
 
-      // 2. Supervisor Login (isolated frontend role flow)
-      if (
-        normalizedInput === "supervisor" &&
-        trimmedPassword === "supervisor123"
-      ) {
-        saveSupervisorSession({
-          id: "supervisor_1",
-          username: "supervisor",
-          name: "Supervisor",
-          role: "supervisor",
-          isSupervisor: true,
-        });
-        navigate("/supervisor", { replace: true });
-        return;
-      }
-
-      // 3. Primary Backend Auth API login (Admin & email/DOB-authenticated users)
+      // 2. Primary Backend Auth API login (Admin, Supervisor via name+paycode, & Operator)
       let authApiError = null;
       try {
         const res = await AuthApi.login({

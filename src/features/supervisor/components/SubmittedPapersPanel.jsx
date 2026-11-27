@@ -18,10 +18,7 @@ import QuestionPaperApi, {
   mapApiSubmissionToModel,
 } from "@/features/lms/services/QuestionPaperApi.js";
 import { getDefaultDayPaper } from "@/features/lms/utils/defaultDayPapers.js";
-import {
-  mergeSubmissionWithGrade,
-  saveGradeForSubmission,
-} from "../utils/submissionGradingStorage.js";
+import { getUser } from "@/features/auth/utils/authStorage.js";
 
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz";
 
@@ -76,6 +73,7 @@ export default function SubmittedPapersPanel({
   // Per-question marks & remarks during evaluation
   const [questionMarks, setQuestionMarks] = useState({});
   const [remarks, setRemarks] = useState("");
+  const [savingGrade, setSavingGrade] = useState(false);
 
   const fetchSubmissions = useCallback(async () => {
     setLoading(true);
@@ -85,8 +83,7 @@ export default function SubmittedPapersPanel({
       const rawList = Array.isArray(res?.data) ? res.data : [];
       const mapped = rawList
         .map(mapApiSubmissionToModel)
-        .filter(Boolean)
-        .map(mergeSubmissionWithGrade);
+        .filter(Boolean);
       setSubmissions(mapped);
     } catch (err) {
       setError(
@@ -127,9 +124,7 @@ export default function SubmittedPapersPanel({
           : Promise.resolve(null),
       ]);
 
-      const detailedSub = mergeSubmissionWithGrade(
-        mapApiSubmissionToModel(subRes?.data) || sub
-      );
+      const detailedSub = mapApiSubmissionToModel(subRes?.data) || sub;
       const detailedPaper = paperRes?.data
         ? mapApiResponseToPaper(paperRes.data)
         : getDefaultDayPaper(detailedSub.dayType || "DAY_1");
@@ -216,47 +211,71 @@ export default function SubmittedPapersPanel({
     setQuestionMarks((prev) => ({ ...prev, [qNum]: clamped }));
   };
 
-  const handleSaveMarks = () => {
-    if (!reviewingSubmission) return;
+  // PUT /api/v1/lms/question-papers/submissions/{submission_id}/grade
+  const handleSaveMarks = async () => {
+    if (!reviewingSubmission || savingGrade) return;
 
     const cleanQuestionMarks = {};
     allReviewQuestions.forEach((q) => {
       const val = Number(questionMarks[q.number]);
-      cleanQuestionMarks[q.number] = Number.isNaN(val) ? 0 : val;
+      cleanQuestionMarks[String(q.number)] = Number.isNaN(val) ? 0 : val;
     });
 
-    saveGradeForSubmission(reviewingSubmission.id, {
-      questionMarks: cleanQuestionMarks,
-      totalMarksObtained: totalObtainedMarks,
-      maxMarks: totalMaxMarks,
-      percentage: computedPercentage,
-      passed: computedPassed,
-      remarks: remarks.trim(),
-      gradedBy: supervisorName,
-    });
+    setSavingGrade(true);
+    setReviewError(null);
+    try {
+      const currentUser = getUser();
+      const gradedById =
+        currentUser?.id != null && !Number.isNaN(Number(currentUser.id))
+          ? Number(currentUser.id)
+          : null;
 
-    // Refresh submissions list with updated grade
-    setSubmissions((prev) =>
-      prev.map((item) =>
-        item.id === reviewingSubmission.id
-          ? mergeSubmissionWithGrade(item)
-          : item
-      )
-    );
+      const payload = {
+        question_marks: cleanQuestionMarks,
+        score: totalObtainedMarks,
+        max_score: totalMaxMarks,
+        percentage: computedPercentage,
+        passed: computedPassed,
+        remarks: remarks.trim() || null,
+        graded_by: gradedById,
+        graded_by_name: supervisorName,
+        status: "GRADED",
+      };
 
-    const empLabel =
-      reviewingSubmission.userName ||
-      reviewingSubmission.userPayCode ||
-      "Employee";
-    const msg = `Saved marks (${totalObtainedMarks}/${totalMaxMarks} — ${computedPercentage}%) for ${empLabel}.`;
+      const res = await QuestionPaperApi.gradeSubmission(
+        reviewingSubmission.id,
+        payload
+      );
+      const updatedModel = mapApiSubmissionToModel(res.data);
 
-    if (onGradeSaved) {
-      onGradeSaved(msg);
+      setSubmissions((prev) =>
+        prev.map((item) =>
+          item.id === reviewingSubmission.id
+            ? updatedModel || item
+            : item
+        )
+      );
+
+      const empLabel =
+        reviewingSubmission.userName ||
+        reviewingSubmission.userPayCode ||
+        "Employee";
+      const msg = `Saved marks (${totalObtainedMarks}/${totalMaxMarks} — ${computedPercentage}%) for ${empLabel}.`;
+
+      if (onGradeSaved) {
+        onGradeSaved(msg);
+      }
+
+      setReviewingSubmission(null);
+      setReviewPaper(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setReviewError(
+        getApiErrorMessage(err, "Failed to save marks to the backend. Please try again.")
+      );
+    } finally {
+      setSavingGrade(false);
     }
-
-    setReviewingSubmission(null);
-    setReviewPaper(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const filteredSubmissions = useMemo(() => {
@@ -336,12 +355,21 @@ export default function SubmittedPapersPanel({
 
             <button
               type="button"
-              disabled={loadingReview}
+              disabled={loadingReview || savingGrade}
               onClick={handleSaveMarks}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs transition disabled:opacity-50 cursor-pointer"
             >
-              <Save className="w-3.5 h-3.5" />
-              <span>Save Marks</span>
+              {savingGrade ? (
+                <>
+                  <span className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Marks</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -572,11 +600,21 @@ export default function SubmittedPapersPanel({
 
                 <button
                   type="button"
+                  disabled={savingGrade}
                   onClick={handleSaveMarks}
-                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-6 text-xs font-semibold text-white shadow-xs transition cursor-pointer"
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-6 text-xs font-semibold text-white shadow-xs transition disabled:opacity-50 cursor-pointer"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>Save Marks</span>
+                  {savingGrade ? (
+                    <>
+                      <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                      <span>Saving Marks...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Save Marks</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

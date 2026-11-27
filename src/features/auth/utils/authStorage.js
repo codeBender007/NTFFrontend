@@ -3,7 +3,6 @@ const ACCESS_TOKEN_KEY = "access_token";
 const USER_KEY = "user";
 const LOGGED_IN_KEY = "isLoggedIn";
 const EMPLOYEE_SESSION_KEY = "employee_session";
-const SUPERVISOR_SESSION_KEY = "supervisor_session";
 
 const INVALID_TOKENS = new Set([
   "",
@@ -35,7 +34,7 @@ export const saveSession = (authData = {}) => {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   }
   localStorage.removeItem(EMPLOYEE_SESSION_KEY);
-  localStorage.removeItem(SUPERVISOR_SESSION_KEY);
+  localStorage.removeItem("supervisor_session");
   localStorage.setItem(LOGGED_IN_KEY, "true");
 };
 
@@ -102,10 +101,7 @@ export const getToken = () => {
 export const isTokenExpired = (token = getToken()) => {
   if (!token || typeof token !== "string") return true;
 
-  if (
-    localStorage.getItem(EMPLOYEE_SESSION_KEY) === "true" ||
-    localStorage.getItem(SUPERVISOR_SESSION_KEY) === "true"
-  ) {
+  if (localStorage.getItem(EMPLOYEE_SESSION_KEY) === "true") {
     return false;
   }
 
@@ -241,45 +237,24 @@ export const saveEmployeeSession = (employeeData = {}) => {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   localStorage.setItem(LOGGED_IN_KEY, "true");
   localStorage.setItem(EMPLOYEE_SESSION_KEY, "true");
-  localStorage.removeItem(SUPERVISOR_SESSION_KEY);
+  localStorage.removeItem("supervisor_session");
 };
 
 /**
- * Check if the active session belongs to a Supervisor
+ * Check if the active session belongs to a Supervisor authenticated via /api/auth/login
  */
 export const isSupervisor = () => {
-  if (localStorage.getItem(SUPERVISOR_SESSION_KEY) === "true") return true;
   const user = getUser();
   if (!user) return false;
+  if (user.isSupervisor === true) return true;
   const role = String(user.role || "").trim().toUpperCase();
-  return role === "SUPERVISOR" || user.isSupervisor === true;
-};
-
-/**
- * Persist supervisor session in localStorage
- */
-export const saveSupervisorSession = (supervisorData = {}) => {
-  const user = {
-    ...supervisorData,
-    username: supervisorData.username || "supervisor",
-    role: "supervisor",
-    isSupervisor: true,
-  };
-
-  const syntheticJwt = `sup_hdr.${btoa(
-    JSON.stringify({
-      role: "supervisor",
-      sub: user.username,
-      name: user.username,
-      exp: Math.floor(Date.now() / 1000) + 86400 * 30,
-    })
-  )}.sup_sig`;
-
-  localStorage.setItem(TOKEN_KEY, syntheticJwt);
-  localStorage.setItem(ACCESS_TOKEN_KEY, syntheticJwt);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-  localStorage.setItem(LOGGED_IN_KEY, "true");
-  localStorage.setItem(SUPERVISOR_SESSION_KEY, "true");
+  const roleType = String(user.roleType || "").trim().toUpperCase();
+  const designation = String(user.designation || "").trim().toLowerCase();
+  return (
+    role === "SUPERVISOR" ||
+    roleType === "SUPERVISOR" ||
+    designation === "supervisor"
+  );
 };
 
 /**
@@ -294,8 +269,8 @@ export const clearSession = () => {
     "authToken",
     USER_KEY,
     LOGGED_IN_KEY,
-    "employee_session",
-    SUPERVISOR_SESSION_KEY,
+    EMPLOYEE_SESSION_KEY,
+    "supervisor_session",
   ];
 
   try {

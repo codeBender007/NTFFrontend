@@ -294,26 +294,86 @@ export default function Filters({
     }
   }, [isDatePickerOpen])
 
-  // Determine effective option lists (props override dynamic if provided non-empty)
+  // Helper to resolve selected ID from current filter value and an options list
+  const resolveSelectedId = (value, list = []) => {
+    if (!value && value !== 0) return null
+    const found = (list || []).find(
+      (item) =>
+        String(item?.id) === String(value) ||
+        String(item?.name || '').toLowerCase() === String(value).toLowerCase()
+    )
+    return found?.id ?? value
+  }
+
+  // Determine effective option lists (props override dynamic if provided non-empty, with cascading filtering)
   const effectivePlantOptions = hasCustomPlantOptions ? plantOptions : plants
   const effectiveDepartmentOptions = hasCustomDeptOptions
-    ? departmentOptions
+    ? currentFilters.plant
+      ? departmentOptions.filter((d) => {
+          const pId = resolveSelectedId(currentFilters.plant, effectivePlantOptions)
+          const itemPlantId = d?.plantId ?? d?.raw?.plantId
+          return !itemPlantId || String(itemPlantId) === String(pId)
+        })
+      : departmentOptions
     : departments
+
   const effectiveSubDepartmentOptions = hasCustomSubDeptOptions
-    ? subDepartmentOptions
-    : !currentFilters.department
-      ? EMPTY_OPTIONS
-      : subDepartments
+    ? currentFilters.department
+      ? subDepartmentOptions.filter((sd) => {
+          const dId = resolveSelectedId(
+            currentFilters.department,
+            effectiveDepartmentOptions
+          )
+          const itemDeptId = sd?.departmentId ?? sd?.raw?.departmentId
+          return !itemDeptId || String(itemDeptId) === String(dId)
+        })
+      : subDepartmentOptions
+    : subDepartments
+
   const effectiveLineOptions = hasCustomLineOptions
-    ? lineOptions
-    : !currentFilters.subDepartment
-      ? EMPTY_OPTIONS
-      : lines
+    ? currentFilters.subDepartment
+      ? lineOptions.filter((l) => {
+          const sdId = resolveSelectedId(
+            currentFilters.subDepartment,
+            effectiveSubDepartmentOptions
+          )
+          const itemSubDeptId = l?.subDepartmentId ?? l?.raw?.subDepartmentId
+          return !itemSubDeptId || String(itemSubDeptId) === String(sdId)
+        })
+      : currentFilters.department
+        ? lineOptions.filter((l) => {
+            const dId = resolveSelectedId(
+              currentFilters.department,
+              effectiveDepartmentOptions
+            )
+            const itemDeptId = l?.departmentId ?? l?.raw?.departmentId
+            return !itemDeptId || String(itemDeptId) === String(dId)
+          })
+        : lineOptions
+    : lines
+
   const effectiveMachineOptions = hasCustomMachineOptions
-    ? machineOptions
-    : !currentFilters.line
-      ? EMPTY_OPTIONS
-      : machines
+    ? currentFilters.line
+      ? machineOptions.filter((m) => {
+          const lId = resolveSelectedId(
+            currentFilters.line,
+            effectiveLineOptions
+          )
+          const itemLineId = m?.lineId ?? m?.raw?.lineId
+          return !itemLineId || String(itemLineId) === String(lId)
+        })
+      : currentFilters.subDepartment
+        ? machineOptions.filter((m) => {
+            const sdId = resolveSelectedId(
+              currentFilters.subDepartment,
+              effectiveSubDepartmentOptions
+            )
+            const itemSubDeptId = m?.subDepartmentId ?? m?.raw?.subDepartmentId
+            return !itemSubDeptId || String(itemSubDeptId) === String(sdId)
+          })
+        : machineOptions
+    : machines
+
   const effectiveShiftOptions =
     shiftOptions?.length > 0 ? shiftOptions : DEFAULT_SHIFTS
 
@@ -446,9 +506,9 @@ export default function Filters({
     }
   }, [currentFilters.plant, hasCustomDeptOptions])
 
-  /* ===================== 3. FETCH SUB-DEPARTMENTS (DEPENDENT ON DEPARTMENT) ===================== */
+  /* ===================== 3. FETCH SUB-DEPARTMENTS (DEPENDENT ON PLANT / DEPARTMENT) ===================== */
   useEffect(() => {
-    if (hasCustomSubDeptOptions || !currentFilters.department) {
+    if (hasCustomSubDeptOptions) {
       return
     }
 
@@ -459,18 +519,34 @@ export default function Filters({
       setLoading((prev) => ({ ...prev, subDepartment: true }))
       setErrors((prev) => ({ ...prev, subDepartment: null }))
       try {
-        const deptList = departmentsRef.current || []
-        const deptObj = deptList.find(
-          (d) =>
-            String(d.id) === String(currentFilters.department) ||
-            d.name === currentFilters.department
-        )
-        const resolvedDeptId = deptObj ? deptObj.id : currentFilters.department
-
-        const res =
-          await SubDepartmentApi.getSubDepartmentsByDepartment(resolvedDeptId, {
+        let res
+        if (currentFilters.department) {
+          const deptList = departmentsRef.current || []
+          const deptObj = deptList.find(
+            (d) =>
+              String(d.id) === String(currentFilters.department) ||
+              d.name === currentFilters.department
+          )
+          const resolvedDeptId = deptObj ? deptObj.id : currentFilters.department
+          res = await SubDepartmentApi.getSubDepartmentsByDepartment(
+            resolvedDeptId,
+            { signal: controller.signal }
+          )
+        } else {
+          const params = {}
+          if (currentFilters.plant) {
+            const plantObj = (plantsRef.current || []).find(
+              (p) =>
+                String(p.id) === String(currentFilters.plant) ||
+                p.name === currentFilters.plant
+            )
+            params.plantId = plantObj ? plantObj.id : currentFilters.plant
+          }
+          res = await SubDepartmentApi.getSubDepartments(params, {
             signal: controller.signal,
           })
+        }
+
         if (!isMounted) return
         const normalized = normalizeList(res?.data ?? res, [
           'subDepartmentName',
@@ -505,11 +581,11 @@ export default function Filters({
       isMounted = false
       controller.abort()
     }
-  }, [currentFilters.department, hasCustomSubDeptOptions])
+  }, [currentFilters.plant, currentFilters.department, hasCustomSubDeptOptions])
 
-  /* ===================== 4. FETCH LINES (DEPENDENT ON SUB-DEPARTMENT) ===================== */
+  /* ===================== 4. FETCH LINES (DEPENDENT ON PLANT / DEPARTMENT / SUB-DEPARTMENT) ===================== */
   useEffect(() => {
-    if (hasCustomLineOptions || !currentFilters.subDepartment) {
+    if (hasCustomLineOptions) {
       return
     }
 
@@ -520,19 +596,44 @@ export default function Filters({
       setLoading((prev) => ({ ...prev, line: true }))
       setErrors((prev) => ({ ...prev, line: null }))
       try {
-        const subDeptList = subDepartmentsRef.current || []
-        const subDeptObj = subDeptList.find(
-          (s) =>
-            String(s.id) === String(currentFilters.subDepartment) ||
-            s.name === currentFilters.subDepartment
-        )
-        const resolvedSubDeptId = subDeptObj
-          ? subDeptObj.id
-          : currentFilters.subDepartment
+        let res
+        if (currentFilters.subDepartment) {
+          const subDeptList = subDepartmentsRef.current || []
+          const subDeptObj = subDeptList.find(
+            (s) =>
+              String(s.id) === String(currentFilters.subDepartment) ||
+              s.name === currentFilters.subDepartment
+          )
+          const resolvedSubDeptId = subDeptObj
+            ? subDeptObj.id
+            : currentFilters.subDepartment
 
-        const res = await LinesApi.getLinesBySubDepartment(resolvedSubDeptId, {
-          signal: controller.signal,
-        })
+          res = await LinesApi.getLinesBySubDepartment(resolvedSubDeptId, {
+            signal: controller.signal,
+          })
+        } else {
+          const params = {}
+          if (currentFilters.plant) {
+            const plantObj = (plantsRef.current || []).find(
+              (p) =>
+                String(p.id) === String(currentFilters.plant) ||
+                p.name === currentFilters.plant
+            )
+            params.plantId = plantObj ? plantObj.id : currentFilters.plant
+          }
+          if (currentFilters.department) {
+            const deptObj = (departmentsRef.current || []).find(
+              (d) =>
+                String(d.id) === String(currentFilters.department) ||
+                d.name === currentFilters.department
+            )
+            params.departmentId = deptObj ? deptObj.id : currentFilters.department
+          }
+          res = await LinesApi.getLines(params, {
+            signal: controller.signal,
+          })
+        }
+
         if (!isMounted) return
         const normalized = normalizeList(res?.data ?? res, [
           'lineName',
@@ -564,11 +665,16 @@ export default function Filters({
       isMounted = false
       controller.abort()
     }
-  }, [currentFilters.subDepartment, hasCustomLineOptions])
+  }, [
+    currentFilters.plant,
+    currentFilters.department,
+    currentFilters.subDepartment,
+    hasCustomLineOptions,
+  ])
 
-  /* ===================== 5. FETCH MACHINES (DEPENDENT ON LINE) ===================== */
+  /* ===================== 5. FETCH MACHINES (DEPENDENT ON PLANT / DEPT / SUB-DEPT / LINE) ===================== */
   useEffect(() => {
-    if (hasCustomMachineOptions || !currentFilters.line) {
+    if (hasCustomMachineOptions) {
       return
     }
 
@@ -579,17 +685,52 @@ export default function Filters({
       setLoading((prev) => ({ ...prev, machine: true }))
       setErrors((prev) => ({ ...prev, machine: null }))
       try {
-        const lineList = linesRef.current || []
-        const lineObj = lineList.find(
-          (l) =>
-            String(l.id) === String(currentFilters.line) ||
-            l.name === currentFilters.line
-        )
-        const resolvedLineId = lineObj ? lineObj.id : currentFilters.line
+        let res
+        if (currentFilters.line) {
+          const lineList = linesRef.current || []
+          const lineObj = lineList.find(
+            (l) =>
+              String(l.id) === String(currentFilters.line) ||
+              l.name === currentFilters.line
+          )
+          const resolvedLineId = lineObj ? lineObj.id : currentFilters.line
 
-        const res = await MachinesApi.getMachinesByLine(resolvedLineId, {
-          signal: controller.signal,
-        })
+          res = await MachinesApi.getMachinesByLine(resolvedLineId, {
+            signal: controller.signal,
+          })
+        } else {
+          const params = {}
+          if (currentFilters.plant) {
+            const plantObj = (plantsRef.current || []).find(
+              (p) =>
+                String(p.id) === String(currentFilters.plant) ||
+                p.name === currentFilters.plant
+            )
+            params.plantId = plantObj ? plantObj.id : currentFilters.plant
+          }
+          if (currentFilters.department) {
+            const deptObj = (departmentsRef.current || []).find(
+              (d) =>
+                String(d.id) === String(currentFilters.department) ||
+                d.name === currentFilters.department
+            )
+            params.departmentId = deptObj ? deptObj.id : currentFilters.department
+          }
+          if (currentFilters.subDepartment) {
+            const subDeptObj = (subDepartmentsRef.current || []).find(
+              (s) =>
+                String(s.id) === String(currentFilters.subDepartment) ||
+                s.name === currentFilters.subDepartment
+            )
+            params.subDepartmentId = subDeptObj
+              ? subDeptObj.id
+              : currentFilters.subDepartment
+          }
+          res = await MachinesApi.getMachines(params, {
+            signal: controller.signal,
+          })
+        }
+
         if (!isMounted) return
         const normalized = normalizeList(res?.data ?? res, [
           'machineName',
@@ -621,7 +762,13 @@ export default function Filters({
       isMounted = false
       controller.abort()
     }
-  }, [currentFilters.line, hasCustomMachineOptions])
+  }, [
+    currentFilters.plant,
+    currentFilters.department,
+    currentFilters.subDepartment,
+    currentFilters.line,
+    hasCustomMachineOptions,
+  ])
 
   /* ===================== CASCADING CHANGE HANDLER ===================== */
   const handleFieldChange = (key, value) => {
@@ -981,14 +1128,10 @@ export default function Filters({
     })
   }
 
-  // Determine disabled states for dependent dropdowns
-  const isSubDeptDisabled =
-    !subDepartmentOptions?.length &&
-    (!currentFilters.department || loading.subDepartment)
-  const isLineDisabled =
-    !lineOptions?.length && (!currentFilters.subDepartment || loading.line)
-  const isMachineDisabled =
-    !machineOptions?.length && (!currentFilters.line || loading.machine)
+  // Determine disabled states for dependent dropdowns (only disabled while actively loading)
+  const isSubDeptDisabled = !hasCustomSubDeptOptions && loading.subDepartment
+  const isLineDisabled = !hasCustomLineOptions && loading.line
+  const isMachineDisabled = !hasCustomMachineOptions && loading.machine
 
   return (
     <div className="bg-white rounded-lg border border-slate-200/90 shadow-xs p-3 sm:p-3.5 mb-4 select-none">
@@ -1086,12 +1229,9 @@ export default function Filters({
             <option value="">
               {loading.subDepartment
                 ? 'Loading Sub-depts...'
-                : !currentFilters.department &&
-                    !subDepartmentOptions?.length
-                  ? 'Select Dept first'
-                  : errors.subDepartment
-                    ? 'Failed to load sub-depts'
-                    : 'All Sub-depts'}
+                : errors.subDepartment
+                  ? 'Failed to load sub-depts'
+                  : 'All Sub-depts'}
             </option>
             {renderOptions(effectiveSubDepartmentOptions)}
           </select>
@@ -1117,11 +1257,9 @@ export default function Filters({
             <option value="">
               {loading.line
                 ? 'Loading Lines...'
-                : !currentFilters.subDepartment && !lineOptions?.length
-                  ? 'Select Sub-dept first'
-                  : errors.line
-                    ? 'Failed to load lines'
-                    : 'All Lines'}
+                : errors.line
+                  ? 'Failed to load lines'
+                  : 'All Lines'}
             </option>
             {renderOptions(effectiveLineOptions)}
           </select>
@@ -1147,11 +1285,9 @@ export default function Filters({
             <option value="">
               {loading.machine
                 ? 'Loading Machines...'
-                : !currentFilters.line && !machineOptions?.length
-                  ? 'Select Line first'
-                  : errors.machine
-                    ? 'Failed to load machines'
-                    : 'All Machines'}
+                : errors.machine
+                  ? 'Failed to load machines'
+                  : 'All Machines'}
             </option>
             {renderOptions(effectiveMachineOptions)}
           </select>

@@ -3,6 +3,41 @@ import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDown
 import KeyboardArrowUpOutlinedIcon from "@mui/icons-material/KeyboardArrowUpOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import DepartmentApi from "../services/DepartmentApi";
+import SubDepartmentApi from "../services/SubDepartmentApi";
+import LinesApi from "../services/LinesApi";
+import MachinesApi from "../services/MachinesApi";
+
+const extractArray = (res) => {
+  const d = res?.data ?? res;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  if (Array.isArray(d?.items)) return d.items;
+  if (Array.isArray(d?.results)) return d.results;
+  return [];
+};
+
+const getItemId = (item) =>
+  String(
+    item?.id ??
+      item?._id ??
+      item?.departmentId ??
+      item?.subDepartmentId ??
+      item?.lineId ??
+      item?.machineId ??
+      "",
+  );
+
+const getDepartmentName = (d) =>
+  d?.departmentName ?? d?.department_name ?? d?.name ?? "";
+
+const getSubDepartmentName = (s) =>
+  s?.subDepartmentName ?? s?.sub_department_name ?? s?.name ?? "";
+
+const getLineName = (l) => l?.lineName ?? l?.line_name ?? l?.name ?? "";
+
+const getMachineName = (m) =>
+  m?.machineName ?? m?.machine_name ?? m?.name ?? "";
 
 const inputClass =
   "w-full h-10 rounded-lg border border-slate-200 px-3.5 text-sm outline-none bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#0284c7] focus:ring-2 focus:ring-sky-500/15 transition";
@@ -28,14 +63,28 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
       initialData.headerTitle || "NTF TECHNICAL EVALUATION TEST PAPER",
     subTitle: initialData.subTitle || "New Manpower Technical Assessment",
     departments: initialData.departments || "",
+    departmentId: initialData.departmentId || "",
     sections: initialData.sections || "",
+    subDepartmentId: initialData.subDepartmentId || "",
     lines: initialData.lines || "",
+    lineId: initialData.lineId || "",
     subSections: initialData.subSections || "",
     machines: initialData.machines || "",
+    machineId: initialData.machineId || "",
     levels: initialData.levels || "",
     duration: initialData.duration || "",
     passPercentage: initialData.passPercentage || "",
   });
+
+  const [departmentsList, setDepartmentsList] = useState([]);
+  const [subDepartmentsList, setSubDepartmentsList] = useState([]);
+  const [linesList, setLinesList] = useState([]);
+  const [machinesList, setMachinesList] = useState([]);
+
+  const [loadingDepts, setLoadingDepts] = useState(false);
+  const [loadingSubDepts, setLoadingSubDepts] = useState(false);
+  const [loadingLines, setLoadingLines] = useState(false);
+  const [loadingMachines, setLoadingMachines] = useState(false);
 
   useEffect(() => {
     if (onChange) {
@@ -43,9 +92,268 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
     }
   }, []);
 
+  // Fetch all departments from LMS -> Plant API
+  useEffect(() => {
+    let active = true;
+    const fetchDepartments = async () => {
+      setLoadingDepts(true);
+      try {
+        const res = await DepartmentApi.getDepartments();
+        if (!active) return;
+        const list = extractArray(res)
+          .map((d) => ({
+            id: getItemId(d),
+            name: getDepartmentName(d),
+          }))
+          .filter((d) => d.id && d.name);
+        setDepartmentsList(list);
+
+        // Resolve departmentId if initialData only had department name
+        if (!formData.departmentId && formData.departments) {
+          const matched = list.find(
+            (d) =>
+              d.name.toLowerCase() === formData.departments.toLowerCase() ||
+              d.id === String(formData.departments),
+          );
+          if (matched) {
+            setFormData((prev) => {
+              const next = {
+                ...prev,
+                departments: matched.name,
+                departmentId: matched.id,
+              };
+              if (onChange) onChange(next);
+              return next;
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching departments:", err);
+        if (active) setDepartmentsList([]);
+      } finally {
+        if (active) setLoadingDepts(false);
+      }
+    };
+    fetchDepartments();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Fetch sub-departments dynamically (cascading by selected department)
+  useEffect(() => {
+    let active = true;
+    const fetchSubDepartments = async () => {
+      setLoadingSubDepts(true);
+      try {
+        const res = formData.departmentId
+          ? await SubDepartmentApi.getSubDepartmentsByDepartment(
+              formData.departmentId,
+            )
+          : await SubDepartmentApi.getSubDepartments();
+        if (!active) return;
+        const list = extractArray(res)
+          .map((s) => ({
+            id: getItemId(s),
+            name: getSubDepartmentName(s),
+            departmentId: String(s?.departmentId ?? s?.department_id ?? ""),
+          }))
+          .filter((s) => s.id && s.name);
+        setSubDepartmentsList(list);
+
+        if (!formData.subDepartmentId && formData.sections) {
+          const matched = list.find(
+            (s) =>
+              s.name.toLowerCase() === formData.sections.toLowerCase() ||
+              s.id === String(formData.sections),
+          );
+          if (matched) {
+            setFormData((prev) => {
+              const next = {
+                ...prev,
+                sections: matched.name,
+                subDepartmentId: matched.id,
+              };
+              if (onChange) onChange(next);
+              return next;
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching sub-departments:", err);
+        if (active) setSubDepartmentsList([]);
+      } finally {
+        if (active) setLoadingSubDepts(false);
+      }
+    };
+    fetchSubDepartments();
+    return () => {
+      active = false;
+    };
+  }, [formData.departmentId]);
+
+  // Fetch lines dynamically (cascading by selected sub-department or department)
+  useEffect(() => {
+    let active = true;
+    const fetchLines = async () => {
+      setLoadingLines(true);
+      try {
+        let res;
+        if (formData.subDepartmentId) {
+          res = await LinesApi.getLinesBySubDepartment(
+            formData.subDepartmentId,
+          );
+        } else {
+          const params = {};
+          if (formData.departmentId) params.departmentId = formData.departmentId;
+          res = await LinesApi.getLines(params);
+        }
+        if (!active) return;
+        const list = extractArray(res)
+          .map((l) => ({
+            id: getItemId(l),
+            name: getLineName(l),
+            subDepartmentId: String(
+              l?.subDepartmentId ?? l?.sub_department_id ?? "",
+            ),
+          }))
+          .filter((l) => l.id && l.name);
+        setLinesList(list);
+
+        if (!formData.lineId && formData.lines) {
+          const matched = list.find(
+            (l) =>
+              l.name.toLowerCase() === formData.lines.toLowerCase() ||
+              l.id === String(formData.lines),
+          );
+          if (matched) {
+            setFormData((prev) => {
+              const next = {
+                ...prev,
+                lines: matched.name,
+                lineId: matched.id,
+              };
+              if (onChange) onChange(next);
+              return next;
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching lines:", err);
+        if (active) setLinesList([]);
+      } finally {
+        if (active) setLoadingLines(false);
+      }
+    };
+    fetchLines();
+    return () => {
+      active = false;
+    };
+  }, [formData.departmentId, formData.subDepartmentId]);
+
+  // Fetch machines dynamically (cascading by selected line, sub-department, or department)
+  useEffect(() => {
+    let active = true;
+    const fetchMachines = async () => {
+      setLoadingMachines(true);
+      try {
+        let res;
+        if (formData.lineId) {
+          res = await MachinesApi.getMachinesByLine(formData.lineId);
+        } else {
+          const params = {};
+          if (formData.departmentId) params.departmentId = formData.departmentId;
+          if (formData.subDepartmentId)
+            params.subDepartmentId = formData.subDepartmentId;
+          res = await MachinesApi.getMachines(params);
+        }
+        if (!active) return;
+        const list = extractArray(res)
+          .map((m) => ({
+            id: getItemId(m),
+            name: getMachineName(m),
+            lineId: String(m?.lineId ?? m?.line_id ?? ""),
+          }))
+          .filter((m) => m.id && m.name);
+        setMachinesList(list);
+
+        if (!formData.machineId && formData.machines) {
+          const matched = list.find(
+            (m) =>
+              m.name.toLowerCase() === formData.machines.toLowerCase() ||
+              m.id === String(formData.machines),
+          );
+          if (matched) {
+            setFormData((prev) => {
+              const next = {
+                ...prev,
+                machines: matched.name,
+                machineId: matched.id,
+              };
+              if (onChange) onChange(next);
+              return next;
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching machines:", err);
+        if (active) setMachinesList([]);
+      } finally {
+        if (active) setLoadingMachines(false);
+      }
+    };
+    fetchMachines();
+    return () => {
+      active = false;
+    };
+  }, [formData.departmentId, formData.subDepartmentId, formData.lineId]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const updated = { ...formData, [name]: value };
+    let updated = { ...formData, [name]: value };
+
+    if (name === "departments") {
+      const matched = departmentsList.find((d) => d.name === value);
+      updated = {
+        ...updated,
+        departments: value,
+        departmentId: matched?.id || "",
+        sections: "",
+        subDepartmentId: "",
+        lines: "",
+        lineId: "",
+        machines: "",
+        machineId: "",
+      };
+    } else if (name === "sections") {
+      const matched = subDepartmentsList.find((s) => s.name === value);
+      updated = {
+        ...updated,
+        sections: value,
+        subDepartmentId: matched?.id || "",
+        lines: "",
+        lineId: "",
+        machines: "",
+        machineId: "",
+      };
+    } else if (name === "lines") {
+      const matched = linesList.find((l) => l.name === value);
+      updated = {
+        ...updated,
+        lines: value,
+        lineId: matched?.id || "",
+        machines: "",
+        machineId: "",
+      };
+    } else if (name === "machines") {
+      const matched = machinesList.find((m) => m.name === value);
+      updated = {
+        ...updated,
+        machines: value,
+        machineId: matched?.id || "",
+      };
+    }
+
     setFormData(updated);
     if (onChange) onChange(updated);
   };
@@ -189,14 +497,23 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
                   name="departments"
                   value={formData.departments}
                   onChange={handleChange}
+                  disabled={loadingDepts}
                   className={selectClass}
                 >
-                  <option value="">Select Department</option>
-                  <option value="Production">Production</option>
-                  <option value="Quality">Quality</option>
-                  <option value="Technical">Technical</option>
-                  <option value="Safety">Safety</option>
-                  <option value="Maintenance">Maintenance</option>
+                  <option value="">
+                    {loadingDepts ? "Loading departments..." : "Select Department"}
+                  </option>
+                  {formData.departments &&
+                    !departmentsList.some((d) => d.name === formData.departments) && (
+                      <option value={formData.departments}>
+                        {formData.departments}
+                      </option>
+                    )}
+                  {departmentsList.map((dept) => (
+                    <option key={dept.id} value={dept.name}>
+                      {dept.name}
+                    </option>
+                  ))}
                 </select>
                 <KeyboardArrowDownOutlinedIcon
                   className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -212,12 +529,25 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
                   name="sections"
                   value={formData.sections}
                   onChange={handleChange}
+                  disabled={loadingSubDepts}
                   className={selectClass}
                 >
-                  <option value="">Select Section</option>
-                  <option value="Section A">Section A</option>
-                  <option value="Section B">Section B</option>
-                  <option value="Section C">Section C</option>
+                  <option value="">
+                    {loadingSubDepts
+                      ? "Loading sub-departments..."
+                      : "Select Sub-Department"}
+                  </option>
+                  {formData.sections &&
+                    !subDepartmentsList.some((s) => s.name === formData.sections) && (
+                      <option value={formData.sections}>
+                        {formData.sections}
+                      </option>
+                    )}
+                  {subDepartmentsList.map((sub) => (
+                    <option key={sub.id} value={sub.name}>
+                      {sub.name}
+                    </option>
+                  ))}
                 </select>
                 <KeyboardArrowDownOutlinedIcon
                   className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -233,11 +563,21 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
                   name="lines"
                   value={formData.lines}
                   onChange={handleChange}
+                  disabled={loadingLines}
                   className={selectClass}
                 >
-                  <option value="">Select Line</option>
-                  <option value="Line 1">Line 1</option>
-                  <option value="Line 2">Line 2</option>
+                  <option value="">
+                    {loadingLines ? "Loading lines..." : "Select Line"}
+                  </option>
+                  {formData.lines &&
+                    !linesList.some((l) => l.name === formData.lines) && (
+                      <option value={formData.lines}>{formData.lines}</option>
+                    )}
+                  {linesList.map((line) => (
+                    <option key={line.id} value={line.name}>
+                      {line.name}
+                    </option>
+                  ))}
                 </select>
                 <KeyboardArrowDownOutlinedIcon
                   className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -253,11 +593,23 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
                   name="machines"
                   value={formData.machines}
                   onChange={handleChange}
+                  disabled={loadingMachines}
                   className={selectClass}
                 >
-                  <option value="">Select Machine</option>
-                  <option value="Machine 1">Machine 1</option>
-                  <option value="Machine 2">Machine 2</option>
+                  <option value="">
+                    {loadingMachines ? "Loading machines..." : "Select Machine"}
+                  </option>
+                  {formData.machines &&
+                    !machinesList.some((m) => m.name === formData.machines) && (
+                      <option value={formData.machines}>
+                        {formData.machines}
+                      </option>
+                    )}
+                  {machinesList.map((machine) => (
+                    <option key={machine.id} value={machine.name}>
+                      {machine.name}
+                    </option>
+                  ))}
                 </select>
                 <KeyboardArrowDownOutlinedIcon
                   className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
