@@ -104,7 +104,7 @@ const OCS_L3_ROWS = [
 
 const OCS_L3_ROW_HEIGHTS = Array(18).fill(28);
 const OCS_L3_BOXED_ROWS = new Set([3, 4, 9, 10, 11, 14, 15, 16]);
-const OCS_L3_DAY1_EMPTY_ROWS = new Set([12, 13]);
+const OCS_L3_DAY1_EMPTY_ROWS = new Set([]);
 
 const OCS_L3_METHOD_GROUPS = [
   { label: "Working procedure", start: 1, end: 5 },
@@ -113,7 +113,7 @@ const OCS_L3_METHOD_GROUPS = [
 ];
 
 const OCS_L3_CYCLE_MERGES = [
-  { start: 13, end: 14, label: "Check Product 1 Hr 1 no." },
+  { start: 13, end: 14, label: "Check 1 Hr Production" },
   { start: 15, end: 16, label: "Check 10 part" },
 ];
 
@@ -242,6 +242,7 @@ function OCSHeader({ ws, sheet }) {
   const excelTitle = ocsText(ws, 1, 1);
 
   const sheetLabel = sheet.replace("-", "");
+  const isL4 = sheet === "L-4" || sheet === "L4";
 
   const title = excelTitle
     ? excelTitle.replace(/L-?4\b/i, sheetLabel)
@@ -370,27 +371,58 @@ function OCSHeader({ ws, sheet }) {
       </div>
 
       {/* =====================================================
-          DATE OF JOINING
+          DATE OF JOINING (L-4 ONLY)
       ===================================================== */}
-      <div className="absolute left-[565px] top-[39px] w-[186px] h-[100px] border border-[#111111] bg-white box-border">
-        {[1, 2, 3, 4, 5].map((row) => (
+      {isL4 && (
+        <div className="absolute left-[565px] top-[39px] w-[186px] h-[100px] border border-[#111111] bg-white box-border">
+          {/* Row 1 (top): Blank / empty cell */}
           <div
-            className="w-full h-[20px] flex items-center pl-[6px] border-b last:border-b-0 border-[#111111] text-[11px] whitespace-nowrap box-border"
-            key={row}
-          >
-            {row === 2 ? (
-              <span className="text-[11px] whitespace-nowrap">
-                Date of Joining:
-              </span>
-            ) : null}
+            className="w-full h-[25px] flex items-center pl-[6px] border-b border-[#111111] text-[11px] whitespace-nowrap box-border outline-none"
+            contentEditable
+            suppressContentEditableWarning
+            spellCheck={false}
+          />
+
+          {/* Row 2: Date of Joining : */}
+          <div className="w-full h-[25px] flex items-center pl-[6px] border-b border-[#111111] text-[11px] whitespace-nowrap box-border">
+            <span className="text-[11px] whitespace-nowrap text-[#111111]">
+              Date of Joining :
+            </span>
+            <span
+              className="flex-1 h-[14px] ml-[4px] mr-[6px] outline-none cursor-text"
+              contentEditable
+              suppressContentEditableWarning
+              spellCheck={false}
+            />
           </div>
-        ))}
-      </div>
+
+          {/* Row 3: Date of Joining : */}
+          <div className="w-full h-[25px] flex items-center pl-[6px] border-b border-[#111111] text-[11px] whitespace-nowrap box-border">
+            <span className="text-[11px] whitespace-nowrap text-[#111111]">
+              Date of Joining :
+            </span>
+            <span
+              className="flex-1 h-[14px] ml-[4px] mr-[6px] outline-none cursor-text"
+              contentEditable
+              suppressContentEditableWarning
+              spellCheck={false}
+            />
+          </div>
+
+          {/* Row 4 (bottom): Blank / empty cell */}
+          <div
+            className="w-full h-[25px] flex items-center pl-[6px] text-[11px] whitespace-nowrap box-border outline-none"
+            contentEditable
+            suppressContentEditableWarning
+            spellCheck={false}
+          />
+        </div>
+      )}
 
       {/* =====================================================
           JUDGEMENT
       ===================================================== */}
-      <div className="absolute left-[751px] top-[39px] w-[372px] h-[100px] grid grid-cols-[155px_72px_30px_115px] border border-[#111111] bg-white box-border">
+      <div className={`absolute ${isL4 ? "left-[751px] w-[372px] grid-cols-[155px_72px_30px_115px]" : "left-[565px] w-[558px] grid-cols-[235px_110px_45px_168px]"} top-[39px] h-[100px] grid border border-[#111111] bg-white box-border`}>
         {/* COL 1: labels */}
         <div className="flex flex-col border-r border-[#111111]">
           <span className="flex-1 flex items-center justify-center px-[6px] text-[10px] font-bold whitespace-nowrap border-b border-[#111111]">
@@ -768,6 +800,59 @@ function OCSTableBody({ ws, sheet }) {
       <div className="w-[1301px] shrink-0 box-border">
         {rows.slice(0, -1).map((row, rowIndex) => {
           const isBoxed = config.boxedRows.has(rowIndex);
+          const isDay1Empty = Boolean(config.day1EmptyRows && config.day1EmptyRows.has(rowIndex));
+
+          // Hybrid rows (Row 16 and Row 17 in L-4):
+          // Day 1: Single cell (kept intact)
+          // Day 2 to Day 7: 10 vertical sub-columns per day matching Rows 13–15
+          if (isDay1Empty) {
+            return (
+              <div
+                className={`w-[1301px] grid box-border ${getOcsGridCols(sheet)}`}
+                style={{
+                  height: config.rowHeights[rowIndex],
+                }}
+                key={row.excelRow}
+              >
+                {/* Day 1: Intact single cell spanning 10 columns */}
+                <div
+                  contentEditable
+                  suppressContentEditableWarning
+                  spellCheck={false}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                    }
+                  }}
+                  className="col-span-10 w-full h-full min-w-0 flex items-center justify-start px-[6px] py-[2px] border-b border-[#111111] bg-white text-[10px] text-left text-[#111111] whitespace-nowrap overflow-hidden text-ellipsis focus:overflow-x-auto outline-none cursor-text box-border border-r-2 border-r-[#111111]"
+                  aria-label="Day 1"
+                />
+
+                {/* Day 2 to Day 7: 10 vertical sub-columns inside each day column matching Rows 13–15 */}
+                {Array.from({ length: (OCS_DAYS - 1) * OCS_CYCLES }).map((_, colIdx) => {
+                  const cycleNumber = (colIdx % OCS_CYCLES) + 1;
+                  const dayNumber = Math.floor(colIdx / OCS_CYCLES) + 2;
+                  const isDayEnd = cycleNumber === OCS_CYCLES;
+                  const isLastCellInRow = colIdx === (OCS_DAYS - 1) * OCS_CYCLES - 1;
+
+                  const borderRightClass = isDayEnd
+                    ? (isLastCellInRow ? "border-r-0" : "border-r-2 border-r-[#111111]")
+                    : (isLastCellInRow ? "border-r-0" : "border-r border-[#111111]");
+
+                  return (
+                    <div
+                      key={`day-${dayNumber}-cycle-${cycleNumber}`}
+                      contentEditable
+                      suppressContentEditableWarning
+                      spellCheck={false}
+                      className={`w-full h-full min-w-0 m-0 p-0 flex items-center justify-center border-0 border-b border-[#111111] bg-white text-[#111111] text-[10px] text-center overflow-hidden outline-none cursor-text ${borderRightClass}`}
+                      aria-label={`Day ${dayNumber}, Cycle ${cycleNumber}`}
+                    />
+                  );
+                })}
+              </div>
+            );
+          }
 
           // Plain/normal rows across Day 1 to Day 7: utilize full width of each day cell
           if (!isBoxed) {

@@ -1,8 +1,9 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LayoutDashboard, GraduationCap, FolderKanban, ArrowRight, LogOut } from 'lucide-react'
-import Navbar from '@/components/Navbar.jsx'
+import { LayoutGrid, GraduationCap, Clock, ArrowRight, LogOut } from 'lucide-react'
 import { clearSession, getUser } from '@/features/auth/utils/authStorage.js'
+import ntfLogo from '@/assets/images/NTF_logo_black.png'
+import loginBg from '@/assets/images/login-bg.png'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -17,127 +18,172 @@ export default function HomePage() {
     {
       id: 'dashboard',
       title: 'Dashboard',
-      icon: LayoutDashboard,
-      iconBg: 'bg-sky-50 text-sky-700 border-sky-100',
-      actionText: 'Open Dashboard',
+      description: 'View insights, performance and key metrics.',
+      icon: LayoutGrid,
       isLive: true,
+      actionText: 'Open Dashboard',
       onClick: () => navigate('/dashboard'),
     },
     {
       id: 'lms',
       title: 'LMS',
+      description: 'Manage training, learning paths and users.',
       icon: GraduationCap,
-      iconBg: 'bg-amber-50 text-amber-700 border-amber-100',
-      actionText: 'Open LMS',
       isLive: true,
+      actionText: 'Open LMS',
       onClick: () => navigate('/lms/dashboard'),
     },
     {
       id: 'cms',
       title: 'CMS',
-      icon: FolderKanban,
-      iconBg: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-      actionText: 'Coming Soon',
-      isLive: false,
-      onClick: () => { },
+      description: 'Manage content, media and digital modules.',
+      icon: null, // Custom folder-play SVG
+      isLive: true,
+      actionText: 'Open CMS',
+      onClick: () => navigate('/cms'),
     },
   ]
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] flex flex-col font-sans text-slate-800">
-      {/* Top Navigation */}
-      <Navbar>
-        <div className="flex items-center space-x-3">
-          {user && (user.username || user.email || user.name || user.empName) && (
-            <span className="text-xs text-sky-200 hidden sm:inline-block font-medium">
-              {user.username || user.email || user.name || user.empName}
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-200 hover:text-white hover:bg-rose-600/30 border border-rose-400/30 transition-all cursor-pointer"
-            title="Logout"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </Navbar>
+    <div
+      className="min-h-screen w-full flex flex-col justify-center items-center px-4 sm:px-6 md:px-8 py-6 select-none relative font-sans bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${loginBg})` }}
+    >
+      {/* Top right subtle profile/logout */}
+      <div className="absolute top-4 sm:top-5 right-4 sm:right-6 z-20 flex items-center gap-2.5 sm:gap-3">
+        {user && (user.username || user.email || user.name || user.empName) && (
+          <span className="text-xs text-slate-600 hidden sm:inline-block font-medium bg-white/70 backdrop-blur-xs px-2.5 py-1 rounded-md border border-slate-200/60 shadow-2xs">
+            {user.username || user.email || user.name || user.empName}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-rose-600 hover:bg-rose-50/80 bg-white/80 backdrop-blur-xs border border-slate-200/80 shadow-2xs transition-all cursor-pointer"
+          title="Logout"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span>Logout</span>
+        </button>
+      </div>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-12 sm:py-16 flex flex-col justify-center">
-        {/* Simple & Clean Header */}
-        <div className="text-center mb-10 sm:mb-12">
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+      <div className="w-full max-w-5xl flex flex-col items-center justify-center my-auto">
+        {/* NTF Brand Logo */}
+        <div className="mb-2.5 sm:mb-3 flex justify-center">
+          <img
+            src={ntfLogo}
+            alt="NTF Group Holding"
+            className="h-20 sm:h-24 md:h-26 w-auto max-w-[260px] object-contain mix-blend-multiply"
+          />
+        </div>
+
+        {/* DOJO 2.0 Title & Center Accent Bar */}
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0f1f38] tracking-tight">
             DOJO 2.0
           </h1>
+          <div className="relative flex items-center justify-center w-40 sm:w-48 mx-auto mt-2.5">
+            <div className="w-full h-px bg-slate-300/80" />
+            <div className="absolute w-10 sm:w-12 h-1 bg-[#0052cc] rounded-full" />
+          </div>
         </div>
 
-        {/* 3 Simple, Professional Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* 3 Portal Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
           {modules.map((m) => {
-            const Icon = m.icon
+            const IconComponent = m.icon
             return (
               <div
                 key={m.id}
-                onClick={m.isLive ? m.onClick : undefined}
-                className={`bg-white rounded-xl border border-slate-200/90 p-6 flex flex-col justify-between transition-all duration-200 ${m.isLive
-                  ? 'hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 cursor-pointer group'
-                  : 'opacity-90 cursor-default'
-                  }`}
+                className="bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.06)] border border-slate-100 p-6 flex flex-col justify-between relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
               >
                 <div>
-                  {/* Icon & Live/Status Badge */}
+                  {/* Top row: Icon & Status Badge */}
                   <div className="flex items-center justify-between mb-5">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center border ${m.iconBg}`}
-                    >
-                      <Icon className="w-6 h-6 stroke-[2]" />
+                    {/* Icon container */}
+                    <div className="w-11 h-11 rounded-xl bg-[#edf3fb] flex items-center justify-center text-[#1e40af] shrink-0">
+                      {IconComponent ? (
+                        <IconComponent className="w-5 h-5 stroke-[2] text-[#2563eb]" />
+                      ) : (
+                        /* Folder with play triangle SVG for CMS */
+                        <svg
+                          className="w-5 h-5 text-[#2563eb]"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+                          <polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none" />
+                        </svg>
+                      )}
                     </div>
+
+                    {/* Badge */}
                     {m.isLive ? (
-                      <span className="inline-flex items-center text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
+                      <span className="inline-flex items-center text-xs font-semibold text-[#137333] bg-[#e6f4ea] px-2.5 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#137333] mr-1.5" />
                         Active
                       </span>
                     ) : (
-                      <span className="text-[11px] font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center text-xs font-medium text-slate-500 bg-[#edf2f7] px-2.5 py-0.5 rounded-full gap-1">
+                        <Clock className="w-3 h-3 stroke-[2] text-slate-500" />
                         Coming Soon
                       </span>
                     )}
                   </div>
 
-                  {/* Title */}
-                  <h2 className="text-lg font-bold text-slate-900 mb-6 group-hover:text-sky-700 transition-colors">
+                  {/* Title & Description */}
+                  <h2 className="text-lg font-bold text-[#0f1f38] mb-1.5">
                     {m.title}
                   </h2>
+                  <p className="text-xs text-slate-500 leading-relaxed font-normal">
+                    {m.description}
+                  </p>
                 </div>
 
-                {/* Bottom Action Button / Status */}
-                <div>
+                {/* Bottom Action Button */}
+                <div className="mt-6 relative z-10">
                   {m.isLive ? (
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        m.onClick()
-                      }}
-                      className="w-full inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg bg-[#0b295c] hover:bg-[#103a7d] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                      onClick={m.onClick}
+                      className="w-full py-3 px-4 bg-[#0d254c] hover:bg-[#153466] active:scale-[0.99] text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
                     >
                       <span>{m.actionText}</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      <ArrowRight className="w-3.5 h-3.5 stroke-[2.2]" />
                     </button>
                   ) : (
-                    <div className="w-full text-center py-2 text-xs font-medium text-slate-400 bg-slate-50 rounded-lg border border-slate-100">
-                      Module in Preparation
+                    <div className="w-full py-3 px-4 bg-[#edf2f7] text-slate-500 font-medium text-xs rounded-xl text-center">
+                      {m.actionText}
                     </div>
                   )}
                 </div>
+
+                {/* Subtle curved blue wave accent in bottom-right corner */}
+                <svg
+                  className="absolute -bottom-1 -right-1 w-28 h-20 pointer-events-none opacity-60 z-0"
+                  viewBox="0 0 120 80"
+                  fill="none"
+                >
+                  <path
+                    d="M10 80 C 45 80, 85 55, 120 15 L 120 80 Z"
+                    fill="#bfdbfe"
+                    fillOpacity="0.45"
+                  />
+                  <path
+                    d="M40 80 C 75 80, 95 65, 120 35 L 120 80 Z"
+                    fill="#93c5fd"
+                    fillOpacity="0.65"
+                  />
+                </svg>
               </div>
             )
           })}
         </div>
-      </main>
+      </div>
     </div>
   )
 }

@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, AlertCircle } from "lucide-react";
 import AuthApi from "../services/AuthApi";
-import { saveSession, isAuthenticated } from "../utils/authStorage";
+import UserApi from "@/features/lms/services/UserApi.js";
+import { SEED_EMPLOYEES } from "@/features/lms/utils/userSchema.js";
+import { applyRoleDesignationOverrides } from "@/features/lms/utils/userUtils.js";
+import { saveSession, isAuthenticated, isEmployee, saveEmployeeSession } from "../utils/authStorage";
+import ntfLogo from "@/assets/images/NTF_logo_black.png";
+import loginBg from "@/assets/images/login-bg.png";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,12 +18,17 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // If already authenticated, redirect straight to the homepage
+  // If already authenticated, redirect straight to the homepage or employee portal
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate("/home", { replace: true });
+      if (isEmployee()) {
+        navigate("/employee", { replace: true });
+      } else {
+        navigate("/home", { replace: true });
+      }
     }
   }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
@@ -26,7 +36,7 @@ export default function Login() {
 
     // 1. Client-side empty field validation
     if (!trimmedEmail) {
-      setErrorMessage("Please enter your email.");
+      setErrorMessage("Please enter your username or email.");
       return;
     }
     if (!password) {
@@ -44,14 +54,134 @@ export default function Login() {
         password: password,
       };
 
-      // 3. API Login call
+      // Dynamic Employee Login: authenticate Operators from Users table
+      // Username matches employee Name (empName / name), Password matches employee Paycode (paycode / payCode)
+      const inputUsername = trimmedEmail.toLowerCase();
+      const inputPassword = String(password).trim();
+
+      let matchedOperator = null;
+      try {
+        let usersList = [];
+        try {
+          const usersRes = await UserApi.getUsers({ limit: 1000 });
+          const raw = Array.isArray(usersRes?.data)
+            ? usersRes.data
+            : Array.isArray(usersRes?.data?.data)
+              ? usersRes.data.data
+              : [];
+          if (raw.length > 0) {
+            usersList = raw.map((u) => ({
+              id: u.id,
+              empName: u.name ?? u.empName ?? "",
+              name: u.name ?? u.empName ?? "",
+              payCode: u.payCode ?? u.paycode ?? "",
+              paycode: u.payCode ?? u.paycode ?? "",
+              cardNo: u.cardNo ?? "",
+              joiningDate: u.dateOfJoining ?? u.joiningDate ?? "",
+              dateOfJoining: u.dateOfJoining ?? u.joiningDate ?? "",
+              department: u.departmentName ?? u.department ?? "",
+              subDepartment: u.subDepartmentName ?? u.subDepartment ?? "",
+              line: u.lineName ?? u.line ?? "",
+              machine: u.machineName ?? u.machine ?? "",
+              shift: u.shift ?? "",
+              plant: u.plantId != null ? String(u.plantId) : (u.plant ?? ""),
+              plantLocation: u.plantLocation ?? "",
+              grade: u.grade ?? "",
+              designation: u.designation ?? "",
+              category: u.category ?? "",
+              gender: u.gender ?? "",
+              bloodGroup: u.bloodGroup ?? "",
+              maritalStatus: u.maritalStatus ?? "",
+              email: u.email ?? "",
+              number: u.mobileNo ?? u.number ?? "",
+              salary: u.salary != null ? String(u.salary) : "",
+            }));
+          }
+        } catch (fetchErr) {
+          console.warn("Could not load users list from API for Operator check:", fetchErr);
+        }
+
+        // Merge with SEED_EMPLOYEES if needed
+        if (usersList.length === 0) {
+          usersList = [...SEED_EMPLOYEES];
+        } else {
+          SEED_EMPLOYEES.forEach((seed) => {
+            const seedPay = String(seed.payCode || seed.paycode).trim();
+            if (seedPay && !usersList.some((u) => String(u.payCode || u.paycode).trim() === seedPay)) {
+              usersList.push(seed);
+            }
+          });
+        }
+
+        // Apply any saved role designation overrides
+        const syncedUsers = applyRoleDesignationOverrides(usersList);
+
+        // Filter for Operator designation and match Username (Name) and Password (Paycode)
+        matchedOperator = syncedUsers.find((u) => {
+          const designation = String(u.designation || u.role || u.roleName || "").trim().toLowerCase();
+          if (designation !== "operator") return false;
+
+          const uPayCode = String(u.payCode || u.paycode || "").trim();
+          if (!uPayCode || uPayCode.toLowerCase() !== inputPassword.toLowerCase()) {
+            return false;
+          }
+
+          const uName = String(u.empName || u.name || "").trim().toLowerCase();
+          const uUsername = String(u.username || "").trim().toLowerCase();
+          const uEmail = String(u.email || "").trim().toLowerCase();
+
+          return (
+            (uName && uName === inputUsername) ||
+            (uUsername && uUsername === inputUsername) ||
+            (uEmail && uEmail === inputUsername)
+          );
+        });
+      } catch (checkErr) {
+        console.warn("Operator login check error:", checkErr);
+      }
+
+      if (matchedOperator) {
+        const operatorProfile = {
+          id: matchedOperator.id || `op_${matchedOperator.payCode || matchedOperator.paycode || Date.now()}`,
+          name: matchedOperator.empName || matchedOperator.name || trimmedEmail,
+          empName: matchedOperator.empName || matchedOperator.name || trimmedEmail,
+          paycode: matchedOperator.paycode || matchedOperator.payCode || inputPassword,
+          payCode: matchedOperator.payCode || matchedOperator.paycode || inputPassword,
+          cardNo: matchedOperator.cardNo || "",
+          joiningDate: matchedOperator.joiningDate || matchedOperator.dateOfJoining || "",
+          dateOfJoining: matchedOperator.dateOfJoining || matchedOperator.joiningDate || "",
+          department: matchedOperator.department || "Production",
+          subDepartment: matchedOperator.subDepartment || "",
+          line: matchedOperator.line || "",
+          machine: matchedOperator.machine || "",
+          plant: matchedOperator.plant || "",
+          plantLocation: matchedOperator.plantLocation || "",
+          designation: matchedOperator.designation || "Operator",
+          email:
+            matchedOperator.email ||
+            `${String(matchedOperator.payCode || matchedOperator.paycode || "operator").trim().toLowerCase()}@ntf.com`,
+          username: matchedOperator.empName || matchedOperator.name || trimmedEmail,
+          role: "employee",
+          isEmployee: true,
+        };
+
+        saveEmployeeSession(operatorProfile);
+        navigate("/employee", { replace: true });
+        return;
+      }
+
+      // 3. Admin / standard API Login call
       const res = await AuthApi.login(credentials);
 
       // 4. Save session to authStorage
       saveSession(res.data);
 
-      // 5. Redirect to Homepage
-      navigate("/home", { replace: true });
+      // 5. Redirect based on role
+      if (isEmployee()) {
+        navigate("/employee", { replace: true });
+      } else {
+        navigate("/home", { replace: true });
+      }
     } catch (err) {
       // Extract detailed error message from response
       const data = err?.response?.data;
@@ -82,46 +212,51 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] flex flex-col justify-center items-center px-4 sm:px-6 py-12 font-sans text-slate-800 select-none">
-      <div className="w-full max-w-md">
-        {/* NTF Brand Emblem */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center border-y-2 border-[#0b295c] px-3.5 py-1 tracking-[0.25em] mb-3">
-            <span className="font-serif-logo text-2xl font-bold tracking-widest text-[#0b295c]">
-              NTF
-            </span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-            Sign in to your account
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            NTF Operations & Learning Management Portal
-          </p>
+    <div
+      className="min-h-screen w-full flex flex-col justify-center items-center px-4 py-8 font-sans select-none relative bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${loginBg})` }}
+    >
+      <div className="w-full max-w-[420px] flex flex-col items-center">
+        {/* NTF Brand Logo Centered Above Card */}
+        <div className="mb-2 sm:mb-2.5 flex justify-center">
+          <img
+            src={ntfLogo}
+            alt="NTF Group Holding"
+            className="h-24 sm:h-28 w-auto max-w-[280px] object-contain mix-blend-multiply"
+          />
         </div>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-sm p-6 sm:p-8">
+        {/* Login Card Container */}
+        <div className="w-full bg-white rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-slate-100/90 p-7 sm:p-9">
+          {/* Card Title & Subtitle */}
+          <div className="text-center mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#0f1f38] tracking-tight">
+              Sign in to your account
+            </h1>
+            <p className="text-xs text-slate-500 mt-1.5 font-normal">
+              NTF Operations & Learning Management Portal
+            </p>
+          </div>
+
           {/* Error Alert */}
           {errorMessage && (
-            <div className="mb-5 flex items-start space-x-2.5 p-3 rounded-lg bg-rose-50 border border-rose-200/80 text-rose-700 text-xs">
+            <div className="mb-5 flex items-start space-x-2.5 p-3 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
               <div className="leading-relaxed font-medium">{errorMessage}</div>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Field */}
+            {/* Username or Email Field */}
             <div>
               <label
                 htmlFor="email"
                 className="block text-xs font-semibold text-slate-700 mb-1.5"
               >
-                Email Address
+                Username or Email
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                  <Mail className="w-4 h-4" />
-                </div>
+              <div className="flex items-center bg-[#edf3fb] border border-[#d9e6f7] rounded-xl px-3.5 py-2.5 focus-within:border-[#0d254c] focus-within:ring-2 focus-within:ring-[#0d254c]/10 transition-all">
+                <Mail className="w-4 h-4 text-slate-400 mr-2.5 shrink-0 stroke-[1.8]" />
                 <input
                   id="email"
                   name="email"
@@ -129,9 +264,9 @@ export default function Login() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
+                  placeholder="Username or Email"
                   disabled={isLoading}
-                  className="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2.5 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all disabled:opacity-60"
+                  className="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 outline-none font-medium disabled:opacity-60"
                 />
               </div>
             </div>
@@ -144,10 +279,8 @@ export default function Login() {
               >
                 Password
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="w-4 h-4" />
-                </div>
+              <div className="flex items-center bg-[#edf3fb] border border-[#d9e6f7] rounded-xl px-3.5 py-2.5 focus-within:border-[#0d254c] focus-within:ring-2 focus-within:ring-[#0d254c]/10 transition-all">
+                <Lock className="w-4 h-4 text-slate-400 mr-2.5 shrink-0 stroke-[1.8]" />
                 <input
                   id="password"
                   name="password"
@@ -155,20 +288,20 @@ export default function Login() {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="••••••••••••••••"
                   disabled={isLoading}
-                  className="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-10 py-2.5 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all disabled:opacity-60"
+                  className="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 outline-none font-medium disabled:opacity-60"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-hidden cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 focus:outline-hidden cursor-pointer ml-2 shrink-0 transition-colors"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="w-4 h-4 stroke-[1.8]" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-4 h-4 stroke-[1.8]" />
                   )}
                 </button>
               </div>
@@ -179,17 +312,17 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2.5 px-4 bg-[#0b295c] hover:bg-[#082046] active:scale-[0.99] text-white font-medium text-sm rounded-lg shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-[#0d254c] hover:bg-[#153466] active:scale-[0.99] text-white font-semibold text-sm rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <Loader2 className="w-4 h-4 animate-spin text-white mr-1.5" />
                     <span>Signing in...</span>
                   </>
                 ) : (
                   <>
                     <span>Sign In</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-4 h-4 stroke-[2.2]" />
                   </>
                 )}
               </button>
@@ -197,8 +330,8 @@ export default function Login() {
           </form>
         </div>
 
-        {/* Footer info */}
-        <p className="text-center text-[11px] text-slate-400 mt-6">
+        {/* Footer info below card */}
+        <p className="text-center text-xs text-slate-400 mt-7">
           &copy; {new Date().getFullYear()} NTF Group. All rights reserved.
         </p>
       </div>

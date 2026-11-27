@@ -26,6 +26,8 @@ import {
   toDateInputValue,
   isUserInactive,
   getUserDisplayStatus,
+  applyRoleDesignationOverrides,
+  saveRoleDesignationOverride,
 } from "../utils/userUtils";
 import { formatDate } from "../utils/operatorUtils";
 import DepartmentApi from "../services/DepartmentApi";
@@ -564,7 +566,10 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
 
       try {
         const response = await UserApi.getUsers({ limit: MAX_USERS_PAGE });
-        if (!cancelled) setUsers(mapUsersFromApi(response.data));
+        if (!cancelled) {
+          const raw = mapUsersFromApi(response.data);
+          setUsers(applyRoleDesignationOverrides(raw));
+        }
       } catch (error) {
         if (!cancelled) {
           if (error?.response?.status === 401) {
@@ -590,10 +595,57 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     };
   }, [reloadKey, setUsers, navigate]);
 
+  // Real-time synchronization of Role Assignments to LMS Users Designation column
+  useEffect(() => {
+    // Apply any saved role designation overrides on initial load
+    setUsers((prev) => applyRoleDesignationOverrides(prev));
+
+    const handleRoleSync = (event) => {
+      const detail = event?.detail;
+      if (!detail) {
+        setUsers((prev) => applyRoleDesignationOverrides(prev));
+        return;
+      }
+
+      setUsers((prev) =>
+        prev.map((u) => {
+          const uId = u.id != null ? String(u.id) : "";
+          const uPayCode = u.payCode ? String(u.payCode).trim() : "";
+          const uEmail = u.email ? String(u.email).trim().toLowerCase() : "";
+          const uName = (u.empName || u.name || "").trim().toLowerCase();
+
+          const isMatch =
+            (detail.userId != null && uId === String(detail.userId)) ||
+            (detail.payCode && uPayCode === String(detail.payCode).trim()) ||
+            (detail.email && uEmail === String(detail.email).trim().toLowerCase()) ||
+            (detail.name && uName === String(detail.name).trim().toLowerCase());
+
+          if (isMatch) {
+            return {
+              ...u,
+              designation: detail.designation || detail.roleName,
+              role: detail.roleName,
+              roleName: detail.roleName,
+            };
+          }
+          return u;
+        })
+      );
+    };
+
+    window.addEventListener("ntf:user-role-updated", handleRoleSync);
+    window.addEventListener("storage", handleRoleSync);
+
+    return () => {
+      window.removeEventListener("ntf:user-role-updated", handleRoleSync);
+      window.removeEventListener("storage", handleRoleSync);
+    };
+  }, [setUsers]);
+
   const refreshUsers = async (updatedOverride = null) => {
     try {
       const response = await UserApi.getUsers({ limit: MAX_USERS_PAGE });
-      const apiUsers = mapUsersFromApi(response.data);
+      const apiUsers = applyRoleDesignationOverrides(mapUsersFromApi(response.data));
 
       if (updatedOverride && (updatedOverride.id != null || updatedOverride.payCode != null)) {
         const overrideId = updatedOverride.id != null ? String(updatedOverride.id) : null;
@@ -916,6 +968,11 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
             return isMatch ? updatedRow : u;
           }),
         );
+
+        // Sync designation change across User Role Assignments tab and User Profile page
+        if (updatedRow.designation) {
+          saveRoleDesignationOverride(updatedRow, updatedRow.designation, null);
+        }
 
         setFormModalOpen(false);
         showToast("User updated successfully.");

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import logo from "../../../assets/images/NTF_logo_black.png";
 
 const QUESTIONS = {
@@ -134,37 +134,6 @@ const PAGE_WIDTH = 1000;
 const PAGE_GAP = 24;
 const TOTAL_PAGES = 2;
 
-// Question component
-const Question = ({ number }) => {
-  const question = QUESTIONS[number];
-
-  return (
-    <div className="mb-7 break-inside-avoid">
-      {/* Question */}
-      <p className="text-[12px] font-medium leading-[1.45] text-black">
-        <span className="mr-2">{number}.</span>
-        {question.q}
-      </p>
-
-      {/* Options */}
-      <div className="mt-3 pl-7">
-        <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-          {question.options.map((option, index) => (
-            <div
-              key={index}
-              className="flex items-start text-[11px] leading-[1.4] text-black"
-            >
-              <span className="mr-1.5 shrink-0">({ALPHABET[index]})</span>
-
-              <span>{option}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Section heading
 const SectionHeading = ({ children }) => {
   return (
@@ -185,15 +154,130 @@ const Footer = () => {
   );
 };
 
-const Day2QuestionPaper = () => {
+const Day2QuestionPaper = ({
+  onSubmitSuccess,
+  initialAnswers = {},
+  isAlreadySubmitted = false,
+  readOnly = false,
+  initialInfo = {},
+} = {}) => {
+  const isViewMode = Boolean(isAlreadySubmitted || readOnly);
+
   const [info, setInfo] = useState({
     date: "",
     name: "",
     qualification: "",
     unit: "",
+    ...initialInfo,
   });
 
   const [pageIndex, setPageIndex] = useState(0);
+
+  const [answers, setAnswers] = useState(() => initialAnswers || {});
+  const [submitted, setSubmitted] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
+
+  useEffect(() => {
+    if (initialAnswers && Object.keys(initialAnswers).length > 0) {
+      setAnswers(initialAnswers);
+    }
+  }, [initialAnswers]);
+
+  useEffect(() => {
+    if (initialInfo && Object.keys(initialInfo).length > 0) {
+      setInfo((prev) => ({ ...prev, ...initialInfo }));
+    }
+  }, [initialInfo]);
+
+  const handleAnswerChange = (questionNumber, optionIndex) => {
+    if (isViewMode) return;
+    setAnswers((prev) => ({
+      ...prev,
+      [questionNumber]: optionIndex,
+    }));
+    if (submitted) {
+      setSubmitted(false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (isViewMode) return;
+    const answeredCount = Object.keys(answers).length;
+    setSubmitted(true);
+    setSubmitMessage(
+      `Day 2 Question Paper submitted successfully! (${answeredCount}/20 questions answered)`
+    );
+    if (onSubmitSuccess) {
+      onSubmitSuccess(answers);
+    }
+  };
+
+  // Interactive Question component
+  const Question = ({ number }) => {
+    const question = QUESTIONS[number];
+    if (!question) return null;
+    const isSelected = (idx) => {
+      const ans =
+        answers[number] !== undefined
+          ? answers[number]
+          : answers[String(number)];
+      if (ans === undefined || ans === null) return false;
+      return String(ans) === String(idx);
+    };
+
+    return (
+      <div className="mb-7 break-inside-avoid">
+        {/* Question */}
+        <p className="text-[12px] font-medium leading-[1.45] text-black">
+          <span className="mr-2">{number}.</span>
+          {question.q}
+        </p>
+
+        {/* Options */}
+        <div className="mt-3 pl-7">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+            {question.options.map((option, index) => {
+              const checked = isSelected(index);
+              return (
+                <label
+                  key={index}
+                  className={`flex items-start text-[11px] leading-[1.4] rounded-md transition-all ${
+                    isViewMode
+                      ? checked
+                        ? "bg-blue-50 text-[#0b295c] font-semibold px-2 py-1 border border-blue-200 select-text shadow-2xs"
+                        : "text-slate-600 px-2 py-1 opacity-70"
+                      : "text-black cursor-pointer select-none group"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name={`day2-question-${number}`}
+                    value={index}
+                    checked={checked}
+                    disabled={isViewMode}
+                    onChange={() => !isViewMode && handleAnswerChange(number, index)}
+                    className={`mr-1.5 mt-0.5 h-3.5 w-3.5 accent-[#0b295c] shrink-0 ${
+                      isViewMode ? "cursor-default" : "cursor-pointer"
+                    }`}
+                  />
+                  <span className="mr-1.5 shrink-0 font-medium">({ALPHABET[index]})</span>
+                  <span className={checked ? "font-bold text-[#0b295c]" : ""}>
+                    {option}
+                  </span>
+                  {isViewMode && checked && (
+                    <span className="ml-auto shrink-0 inline-flex items-center px-1.5 py-0.2 text-[9px] font-bold rounded bg-[#0b295c] text-white">
+                      ✓ Selected
+                    </span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const rowWidth = TOTAL_PAGES * PAGE_WIDTH + (TOTAL_PAGES - 1) * PAGE_GAP;
   const offset = pageIndex * (PAGE_WIDTH + PAGE_GAP);
@@ -204,6 +288,7 @@ const Day2QuestionPaper = () => {
 
   // Handle input changes
   const handleChange = (field) => (event) => {
+    if (isViewMode) return;
     setInfo({
       ...info,
       [field]: event.target.value,
@@ -325,8 +410,11 @@ const Day2QuestionPaper = () => {
                       <input
                         type="text"
                         value={info.date}
+                        readOnly={isViewMode}
                         onChange={handleChange("date")}
-                        className="ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                        className={`ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none ${
+                          isViewMode ? "cursor-default font-medium" : ""
+                        }`}
                       />
                     </div>
                   </div>
@@ -338,8 +426,11 @@ const Day2QuestionPaper = () => {
                     <input
                       type="text"
                       value={info.name}
+                      readOnly={isViewMode}
                       onChange={handleChange("name")}
-                      className="mx-2 w-[240px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                      className={`mx-2 w-[240px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none ${
+                        isViewMode ? "cursor-default font-medium" : ""
+                      }`}
                     />
 
                     <span className="whitespace-nowrap">क्वालिफिकेशन</span>
@@ -347,8 +438,11 @@ const Day2QuestionPaper = () => {
                     <input
                       type="text"
                       value={info.qualification}
+                      readOnly={isViewMode}
                       onChange={handleChange("qualification")}
-                      className="mx-2 w-[220px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                      className={`mx-2 w-[220px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none ${
+                        isViewMode ? "cursor-default font-medium" : ""
+                      }`}
                     />
 
                     <span className="whitespace-nowrap">यूनिट नाम</span>
@@ -356,8 +450,11 @@ const Day2QuestionPaper = () => {
                     <input
                       type="text"
                       value={info.unit}
+                      readOnly={isViewMode}
                       onChange={handleChange("unit")}
-                      className="ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none"
+                      className={`ml-2 w-[180px] border-0 border-b border-dotted border-black bg-transparent px-1 outline-none ${
+                        isViewMode ? "cursor-default font-medium" : ""
+                      }`}
                     />
                   </div>
                 </div>
@@ -482,6 +579,28 @@ const Day2QuestionPaper = () => {
           </div>
         </div>
       </div>
+
+      {/* =====================================================
+          SUBMIT ACTION BUTTON
+      ====================================================== */}
+      {!isViewMode && (
+        <div className="mt-8 mb-12 flex flex-col items-center justify-center gap-3 print:hidden">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="px-8 py-2.5 bg-[#0b295c] hover:bg-[#123977] active:scale-[0.99] text-white font-semibold text-sm rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <span>Submit</span>
+          </button>
+
+          {submitted && (
+            <div className="flex items-center gap-2 text-emerald-800 bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-lg text-xs font-semibold shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>{submitMessage}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* =====================================================
           PRINT CSS

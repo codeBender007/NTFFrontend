@@ -11,8 +11,20 @@ const EMPTY_ROW = {
   signParticipants: "",
 };
 
-const TrainingSchedule = () => {
-  const [rows, setRows] = useState([{ ...EMPTY_ROW }]);
+const createInitialRows = (initialRows = null) => {
+  if (Array.isArray(initialRows) && initialRows.length > 0) {
+    if (initialRows.length >= 10) return initialRows;
+    const padded = [...initialRows];
+    while (padded.length < 10) {
+      padded.push({ ...EMPTY_ROW });
+    }
+    return padded;
+  }
+  return Array.from({ length: 10 }, () => ({ ...EMPTY_ROW }));
+};
+
+const TrainingSchedule = ({ onSave, defaultDetails = {}, defaultRows = null } = {}) => {
+  const [rows, setRows] = useState(() => createInitialRows(defaultRows));
 
   // Training information
   const [details, setDetails] = useState({
@@ -23,6 +35,7 @@ const TrainingSchedule = () => {
     periodTo: "",
     internalExternal: "",
     venue: "",
+    ...defaultDetails,
   });
 
   // Change training details
@@ -51,6 +64,16 @@ const TrainingSchedule = () => {
     <>
       {/* PRINT BUTTON + ADD BUTTON */}
       <div className="mb-4 flex items-center justify-end gap-2 print:hidden">
+        {onSave && (
+          <button
+            type="button"
+            onClick={() => onSave({ details, rows })}
+            className="flex cursor-pointer items-center gap-2 rounded-lg bg-[#0b295c] hover:bg-[#123977] px-5 py-2 text-sm font-semibold text-white shadow-xs transition-colors"
+          >
+            Save
+          </button>
+        )}
+
         <button
           type="button"
           onClick={addRow}
@@ -340,6 +363,7 @@ const TrainingSchedule = () => {
           </div>
         </div>
       </div>
+
 
       {/* =====================================================
           PRINT CSS

@@ -1,12 +1,17 @@
 import React from 'react'
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
-import { isAuthenticated } from '@/features/auth/utils/authStorage.js'
+import { isAuthenticated, isEmployee } from '@/features/auth/utils/authStorage.js'
 
 // Auth Pages
 import Login from '@/features/auth/pages/Login.jsx'
 
 // Home Portal
 import HomePage from '@/pages/HomePage/index.jsx'
+
+// Employee Feature Pages
+import EmployeePage from '@/features/employee/pages/EmployeePage.jsx'
+import PastQuestionPapers from '@/features/employee/pages/PastQuestionPapers.jsx'
+import UpcomingQuestionPapers from '@/features/employee/pages/UpcomingQuestionPapers.jsx'
 
 // Section 1: Dashboard Feature Pages
 import Dashboard from '@/features/dashboard/pages/Dashboard.jsx'
@@ -37,25 +42,61 @@ import L1Editor from '@/features/lms/pages/L1Editor.jsx'
 import L1Preview from '@/features/lms/pages/L1Preview.jsx'
 import SavedPaperPreview from '@/features/lms/pages/SavedPaperPreview.jsx'
 
-// Guard component: redirects unauthenticated users to /login
-function ProtectedRoute() {
+// Section 3: CMS Layout & Feature Pages
+import CMSLayout from '@/layouts/CMSLayout.jsx'
+import ManRelatedDefects from '@/features/cms/pages/ManRelatedDefects.jsx'
+import TotalDefects from '@/features/cms/pages/TotalDefects.jsx'
+
+// Admin Route Guard: redirects unauthenticated users to /login, and employees to /employee
+function AdminProtectedRoute() {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />
+  }
+  if (isEmployee()) {
+    return <Navigate to="/employee" replace />
   }
   return <Outlet />
 }
 
-// Public-only route: redirects authenticated users to /home
+// Employee Route Guard: redirects unauthenticated users to /login, and non-employees to /home
+function EmployeeProtectedRoute() {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />
+  }
+  if (!isEmployee()) {
+    return <Navigate to="/home" replace />
+  }
+  return <Outlet />
+}
+
+// Public-only route: redirects authenticated users to their corresponding page
 function PublicRoute({ children }) {
   if (isAuthenticated()) {
+    if (isEmployee()) {
+      return <Navigate to="/employee" replace />
+    }
     return <Navigate to="/home" replace />
   }
   return children
 }
 
+// Root Route handler: routes authenticated users based on role
+function RootRoute() {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />
+  }
+  if (isEmployee()) {
+    return <Navigate to="/employee" replace />
+  }
+  return <HomePage />
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
+      {/* Root Route */}
+      <Route path="/" element={<RootRoute />} />
+
       {/* Public Route: Login */}
       <Route
         path="/login"
@@ -66,10 +107,17 @@ export default function AppRoutes() {
         }
       />
 
-      {/* Protected Routes (Requires valid authentication) */}
-      <Route element={<ProtectedRoute />}>
+      {/* Employee Protected Routes */}
+      <Route element={<EmployeeProtectedRoute />}>
+        <Route path="/employee" element={<EmployeePage />} />
+        <Route path="/employee/past-papers" element={<PastQuestionPapers />} />
+        <Route path="/employee/upcoming-papers" element={<UpcomingQuestionPapers />} />
+        <Route path="/employee/*" element={<Navigate to="/employee" replace />} />
+      </Route>
+
+      {/* Protected Routes (Admin - Requires valid authentication) */}
+      <Route element={<AdminProtectedRoute />}>
         {/* Home Portal */}
-        <Route path="/" element={<HomePage />} />
         <Route path="/home" element={<HomePage />} />
 
         {/* DOJO 2.0 Dashboard Feature Routes */}
@@ -122,8 +170,13 @@ export default function AppRoutes() {
           <Route path="*" element={<Navigate to="/lms/dashboard" replace />} />
         </Route>
 
-        {/* CMS Routes (Placeholder redirect) */}
-        <Route path="/cms/*" element={<Navigate to="/home" replace />} />
+        {/* CMS Module Parent Route with CMSLayout */}
+        <Route path="/cms" element={<CMSLayout />}>
+          <Route index element={<Navigate to="/cms/man-related-defects" replace />} />
+          <Route path="man-related-defects" element={<ManRelatedDefects />} />
+          <Route path="total-defects" element={<TotalDefects />} />
+          <Route path="*" element={<Navigate to="/cms/man-related-defects" replace />} />
+        </Route>
       </Route>
 
       {/* Global Fallback Redirect */}

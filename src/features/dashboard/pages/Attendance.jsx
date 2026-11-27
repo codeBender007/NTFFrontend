@@ -8,8 +8,10 @@ import {
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import Filters from '@/components/Filters.jsx'
+import { useSidebar } from '@/contexts/SidebarContext.jsx'
 
 export default function Attendance() {
+  const { isCollapsed } = useSidebar()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Top Filters state
@@ -381,7 +383,11 @@ export default function Attendance() {
         />
 
         {/* Main Content Area */}
-        <main className="flex-1 ml-0 lg:ml-48 p-3 sm:p-4 md:p-5 min-h-[calc(100vh-53px)] overflow-x-hidden">
+        <main
+          className={`flex-1 p-3 sm:p-4 md:p-5 min-h-[calc(100vh-64px)] overflow-x-hidden transition-all duration-300 ${
+            isCollapsed ? 'ml-0 lg:ml-20' : 'ml-0 lg:ml-60'
+          }`}
+        >
           {/* Header Banner */}
           <div className="bg-[#0b295c] text-white rounded-lg px-4 py-2.5 sm:px-5 sm:py-3 shadow-xs mb-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 select-none">
             <div>

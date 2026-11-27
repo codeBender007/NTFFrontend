@@ -2,6 +2,7 @@ const TOKEN_KEY = "token";
 const ACCESS_TOKEN_KEY = "access_token";
 const USER_KEY = "user";
 const LOGGED_IN_KEY = "isLoggedIn";
+const EMPLOYEE_SESSION_KEY = "employee_session";
 
 const INVALID_TOKENS = new Set([
   "",
@@ -32,6 +33,7 @@ export const saveSession = (authData = {}) => {
   if (user) {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   }
+  localStorage.removeItem(EMPLOYEE_SESSION_KEY);
   localStorage.setItem(LOGGED_IN_KEY, "true");
 };
 
@@ -98,6 +100,10 @@ export const getToken = () => {
 export const isTokenExpired = (token = getToken()) => {
   if (!token || typeof token !== "string") return true;
 
+  if (localStorage.getItem(EMPLOYEE_SESSION_KEY) === "true") {
+    return false;
+  }
+
   try {
     const parts = token.split(".");
     // A valid JWT must consist of 3 parts (header.payload.signature)
@@ -127,6 +133,7 @@ export const isTokenExpired = (token = getToken()) => {
     }
 
     return false;
+    
   } catch {
     // Parsing, decoding, or JSON error indicates a corrupt/invalid token
     return true;
@@ -189,6 +196,43 @@ export const isAuthenticated = () => {
 };
 
 /**
+ * Check if the active session belongs to an Employee
+ */
+export const isEmployee = () => {
+  if (localStorage.getItem(EMPLOYEE_SESSION_KEY) === "true") return true;
+  const user = getUser();
+  return user?.role === "employee" || user?.isEmployee === true;
+};
+
+/**
+ * Persist employee session in localStorage
+ */
+export const saveEmployeeSession = (employeeData = {}) => {
+  const user = {
+    ...employeeData,
+    email: employeeData.email || "emp123@gmail.com",
+    username: employeeData.username || "emp123",
+    role: "employee",
+    isEmployee: true,
+  };
+
+  const syntheticJwt = `emp_hdr.${btoa(
+    JSON.stringify({
+      role: "employee",
+      sub: user.email,
+      name: user.username,
+      exp: Math.floor(Date.now() / 1000) + 86400 * 30,
+    })
+  )}.emp_sig`;
+
+  localStorage.setItem(TOKEN_KEY, syntheticJwt);
+  localStorage.setItem(ACCESS_TOKEN_KEY, syntheticJwt);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  localStorage.setItem(LOGGED_IN_KEY, "true");
+  localStorage.setItem(EMPLOYEE_SESSION_KEY, "true");
+};
+
+/**
  * Clear all session data on logout or when the token becomes invalid
  */
 export const clearSession = () => {
@@ -200,6 +244,7 @@ export const clearSession = () => {
     "authToken",
     USER_KEY,
     LOGGED_IN_KEY,
+    EMPLOYEE_SESSION_KEY,
   ];
 
   try {

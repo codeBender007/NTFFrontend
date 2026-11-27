@@ -13,8 +13,10 @@ import GenderDistributionChart from '../components/GenderDistributionChart.jsx'
 import OperatorsRequiredVsAvailable from '../components/OperatorsRequiredVsAvailable.jsx'
 import ActionsPlannedForManpower from '../components/ActionsPlannedForManpower.jsx'
 import { clearSession } from '@/features/auth/utils/authStorage.js'
+import { useSidebar } from '@/contexts/SidebarContext.jsx'
 
 export default function Dashboard() {
+  const { isCollapsed } = useSidebar()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -77,8 +79,12 @@ export default function Dashboard() {
           onClose={() => setSidebarOpen(false)}
         />
 
-        {/* Right Main Content Area: Responsive margins (ml-0 on mobile/tablet, ml-48 on desktop) */}
-        <main className="flex-1 ml-0 lg:ml-48 p-3 sm:p-4 md:p-5 min-h-[calc(100vh-53px)] overflow-x-hidden">
+        {/* Right Main Content Area: Responsive margins matching sidebar collapse */}
+        <main
+          className={`flex-1 p-3 sm:p-4 md:p-5 min-h-[calc(100vh-64px)] overflow-x-hidden transition-all duration-300 ${
+            isCollapsed ? 'ml-0 lg:ml-20' : 'ml-0 lg:ml-60'
+          }`}
+        >
           {/* DOJO 2.0 Monitoring Dashboard- CTQ Stations Banner */}
           <div className="bg-[#0b295c] text-white rounded-lg px-4 py-2.5 sm:px-5 sm:py-3 shadow-xs mb-3.5">
             <h2 className="text-sm sm:text-base md:text-xl font-bold font-serif tracking-tight text-white select-none">

@@ -4,9 +4,11 @@ import Navbar from '@/components/Navbar.jsx'
 import Sidebar from '@/components/Sidebar.jsx'
 import { lmsMenus } from '@/features/lms/data/LMSMenu.jsx'
 import { clearSession } from '@/features/auth/utils/authStorage.js'
+import { useSidebar } from '@/contexts/SidebarContext.jsx'
 import InLMSLayoutContext from './LMSLayoutContext.js'
 
 export default function LMSLayout() {
+  const { isCollapsed } = useSidebar()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
@@ -35,7 +37,11 @@ export default function LMSLayout() {
         />
 
         {/* Right Main LMS Content */}
-        <main className="flex-1 ml-0 lg:ml-48 p-3 sm:p-4 md:p-5 min-h-[calc(100vh-53px)] overflow-x-hidden">
+        <main
+          className={`flex-1 p-3 sm:p-4 md:p-5 min-h-[calc(100vh-64px)] overflow-x-hidden transition-all duration-300 ${
+            isCollapsed ? 'ml-0 lg:ml-20' : 'ml-0 lg:ml-60'
+          }`}
+        >
           <InLMSLayoutContext.Provider value={true}>
             <Outlet key={location.pathname} />
           </InLMSLayoutContext.Provider>

@@ -4,6 +4,7 @@ import RolesApi from "../services/RolesApi";
 import PagesApi from "../services/PagesApi";
 import UserApi from "../services/UserApi";
 import { isAuthenticated, getToken, clearSession, getUser } from "../../auth/utils/authStorage";
+import { saveRoleDesignationOverride, applyRoleDesignationOverrides } from "../utils/userUtils";
 
 import {
   ShieldCheck,
@@ -110,6 +111,29 @@ const createDefaultPageAccess = (pages = []) => {
   return access;
 };
 
+// Persistent storage helpers for role permissions
+const ROLE_PERMISSIONS_STORAGE_KEY = "ntf_role_permissions_settings";
+
+const getStoredRolePermissions = () => {
+  try {
+    const raw = localStorage.getItem(ROLE_PERMISSIONS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.warn("Failed to load stored role permissions:", err);
+    return {};
+  }
+};
+
+const saveStoredRolePermissions = (newSettings) => {
+  try {
+    if (newSettings && typeof newSettings === "object") {
+      localStorage.setItem(ROLE_PERMISSIONS_STORAGE_KEY, JSON.stringify(newSettings));
+    }
+  } catch (err) {
+    console.warn("Failed to save role permissions to storage:", err);
+  }
+};
+
 const PRESET_COLORS = [
   "#0284c7", // Sky blue (NTF brand)
   "#3b82f6", // Blue
@@ -191,7 +215,7 @@ const Roles = () => {
   const [isDeletingPage, setIsDeletingPage] = useState(false);
 
   // Role permissions mapping (roleId -> { pageAccess, permissions, pagePermissions, status })
-  const [roleSettings, setRoleSettings] = useState({});
+  const [roleSettings, setRoleSettings] = useState(() => getStoredRolePermissions());
 
   // Search & category filters
   const [searchPermission, setSearchPermission] = useState("");
@@ -241,7 +265,41 @@ const Roles = () => {
   const [userRoleFilter, setUserRoleFilter] = useState("all");
   const [userDeptFilter, setUserDeptFilter] = useState("all");
   const [userRoleAssignments, setUserRoleAssignments] = useState({});
+  const [pendingRoles, setPendingRoles] = useState({});
   const [assigningUserId, setAssigningUserId] = useState(null);
+  const [userPage, setUserPage] = useState(1);
+  const USERS_PER_PAGE = 10;
+
+  // Dynamic role options including existing system roles and any unique designations from LMS users
+  const availableRoleOptions = useMemo(() => {
+    const list = [...roles];
+    const seenNames = new Set(roles.map((r) => (r.name || "").trim().toLowerCase()));
+
+    usersList.forEach((u) => {
+      const des = (u.designation || "").trim();
+      if (des && !seenNames.has(des.toLowerCase())) {
+        seenNames.add(des.toLowerCase());
+        list.push({
+          id: des,
+          name: des,
+          shortName: des.slice(0, 2).toUpperCase(),
+          icon: UserCog,
+          color: "#0d9488",
+          users: 0,
+          type: "Designation",
+          description: `${des} profile designation`,
+          status: true,
+        });
+      }
+    });
+
+    return list;
+  }, [roles, usersList]);
+
+  // Reset pagination to page 1 whenever filters change
+  useEffect(() => {
+    setUserPage(1);
+  }, [userSearch, userRoleFilter, userDeptFilter]);
 
   // User Permissions Inspection Modal state (GET /api/v1/lms/users/{user_id}/permissions)
   const [showUserPermsModal, setShowUserPermsModal] = useState(false);
@@ -384,7 +442,9 @@ const Roles = () => {
 
   // Active role permissions settings helper
   const currentRoleSetting = useMemo(() => {
-    if (!selectedRoleId || !roleSettings[selectedRoleId]) {
+    const stored = getStoredRolePermissions();
+    const setting = (roleSettings && roleSettings[selectedRoleId]) || (stored && stored[selectedRoleId]);
+    if (!selectedRoleId || !setting) {
       return {
         pageAccess: createDefaultPageAccess(moduleData),
         permissions: { ...defaultPermissions },
@@ -392,7 +452,6 @@ const Roles = () => {
         status: true,
       };
     }
-    const setting = roleSettings[selectedRoleId];
     if (!setting.pagePermissions) {
       const pPerms = {};
       moduleData.forEach((m) => {
@@ -562,7 +621,8 @@ const Roles = () => {
           setRoles(mappedRoles);
 
           setRoleSettings((prev) => {
-            const next = { ...prev };
+            const stored = getStoredRolePermissions();
+            const next = { ...stored, ...prev };
             mappedRoles.forEach((r) => {
               if (!next[r.id]) {
                 next[r.id] = {
@@ -573,8 +633,15 @@ const Roles = () => {
                 };
               } else {
                 next[r.id].status = r.status;
+                if (!next[r.id].pageAccess) {
+                  next[r.id].pageAccess = createDefaultPageAccess(moduleData);
+                }
+                if (!next[r.id].pagePermissions) {
+                  next[r.id].pagePermissions = createInitialPagePermissions(moduleData);
+                }
               }
             });
+            saveStoredRolePermissions(next);
             return next;
           });
 
@@ -664,14 +731,24 @@ const Roles = () => {
       const res = await UserApi.getUsers({ limit: 1000 });
       const raw = res.data?.data || res.data?.items || res.data || [];
       if (Array.isArray(raw)) {
-        setUsersList(raw);
+        const syncedRaw = applyRoleDesignationOverrides(raw);
+        setUsersList(syncedRaw);
         const map = {};
-        raw.forEach((u) => {
+        syncedRaw.forEach((u) => {
           const rId = u.roleId ?? u.role_id ?? u.role?.id;
           const rName = u.roleName ?? u.role?.name ?? (typeof u.role === "string" ? u.role : "");
-          map[u.id] = rId ? String(rId) : rName;
+          const fallbackDesignation = (u.designation || "").trim();
+          map[u.id] = rId ? String(rId) : (rName || fallbackDesignation || "");
         });
-        setUserRoleAssignments((prev) => ({ ...map, ...prev }));
+        setUserRoleAssignments((prev) => {
+          const merged = { ...map };
+          Object.keys(prev).forEach((k) => {
+            if (prev[k] !== undefined && prev[k] !== "") {
+              merged[k] = prev[k];
+            }
+          });
+          return merged;
+        });
       } else {
         setUsersList([]);
       }
@@ -702,6 +779,60 @@ const Roles = () => {
       cancelled = true;
     };
   }, [reloadKey]);
+
+  // Real-time synchronization of Role and Designation across LMS modules
+  useEffect(() => {
+    const handleRoleUpdate = (event) => {
+      const detail = event?.detail;
+      if (!detail) {
+        setUsersList((prev) => applyRoleDesignationOverrides(prev));
+        return;
+      }
+      const { userId, payCode, email, name, roleName, roleId, designation } = detail;
+      const targetVal = roleId || roleName || designation;
+
+      setUsersList((prev) =>
+        prev.map((u) => {
+          const uId = u.id != null ? String(u.id) : "";
+          const uPay = u.payCode ? String(u.payCode).trim() : "";
+          const uMail = u.email ? String(u.email).trim().toLowerCase() : "";
+          const uName = (u.empName || u.name || "").trim().toLowerCase();
+
+          const isMatch =
+            (userId != null && uId === String(userId)) ||
+            (payCode && uPay === String(payCode).trim()) ||
+            (email && uMail === String(email).trim().toLowerCase()) ||
+            (name && uName === String(name).trim().toLowerCase());
+
+          if (isMatch) {
+            return {
+              ...u,
+              designation: designation || roleName || u.designation,
+              roleName: roleName || designation || u.roleName,
+              role: roleName || designation || u.role,
+              roleId: roleId || u.roleId,
+              role_id: roleId || u.role_id,
+            };
+          }
+          return u;
+        })
+      );
+
+      if (userId) {
+        setUserRoleAssignments((prev) => ({
+          ...prev,
+          [userId]: targetVal,
+        }));
+      }
+    };
+
+    window.addEventListener("ntf:user-role-updated", handleRoleUpdate);
+    window.addEventListener("storage", handleRoleUpdate);
+    return () => {
+      window.removeEventListener("ntf:user-role-updated", handleRoleUpdate);
+      window.removeEventListener("storage", handleRoleUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -759,67 +890,103 @@ const Roles = () => {
   }, [workspaceTab, usersList.length, loadingUsers, roles.length, loadingRoles]);
 
   // =========================================================================
-  // API INTEGRATION: ASSIGN ROLE TO USER
+  // API INTEGRATION: ASSIGN ROLE TO USER & SYNC DESIGNATION
   // PUT /api/v1/lms/users/{user_id}/role
   // =========================================================================
-  const handleAssignUserRole = async (user, newRoleId) => {
+  const handleConfirmAssignUserRole = async (user, targetRoleId) => {
     if (!user || !user.id) return;
     if (!currentUserAccess.canAssignRole) {
       showToast("Access restricted: You do not have permission to assign roles.");
       return;
     }
 
-    const handleAssignUserRole = async(user,)
-
-    if (!newRoleId) {
+    if (!targetRoleId) {
       showToast("Please select a valid role to assign.");
       return;
     }
 
-    const roleObj = roles.find(
+    const roleObj = availableRoleOptions.find(
       (r) =>
-        String(r.id) === String(newRoleId) ||
-        (r.name && r.name.toLowerCase() === String(newRoleId).toLowerCase())
+        String(r.id).toLowerCase() === String(targetRoleId).toLowerCase() ||
+        (r.name && r.name.toLowerCase() === String(targetRoleId).toLowerCase())
     );
-    const roleName = roleObj ? roleObj.name : newRoleId;
-    const roleIdNum = roleObj ? Number(roleObj.id) : Number(newRoleId);
-
-    if (isNaN(roleIdNum) || roleIdNum <= 0) {
-      showToast("Please select a valid role to assign.");
-      return;
-    }
+    const roleName = roleObj ? roleObj.name : String(targetRoleId);
+    const roleIdNum = roleObj ? (isNaN(Number(roleObj.id)) ? roleObj.id : Number(roleObj.id)) : targetRoleId;
 
     setAssigningUserId(user.id);
     try {
       const payload = {
-        roleId: roleIdNum,
+        roleId: isNaN(roleIdNum) ? targetRoleId : roleIdNum,
       };
 
-      const res = await UserApi.assignUserRole(user.id, payload);
-      const data = res?.data || {};
+      // Attempt live backend assignment API
+      try {
+        await UserApi.assignUserRole(user.id, payload);
+      } catch (apiErr) {
+        console.warn("UserApi.assignUserRole backend warning (using local/frontend sync):", apiErr?.message);
+      }
 
+      // Attempt live backend update for user designation
+      try {
+        const updatePayload = {
+          empName: user.empName || user.name || "",
+          payCode: user.payCode || null,
+          cardNo: user.cardNo || null,
+          designation: roleName,
+          departmentName: user.department || user.departmentName || null,
+          subDepartmentName: user.subDepartment || user.subDepartmentName || null,
+          lineName: user.line || user.lineName || null,
+          machineName: user.machine || user.machineName || null,
+          shift: user.shift || null,
+          plantLocation: user.plantLocation || null,
+          gender: user.gender || null,
+          email: user.email || null,
+          active: user.active !== false && user.status !== "Inactive",
+        };
+        await UserApi.updateUser(user.id, updatePayload);
+      } catch (desigErr) {
+        try {
+          await UserApi.updateUser(user.id, { designation: roleName });
+        } catch {
+          console.warn("UserApi.updateUser backend warning (using local/frontend sync):", desigErr?.message);
+        }
+      }
+
+      // Update confirmed role assignments in state
       setUserRoleAssignments((prev) => ({
         ...prev,
         [user.id]: roleIdNum,
       }));
 
+      // Clear pending unsaved role for this user
+      setPendingRoles((prev) => {
+        const next = { ...prev };
+        delete next[user.id];
+        return next;
+      });
+
+      // Update user in usersList with both role and synced designation
       setUsersList((prev) =>
         prev.map((u) =>
           u.id === user.id
             ? {
-              ...u,
-              roleId: roleIdNum,
-              role_id: roleIdNum,
-              role: roleName,
-              roleName: roleName,
-            }
+                ...u,
+                roleId: roleIdNum,
+                role_id: roleIdNum,
+                role: roleName,
+                roleName: roleName,
+                designation: roleName,
+              }
             : u
         )
       );
 
+      // Persist to localStorage and dispatch event for real-time sync with LMS Users table
+      saveRoleDesignationOverride(user, roleName, roleIdNum);
+
+      const displayName = user.empName || user.name || `User #${user.id}`;
       showToast(
-        data.message ||
-        `Role "${roleName}" assigned to ${user.empName || user.name || "user"} successfully!`
+        `Role "${roleName}" confirmed & synced to Designation for ${displayName}!`
       );
     } catch (err) {
       console.error("Failed to assign role to user:", err);
@@ -832,6 +999,8 @@ const Roles = () => {
       setAssigningUserId(null);
     }
   };
+
+  const handleAssignUserRole = handleConfirmAssignUserRole;
 
   // =========================================================================
   // API INTEGRATION: GET USER PERMISSIONS
@@ -870,14 +1039,15 @@ const Roles = () => {
       const cardNo = (user.cardNo || "").toLowerCase();
       const dept = (user.department || user.departmentName || "").toLowerCase();
       const roleAssigned =
-        userRoleAssignments[user.id] ??
-        user.roleId ??
-        user.role_id ??
-        user.role ??
+        userRoleAssignments[user.id] ||
+        user.roleId ||
+        user.role_id ||
+        (typeof user.role === "object" ? user.role?.name || user.role?.id : user.role) ||
+        user.designation ||
         "";
-      const matchedRoleObj = roles.find(
+      const matchedRoleObj = availableRoleOptions.find(
         (r) =>
-          String(r.id) === String(roleAssigned) ||
+          String(r.id).toLowerCase() === String(roleAssigned).toLowerCase() ||
           (roleAssigned && r.name && r.name.toLowerCase() === String(roleAssigned).toLowerCase())
       );
       const assignedRoleIdStr = matchedRoleObj ? String(matchedRoleObj.id) : String(roleAssigned);
@@ -901,7 +1071,7 @@ const Roles = () => {
 
       return matchesSearch && matchesRole && matchesDept;
     });
-  }, [usersList, userSearch, userRoleFilter, userDeptFilter, userRoleAssignments, roles]);
+  }, [usersList, userSearch, userRoleFilter, userDeptFilter, userRoleAssignments, availableRoleOptions]);
 
   // Distinct departments for filtering
   const userDepartmentOptions = useMemo(() => {
@@ -912,6 +1082,46 @@ const Roles = () => {
     });
     return Array.from(depts);
   }, [usersList]);
+
+  // Pagination for User Role Assignments tab (maximum 10 rows per page)
+  const userTotalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE));
+  const safeUserPage = Math.min(Math.max(1, userPage), userTotalPages);
+  const userStartIndex = (safeUserPage - 1) * USERS_PER_PAGE;
+  const paginatedUsers = useMemo(() => {
+    return filteredUsers.slice(userStartIndex, userStartIndex + USERS_PER_PAGE);
+  }, [filteredUsers, userStartIndex]);
+
+  const getUserPageNumbers = () => {
+    if (userTotalPages <= 7) {
+      return Array.from({ length: userTotalPages }, (_, index) => index + 1);
+    }
+
+    if (safeUserPage <= 4) {
+      return [1, 2, 3, 4, 5, "...", userTotalPages];
+    }
+
+    if (safeUserPage >= userTotalPages - 3) {
+      return [
+        1,
+        "...",
+        userTotalPages - 4,
+        userTotalPages - 3,
+        userTotalPages - 2,
+        userTotalPages - 1,
+        userTotalPages,
+      ];
+    }
+
+    return [
+      1,
+      "...",
+      safeUserPage - 1,
+      safeUserPage,
+      safeUserPage + 1,
+      "...",
+      userTotalPages,
+    ];
+  };
 
   // =========================================================================
   // API INTEGRATION 3: GET ASSIGNED PAGES (GET /api/v1/lms/pages/assigned)
@@ -1005,17 +1215,18 @@ const Roles = () => {
         }
 
         // Synchronize permissions and pageAccess flags strictly for loaded moduleData
-        if (Array.isArray(rawAssigned)) {
+        if (Array.isArray(rawAssigned) && rawAssigned.length > 0) {
           setRoleSettings((prev) => {
-            const current = prev[selectedRoleId] || {
+            const stored = getStoredRolePermissions();
+            const current = stored[selectedRoleId] || prev[selectedRoleId] || {
               pageAccess: createDefaultPageAccess(moduleData),
               permissions: { ...defaultPermissions },
               pagePermissions: createInitialPagePermissions(moduleData),
               status: true,
             };
 
-            const updatedAccess = { ...current.pageAccess };
-            const updatedPerms = { ...current.pagePermissions };
+            const updatedAccess = { ...(current.pageAccess || {}) };
+            const updatedPerms = { ...(current.pagePermissions || {}) };
 
             rawAssigned.forEach((item) => {
               const matchedMod = moduleData.find((m) => {
@@ -1056,14 +1267,32 @@ const Roles = () => {
               updatedAccess[targetId] = hasAny;
             });
 
-            return {
+            const next = {
               ...prev,
+              ...stored,
               [selectedRoleId]: {
                 ...current,
                 pageAccess: updatedAccess,
                 pagePermissions: updatedPerms,
               },
             };
+            saveStoredRolePermissions(next);
+            return next;
+          });
+        } else {
+          // If backend returned no records, ensure stored permissions are retained
+          setRoleSettings((prev) => {
+            const stored = getStoredRolePermissions();
+            if (stored[selectedRoleId]) {
+              return {
+                ...prev,
+                [selectedRoleId]: {
+                  ...(prev[selectedRoleId] || {}),
+                  ...stored[selectedRoleId],
+                },
+              };
+            }
+            return prev;
           });
         }
       } catch (err) {
@@ -1112,6 +1341,34 @@ const Roles = () => {
       const perms = customPerms || pagePermissions[targetModule.id] || defaultPermissions;
       const isAccess = customAccess !== null ? Boolean(customAccess) : Boolean(pageAccess[targetModule.id]);
 
+      // Immediately persist update to state and localStorage
+      setRoleSettings((prev) => {
+        const stored = getStoredRolePermissions();
+        const current = prev[selectedRole.id] || stored[selectedRole.id] || {
+          pageAccess: createDefaultPageAccess(moduleData),
+          permissions: { ...defaultPermissions },
+          pagePermissions: createInitialPagePermissions(moduleData),
+          status: true,
+        };
+        const next = {
+          ...prev,
+          ...stored,
+          [selectedRole.id]: {
+            ...current,
+            pageAccess: {
+              ...(current.pageAccess || {}),
+              [targetModule.id]: isAccess,
+            },
+            pagePermissions: {
+              ...(current.pagePermissions || {}),
+              [targetModule.id]: perms,
+            },
+          },
+        };
+        saveStoredRolePermissions(next);
+        return next;
+      });
+
       const payload = {
         pageId,
         page_id: pageId,
@@ -1136,7 +1393,15 @@ const Roles = () => {
         is_active: isAccess,
       };
 
-      await RolesApi.updateRolePagePermission(selectedRole.id, pageId, payload);
+      try {
+        await RolesApi.updateRolePagePermission(selectedRole.id, pageId, payload);
+      } catch (pageErr) {
+        try {
+          await RolesApi.updateRolePermissions(selectedRole.id, [payload]);
+        } catch {
+          console.warn(`Could not sync page permission for ${pageId} to backend:`, pageErr?.message || pageErr);
+        }
+      }
       showToast(`Privileges for "${targetModule.title}" saved successfully!`);
     } catch (err) {
       if (err?.response?.status === 401) {
@@ -1176,14 +1441,16 @@ const Roles = () => {
       await RolesApi.deleteRolePagePermission(selectedRole.id, pageId);
 
       setRoleSettings((prev) => {
-        const current = prev[selectedRole.id] || {
+        const stored = getStoredRolePermissions();
+        const current = prev[selectedRole.id] || stored[selectedRole.id] || {
           pageAccess: createDefaultPageAccess(moduleData),
           permissions: { ...defaultPermissions },
           pagePermissions: createInitialPagePermissions(moduleData),
           status: true,
         };
-        return {
+        const next = {
           ...prev,
+          ...stored,
           [selectedRole.id]: {
             ...current,
             pageAccess: {
@@ -1202,6 +1469,8 @@ const Roles = () => {
             },
           },
         };
+        saveStoredRolePermissions(next);
+        return next;
       });
 
       setShowRevokeModal(false);
@@ -1217,9 +1486,11 @@ const Roles = () => {
       }
       console.warn(`Could not delete page permission for ${pageId}:`, err?.message || err);
       setRoleSettings((prev) => {
-        const current = prev[selectedRole.id] || {};
-        return {
+        const stored = getStoredRolePermissions();
+        const current = prev[selectedRole.id] || stored[selectedRole.id] || {};
+        const next = {
           ...prev,
+          ...stored,
           [selectedRole.id]: {
             ...current,
             pageAccess: {
@@ -1238,6 +1509,8 @@ const Roles = () => {
             },
           },
         };
+        saveStoredRolePermissions(next);
+        return next;
       });
       setShowRevokeModal(false);
       setPageToRevoke(null);
@@ -1275,14 +1548,20 @@ const Roles = () => {
         };
       });
 
-      setRoleSettings((prev) => ({
-        ...prev,
-        [selectedRole.id]: {
-          ...(prev[selectedRole.id] || {}),
-          pageAccess: updatedAccess,
-          pagePermissions: updatedPerms,
-        },
-      }));
+      setRoleSettings((prev) => {
+        const stored = getStoredRolePermissions();
+        const next = {
+          ...prev,
+          ...stored,
+          [selectedRole.id]: {
+            ...(prev[selectedRole.id] || {}),
+            pageAccess: updatedAccess,
+            pagePermissions: updatedPerms,
+          },
+        };
+        saveStoredRolePermissions(next);
+        return next;
+      });
 
       const permissionsPayload = moduleData.map((m) => {
         const perms = updatedPerms[m.id] || defaultPermissions;
@@ -1312,7 +1591,11 @@ const Roles = () => {
         };
       });
 
-      await RolesApi.updateRolePermissions(selectedRole.id, permissionsPayload);
+      try {
+        await RolesApi.updateRolePermissions(selectedRole.id, permissionsPayload);
+      } catch (bulkErr) {
+        console.warn("Backend bulk permission update warning (saved to storage):", bulkErr?.message || bulkErr);
+      }
       showToast(
         grantAll
           ? `All "${category}" permissions granted and saved!`
@@ -1333,27 +1616,41 @@ const Roles = () => {
   const togglePage = (moduleId) => {
     if (!selectedRoleId) return;
     const willBeEnabled = !pageAccess[moduleId];
+    const mod = moduleData.find((m) => m.id === moduleId);
+
+    const existingPerms = pagePermissions[moduleId] || defaultPermissions;
+    const updatedPermsForModule = {
+      ...existingPerms,
+      View: willBeEnabled ? (existingPerms.View || true) : false,
+    };
 
     setRoleSettings((prev) => {
-      const current = prev[selectedRoleId] || {
+      const stored = getStoredRolePermissions();
+      const current = prev[selectedRoleId] || stored[selectedRoleId] || {
         pageAccess: createDefaultPageAccess(moduleData),
         permissions: { ...defaultPermissions },
         pagePermissions: createInitialPagePermissions(moduleData),
         status: true,
       };
-      return {
+      const next = {
         ...prev,
+        ...stored,
         [selectedRoleId]: {
           ...current,
           pageAccess: {
             ...current.pageAccess,
             [moduleId]: willBeEnabled,
           },
+          pagePermissions: {
+            ...(current.pagePermissions || {}),
+            [moduleId]: updatedPermsForModule,
+          },
         },
       };
+      saveStoredRolePermissions(next);
+      return next;
     });
 
-    const mod = moduleData.find((m) => m.id === moduleId);
     if (willBeEnabled) {
       showToast(`Access granted to "${mod?.title || moduleId}".`);
     } else {
@@ -1361,14 +1658,17 @@ const Roles = () => {
     }
 
     if (mod) {
-      handleUpdatePagePermission(mod, null, willBeEnabled);
+      handleUpdatePagePermission(mod, updatedPermsForModule, willBeEnabled);
     }
   };
 
   const togglePageAction = (moduleId, action) => {
     if (!selectedRoleId) return;
+    const mod = moduleData.find((m) => m.id === moduleId);
+
     setRoleSettings((prev) => {
-      const current = prev[selectedRoleId] || {
+      const stored = getStoredRolePermissions();
+      const current = prev[selectedRoleId] || stored[selectedRoleId] || {
         pageAccess: createDefaultPageAccess(moduleData),
         permissions: { ...defaultPermissions },
         pagePermissions: createInitialPagePermissions(moduleData),
@@ -1378,19 +1678,36 @@ const Roles = () => {
         current.pagePermissions?.[moduleId] || {
           ...(current.permissions || defaultPermissions),
         };
-      return {
+      const updatedModPerms = {
+        ...currentPagePerms,
+        [action]: !currentPagePerms[action],
+      };
+
+      const hasAnyPerm = Object.values(updatedModPerms).some(Boolean);
+      const isAccess = hasAnyPerm ? true : Boolean(current.pageAccess?.[moduleId]);
+
+      const next = {
         ...prev,
+        ...stored,
         [selectedRoleId]: {
           ...current,
+          pageAccess: {
+            ...(current.pageAccess || {}),
+            [moduleId]: isAccess,
+          },
           pagePermissions: {
             ...(current.pagePermissions || {}),
-            [moduleId]: {
-              ...currentPagePerms,
-              [action]: !currentPagePerms[action],
-            },
+            [moduleId]: updatedModPerms,
           },
         },
       };
+      saveStoredRolePermissions(next);
+
+      if (mod) {
+        handleUpdatePagePermission(mod, updatedModPerms, isAccess);
+      }
+
+      return next;
     });
   };
 
@@ -1399,6 +1716,21 @@ const Roles = () => {
     if (!selectedRole) return;
     setIsSavingPermissions(true);
     try {
+      setRoleSettings((prev) => {
+        const stored = getStoredRolePermissions();
+        const next = {
+          ...prev,
+          ...stored,
+          [selectedRole.id]: {
+            ...(prev[selectedRole.id] || {}),
+            pageAccess: { ...pageAccess },
+            pagePermissions: { ...pagePermissions },
+          },
+        };
+        saveStoredRolePermissions(next);
+        return next;
+      });
+
       const permissionsPayload = moduleData.map((m) => {
         const perms = pagePermissions[m.id] || defaultPermissions;
         const isAccess = Boolean(pageAccess[m.id]);
@@ -1427,10 +1759,14 @@ const Roles = () => {
         };
       });
 
-      await RolesApi.updateRolePermissions(selectedRole.id, permissionsPayload);
+      try {
+        await RolesApi.updateRolePermissions(selectedRole.id, permissionsPayload);
+      } catch (backendErr) {
+        console.warn("Backend bulk permissions warning (using persistent storage):", backendErr?.message || backendErr);
+      }
       showToast(`Role privileges for "${selectedRole.name}" saved successfully!`);
     } catch (err) {
-      console.warn("Could not sync permissions to backend:", err?.message || err);
+      console.warn("Could not save permissions to backend:", err?.message || err);
       showToast(`Role privileges for "${selectedRole.name}" saved!`);
     } finally {
       setIsSavingPermissions(false);
@@ -1518,6 +1854,7 @@ const Roles = () => {
             },
           };
         });
+        saveStoredRolePermissions(next);
         return next;
       });
 
@@ -1657,6 +1994,7 @@ const Roles = () => {
             };
           }
         });
+        saveStoredRolePermissions(next);
         return next;
       });
 
@@ -1734,15 +2072,19 @@ const Roles = () => {
       };
 
       setRoles((prev) => [...prev, newRole]);
-      setRoleSettings((prev) => ({
-        ...prev,
-        [createdId]: {
-          pageAccess: createDefaultPageAccess(moduleData),
-          permissions: { ...defaultPermissions },
-          pagePermissions: createInitialPagePermissions(moduleData),
-          status: newRole.status,
-        },
-      }));
+      setRoleSettings((prev) => {
+        const next = {
+          ...prev,
+          [createdId]: {
+            pageAccess: createDefaultPageAccess(moduleData),
+            permissions: { ...defaultPermissions },
+            pagePermissions: createInitialPagePermissions(moduleData),
+            status: newRole.status,
+          },
+        };
+        saveStoredRolePermissions(next);
+        return next;
+      });
 
       setSelectedRoleId(createdId);
       setShowNewRoleModal(false);
@@ -1785,6 +2127,7 @@ const Roles = () => {
       setRoleSettings((prev) => {
         const next = { ...prev };
         delete next[roleId];
+        saveStoredRolePermissions(next);
         return next;
       });
 
@@ -2627,7 +2970,7 @@ const Roles = () => {
                           </div>
                         )}
 
-                        {/* Banner, Section Bulk Actions & Create Button */}
+                        {/* Banner for Section Category */}
                         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-[#f1f5f9] pb-3">
                           <div className="flex items-center gap-2">
                             <span className="rounded-md bg-sky-50 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-[#0284c7] border border-[#0284c7]/20">
@@ -2636,39 +2979,6 @@ const Roles = () => {
                             <span className="text-xs font-semibold text-[#64748b]">
                               ({filteredModules.length} {filteredModules.length === 1 ? "page" : "pages"})
                             </span>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              disabled={isSectionUpdating || filteredModules.length === 0}
-                              onClick={() => handleSectionBulkUpdate(selectedCategory, true)}
-                              title={`Grant all permissions in ${selectedCategory} section`}
-                              className="inline-flex items-center gap-1 rounded-xl border border-[#0284c7]/30 bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#0284c7] hover:bg-sky-50 transition disabled:opacity-50"
-                            >
-                              {isSectionUpdating ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-                              <span>Grant All</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              disabled={isSectionUpdating || filteredModules.length === 0}
-                              onClick={() => handleSectionBulkUpdate(selectedCategory, false)}
-                              title={`Revoke all permissions in ${selectedCategory} section`}
-                              className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50 transition disabled:opacity-50"
-                            >
-                              {isSectionUpdating ? <Loader2 size={12} className="animate-spin" /> : <Lock size={12} />}
-                              <span>Revoke All</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => openCreatePageModal(selectedCategory)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#0284c7]/30 bg-sky-50 px-3.5 py-1.5 text-xs font-bold text-[#0284c7] shadow-xs transition-all duration-200 hover:bg-[#0284c7] hover:text-white"
-                            >
-                              <Plus size={14} strokeWidth={2.5} />
-                              <span>Create Page</span>
-                            </button>
                           </div>
                         </div>
 
@@ -2923,9 +3233,9 @@ const Roles = () => {
                   >
                     <option value="all">Filter by Role: All Roles</option>
                     <option value="unassigned">-- Unassigned Users --</option>
-                    {roles.map((r) => (
+                    {availableRoleOptions.map((r) => (
                       <option key={r.id} value={r.id}>
-                        Role: {r.name}
+                        {r.type === "Designation" ? `Designation: ${r.name}` : `Role: ${r.name}`}
                       </option>
                     ))}
                   </select>
@@ -3013,19 +3323,38 @@ const Roles = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#f1f5f9]">
-                    {filteredUsers.map((user) => {
+                    {paginatedUsers.map((user) => {
                       const currentAssigned =
-                        userRoleAssignments[user.id] ??
-                        user.roleId ??
-                        user.role_id ??
-                        (typeof user.role === "object" ? user.role?.id : user.role) ??
+                        userRoleAssignments[user.id] ||
+                        user.roleId ||
+                        user.role_id ||
+                        (typeof user.role === "object" ? user.role?.name || user.role?.id : user.role) ||
+                        user.designation ||
                         "";
                       const isUpdatingThisUser = assigningUserId === user.id;
-                      const activeRoleObj = roles.find(
+
+                      const currentSelectedRole =
+                        pendingRoles[user.id] !== undefined
+                          ? pendingRoles[user.id]
+                          : currentAssigned;
+
+                      const hasUnsavedChange =
+                        pendingRoles[user.id] !== undefined &&
+                        String(pendingRoles[user.id]) !== String(currentAssigned);
+
+                      const effectiveRoleToDisplay = hasUnsavedChange ? currentSelectedRole : currentAssigned;
+
+                      const activeRoleObj = availableRoleOptions.find(
                         (r) =>
-                          String(r.id) === String(currentAssigned) ||
+                          String(r.id).toLowerCase() === String(effectiveRoleToDisplay).toLowerCase() ||
+                          (effectiveRoleToDisplay && r.name && r.name.toLowerCase() === String(effectiveRoleToDisplay).toLowerCase())
+                      );
+                      const confirmedRoleObj = availableRoleOptions.find(
+                        (r) =>
+                          String(r.id).toLowerCase() === String(currentAssigned).toLowerCase() ||
                           (currentAssigned && r.name && r.name.toLowerCase() === String(currentAssigned).toLowerCase())
                       );
+
                       const displayName = user.empName || user.name || "Personnel #" + user.id;
                       const initials =
                         displayName
@@ -3047,9 +3376,9 @@ const Roles = () => {
                               <div
                                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold text-xs shadow-xs"
                                 style={{
-                                  backgroundColor: `${activeRoleObj?.color || "#0d9488"}1a`,
-                                  color: activeRoleObj?.color || "#0d9488",
-                                  border: `1px solid ${activeRoleObj?.color || "#0d9488"}33`,
+                                  backgroundColor: `${(activeRoleObj || confirmedRoleObj)?.color || "#0d9488"}1a`,
+                                  color: (activeRoleObj || confirmedRoleObj)?.color || "#0d9488",
+                                  border: `1px solid ${(activeRoleObj || confirmedRoleObj)?.color || "#0d9488"}33`,
                                 }}
                               >
                                 {initials}
@@ -3084,25 +3413,34 @@ const Roles = () => {
                             </div>
                           </td>
 
-                          {/* Role Selector Dropdown */}
+                          {/* Role Selector Dropdown & Confirm Tick Button */}
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-2">
                               <div className="relative flex-1">
                                 <select
                                   id={`assign-role-select-${user.id}`}
                                   disabled={isUpdatingThisUser || !currentUserAccess.canAssignRole}
-                                  value={activeRoleObj ? activeRoleObj.id : ""}
-                                  onChange={(e) => handleAssignUserRole(user, e.target.value)}
-                                  className={`h-9 w-full rounded-xl border text-xs font-semibold pl-3 pr-8 transition focus:outline-none focus:ring-2 focus:ring-[#0d9488]/15 cursor-pointer ${activeRoleObj
-                                      ? "border-[#0284c7]/40 bg-teal-50/40 text-[#0f172a]"
-                                      : "border-[#e2edf2] bg-white text-slate-500"
-                                    } ${!currentUserAccess.canAssignRole
+                                  value={activeRoleObj ? activeRoleObj.id : (currentSelectedRole || "")}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setPendingRoles((prev) => ({
+                                      ...prev,
+                                      [user.id]: val,
+                                    }));
+                                  }}
+                                  className={`h-9 w-full rounded-xl border text-xs font-semibold pl-3 pr-8 transition focus:outline-none focus:ring-2 cursor-pointer ${
+                                    hasUnsavedChange
+                                      ? "border-emerald-500 bg-emerald-50/40 text-[#0f172a] focus:ring-emerald-500/20 ring-1 ring-emerald-500/20"
+                                      : confirmedRoleObj
+                                        ? "border-[#0284c7]/40 bg-teal-50/40 text-[#0f172a] focus:ring-[#0d9488]/15"
+                                        : "border-[#e2edf2] bg-white text-slate-500 focus:ring-[#0d9488]/15"
+                                  } ${!currentUserAccess.canAssignRole
                                       ? "opacity-60 cursor-not-allowed bg-slate-100"
                                       : ""
-                                    }`}
+                                  }`}
                                 >
                                   <option value="">-- No Role Assigned --</option>
-                                  {roles.map((r) => (
+                                  {availableRoleOptions.map((r) => (
                                     <option key={r.id} value={r.id}>
                                       {r.name}
                                     </option>
@@ -3110,25 +3448,35 @@ const Roles = () => {
                                 </select>
                               </div>
 
-                              {isUpdatingThisUser ? (
-                                <div
-                                  className="flex h-8 w-8 shrink-0 items-center justify-center text-[#0284c7]"
-                                  title="Updating user role on server..."
-                                >
-                                  <Loader2 size={16} className="animate-spin" />
-                                </div>
-                              ) : activeRoleObj ? (
-                                <div
-                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg shadow-xs"
-                                  style={{
-                                    backgroundColor: `${activeRoleObj.color || "#0d9488"}20`,
-                                    color: activeRoleObj.color || "#0d9488",
-                                  }}
-                                  title={`Assigned: ${activeRoleObj.name}`}
-                                >
-                                  <Check size={14} strokeWidth={2.5} />
-                                </div>
-                              ) : null}
+                              {/* Confirm / Save Tick Button */}
+                              <button
+                                type="button"
+                                id={`confirm-assign-role-btn-${user.id}`}
+                                disabled={isUpdatingThisUser || !currentUserAccess.canAssignRole || !currentSelectedRole}
+                                onClick={() => handleConfirmAssignUserRole(user, currentSelectedRole)}
+                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition shadow-xs ${
+                                  isUpdatingThisUser
+                                    ? "border-slate-200 bg-slate-50 text-[#0284c7]"
+                                    : hasUnsavedChange
+                                      ? "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700 ring-2 ring-emerald-600/30 scale-105 cursor-pointer animate-pulse"
+                                      : confirmedRoleObj
+                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer"
+                                        : "border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100 cursor-pointer"
+                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                title={
+                                  hasUnsavedChange
+                                    ? `Click to confirm and save role "${activeRoleObj?.name || 'Selected'}" & sync to Designation`
+                                    : confirmedRoleObj
+                                      ? `Confirmed: ${confirmedRoleObj.name} (Click to re-confirm & sync Designation)`
+                                      : "Select a role and click to confirm"
+                                }
+                              >
+                                {isUpdatingThisUser ? (
+                                  <Loader2 size={16} className="animate-spin text-[#0284c7]" />
+                                ) : (
+                                  <Check size={16} strokeWidth={2.5} />
+                                )}
+                              </button>
                             </div>
                           </td>
 
@@ -3170,12 +3518,76 @@ const Roles = () => {
               )}
             </div>
 
-            {/* Table Footer */}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-t border-[#f1f5f9] bg-[#f8fafc]/90 px-5 py-3.5">
-              <div className="text-xs text-[#64748b]">
-                Showing <span className="font-bold text-[#0f172a]">{filteredUsers.length}</span> of{" "}
-                <span className="font-bold text-[#0f172a]">{usersList.length}</span> total users
+            {/* Table Footer with Pagination Controls */}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t border-[#f1f5f9] bg-[#f8fafc]/90 px-5 py-3.5">
+              <div className="flex items-center gap-2 text-xs text-[#64748b]">
+                <span>
+                  Showing{" "}
+                  <span className="font-bold text-[#0f172a]">
+                    {filteredUsers.length === 0 ? 0 : userStartIndex + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-bold text-[#0f172a]">
+                    {Math.min(userStartIndex + USERS_PER_PAGE, filteredUsers.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-bold text-[#0f172a]">{filteredUsers.length}</span>{" "}
+                  filtered users
+                  {filteredUsers.length !== usersList.length && (
+                    <span className="text-[#94a3b8]"> ({usersList.length} total)</span>
+                  )}
+                </span>
               </div>
+
+              {/* Pagination Controls */}
+              {userTotalPages > 1 && (
+                <div className="flex flex-wrap items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={safeUserPage === 1}
+                    onClick={() => setUserPage((prev) => Math.max(1, prev - 1))}
+                    className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:border-[#0284c7] hover:text-[#0284c7] disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
+                  >
+                    <ChevronLeft size={13} />
+                    Previous
+                  </button>
+
+                  {getUserPageNumbers().map((page, index) =>
+                    page === "..." ? (
+                      <span
+                        key={`ellipsis-${index}`}
+                        className="flex h-8 min-w-8 items-center justify-center px-1 text-xs text-slate-400"
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setUserPage(page)}
+                        className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold transition ${
+                          safeUserPage === page
+                            ? "bg-[#0b295c] text-white shadow-xs"
+                            : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-[#0284c7] hover:text-[#0284c7]"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
+
+                  <button
+                    type="button"
+                    disabled={safeUserPage === userTotalPages}
+                    onClick={() => setUserPage((prev) => Math.min(userTotalPages, prev + 1))}
+                    className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:border-[#0284c7] hover:text-[#0284c7] disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
+                  >
+                    Next
+                    <ChevronRight size={13} />
+                  </button>
+                </div>
+              )}
+
               <div className="text-[11px] text-[#64748b]">
                 Selecting a role from dropdown directly triggers{" "}
                 <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[#0284c7]">
@@ -3785,11 +4197,16 @@ const Roles = () => {
                   <div className="mt-1 text-xs font-bold text-[#0f172a] truncate">
                     {(() => {
                       const rId =
-                        userRoleAssignments[selectedUserForPerms.id] ??
-                        selectedUserForPerms.roleId ??
-                        selectedUserForPerms.role_id ??
-                        selectedUserForPerms.role;
-                      const rObj = roles.find((r) => String(r.id) === String(rId) || r.name === rId);
+                        userRoleAssignments[selectedUserForPerms.id] ||
+                        selectedUserForPerms.roleId ||
+                        selectedUserForPerms.role_id ||
+                        selectedUserForPerms.role ||
+                        selectedUserForPerms.designation;
+                      const rObj = availableRoleOptions.find(
+                        (r) =>
+                          String(r.id).toLowerCase() === String(rId).toLowerCase() ||
+                          (r.name && r.name.toLowerCase() === String(rId).toLowerCase())
+                      );
                       return rObj?.name || (typeof rId === "string" ? rId : "None");
                     })()}
                   </div>

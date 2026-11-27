@@ -177,3 +177,101 @@ export const filterUsers = (
     );
   });
 };
+
+/* =========================================================================
+   ROLE ASSIGNMENT -> LMS USERS DESIGNATION SYNCHRONIZATION HELPERS
+   ========================================================================= */
+
+export const USER_ROLE_DESIGNATIONS_KEY = "ntf_user_role_designations";
+
+export const getRoleDesignationOverrides = () => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(USER_ROLE_DESIGNATIONS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const saveRoleDesignationOverride = (user, roleName, roleId) => {
+  if (typeof window === "undefined" || !user) return {};
+  try {
+    const overrides = getRoleDesignationOverrides();
+    const cleanRoleName = String(roleName || "").trim();
+    const entry = {
+      userId: user.id != null ? String(user.id) : null,
+      payCode: user.payCode ? String(user.payCode).trim() : null,
+      email: user.email ? String(user.email).trim().toLowerCase() : null,
+      name: (user.empName || user.name || "").trim(),
+      roleId: roleId != null ? String(roleId) : null,
+      roleName: cleanRoleName,
+      designation: cleanRoleName,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (entry.userId) {
+      overrides[`id_${entry.userId}`] = entry;
+      overrides[entry.userId] = entry;
+    }
+    if (entry.payCode) {
+      overrides[`payCode_${entry.payCode}`] = entry;
+      overrides[entry.payCode] = entry;
+    }
+    if (entry.email) {
+      overrides[`email_${entry.email}`] = entry;
+      overrides[entry.email] = entry;
+    }
+    if (entry.name) {
+      overrides[`name_${entry.name.toLowerCase()}`] = entry;
+    }
+
+    localStorage.setItem(USER_ROLE_DESIGNATIONS_KEY, JSON.stringify(overrides));
+
+    // Dispatch event for instant sync to LMS Users table without needing page reload
+    window.dispatchEvent(
+      new CustomEvent("ntf:user-role-updated", {
+        detail: entry,
+      })
+    );
+
+    return overrides;
+  } catch (err) {
+    console.warn("Could not save role designation override:", err);
+    return {};
+  }
+};
+
+export const applyRoleDesignationOverrides = (usersList = []) => {
+  if (!Array.isArray(usersList) || usersList.length === 0) return usersList;
+  const overrides = getRoleDesignationOverrides();
+  if (!overrides || Object.keys(overrides).length === 0) return usersList;
+
+  return usersList.map((user) => {
+    const uId = user.id != null ? String(user.id) : "";
+    const uPayCode = user.payCode ? String(user.payCode).trim() : "";
+    const uEmail = user.email ? String(user.email).trim().toLowerCase() : "";
+    const uName = (user.empName || user.name || "").trim().toLowerCase();
+
+    const match =
+      (uId && (overrides[`id_${uId}`] || overrides[uId])) ||
+      (uPayCode && (overrides[`payCode_${uPayCode}`] || overrides[uPayCode])) ||
+      (uEmail && (overrides[`email_${uEmail}`] || overrides[uEmail])) ||
+      (uName && overrides[`name_${uName}`]);
+
+    if (!match) return user;
+
+    const newDesignation = typeof match === "object" ? match.designation || match.roleName : match;
+    const newRoleId = typeof match === "object" ? match.roleId : null;
+    const newRoleName = typeof match === "object" ? match.roleName : match;
+
+    if (!newDesignation) return user;
+
+    return {
+      ...user,
+      designation: newDesignation,
+      ...(newRoleId ? { roleId: newRoleId, role_id: newRoleId } : {}),
+      ...(newRoleName ? { role: newRoleName, roleName: newRoleName } : {}),
+    };
+  });
+};
