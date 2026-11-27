@@ -387,21 +387,20 @@ export default function UpcomingQuestionPapers() {
                 Current Status:
               </span>
               <span
-                className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                  diffDays === 0
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    : diffDays === 1
+                className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${diffDays === 0
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : diffDays === 1
                     ? "bg-sky-50 text-sky-700 border border-sky-200"
                     : "bg-slate-100 text-slate-600 border border-slate-200"
-                }`}
+                  }`}
               >
                 {diffDays === 0
                   ? "Day 1 (Joining Date)"
                   : diffDays === 1
-                  ? "Day 2 (1 Day After Joining)"
-                  : diffDays !== null && diffDays > 1
-                  ? `Day ${diffDays + 1} (Induction Completed)`
-                  : "Scheduled"}
+                    ? "Day 2 (1 Day After Joining)"
+                    : diffDays !== null && diffDays > 1
+                      ? `Day ${diffDays + 1} (Induction Completed)`
+                      : "Scheduled"}
               </span>
             </div>
             <p className="text-xs text-slate-500">
@@ -517,24 +516,24 @@ export default function UpcomingQuestionPapers() {
               {allPapersSubmitted
                 ? "All Scheduled Question Papers Completed!"
                 : diffDays === 0 && isDay1Submitted
-                ? "Today's Day 1 Question Paper Completed!"
-                : diffDays === 1 && isDay2Submitted
-                ? "Today's Day 2 Question Paper Completed!"
-                : "No question papers available for today"}
+                  ? "Today's Day 1 Question Paper Completed!"
+                  : diffDays === 1 && isDay2Submitted
+                    ? "Today's Day 2 Question Paper Completed!"
+                    : "No question papers available for today"}
             </h3>
 
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
               {allPapersSubmitted
                 ? "You have completed both Day 1 and Day 2 question papers. They have been moved to your Past Question Papers repository."
                 : diffDays === 0 && isDay1Submitted
-                ? "You have already completed and submitted your Day 1 Question Paper today. Day 2 Question Paper will unlock tomorrow."
-                : diffDays === 1 && isDay2Submitted
-                ? "You have already completed and submitted your Day 2 Question Paper today. You can review your submission under Past Question Papers."
-                : diffDays !== null && diffDays > 1
-                ? "Induction question papers are scheduled strictly for Day 1 (joining date) and Day 2 (next day). Because your joining date has passed, there are no active question papers scheduled for today."
-                : diffDays !== null && diffDays < 0
-                ? `Your training begins on your official joining date (${formatDisplayDate(joiningDate)}). Your Day 1 Question Paper will unlock on that day.`
-                : "There are no question papers scheduled for today."}
+                  ? "You have already completed and submitted your Day 1 Question Paper today. Day 2 Question Paper will unlock tomorrow."
+                  : diffDays === 1 && isDay2Submitted
+                    ? "You have already completed and submitted your Day 2 Question Paper today. You can review your submission under Past Question Papers."
+                    : diffDays !== null && diffDays > 1
+                      ? "Induction question papers are scheduled strictly for Day 1 (joining date) and Day 2 (next day). Because your joining date has passed, there are no active question papers scheduled for today."
+                      : diffDays !== null && diffDays < 0
+                        ? `Your training begins on your official joining date (${formatDisplayDate(joiningDate)}). Your Day 1 Question Paper will unlock on that day.`
+                        : "There are no question papers scheduled for today."}
             </p>
 
             {(isDay1Submitted || isDay2Submitted) && (
