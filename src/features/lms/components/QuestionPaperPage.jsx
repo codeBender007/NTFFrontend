@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import TopActions from "./TopActions";
 import BasicInformation from "./BasicInformation";
 import QuestionSectionsCard from "./QuestionSectionsCard";
@@ -77,20 +78,49 @@ const loadPaper = (storageKey) => {
   return createInitialPaper();
 };
 
-const QuestionPaperPage = ({ level = "L0" }) => {
+const QuestionPaperPage = ({
+  level = "L0",
+  initialPaper = null,
+  storageKey: customStorageKey,
+  previewPath: customPreviewPath,
+  onPreview: customOnPreview,
+  onSaveSuccess,
+  bannerTitle,
+  onBack,
+}) => {
   const navigate = useNavigate();
-  const storageKey = `${level.toLowerCase()}_question_paper`;
-  const previewPath = `/lms/${level.toLowerCase()}/preview`;
+  const storageKey =
+    customStorageKey ||
+    (initialPaper?.id ? `paper_${initialPaper.id}` : `${level.toLowerCase()}_question_paper`);
+  const previewPath = customPreviewPath || `/lms/${level.toLowerCase()}/preview`;
 
-  const [sections, setSections] = useState(() => loadPaper(storageKey));
+  const [sections, setSections] = useState(() => {
+    if (initialPaper?.sections?.length) {
+      return initialPaper.sections;
+    }
+    return loadPaper(storageKey);
+  });
   const [selectedSection, setSelectedSection] = useState(
-    () => sections[0]?.id
+    () => (initialPaper?.sections?.[0]?.id || sections[0]?.id)
   );
   const [selectedQuestion, setSelectedQuestion] = useState(
-    () => sections[0]?.questions[0]?.id
+    () => (initialPaper?.sections?.[0]?.questions?.[0]?.id || sections[0]?.questions[0]?.id)
   );
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
+
+  useEffect(() => {
+    if (initialPaper) {
+      if (initialPaper.sections?.length) {
+        setSections(initialPaper.sections);
+        setSelectedSection(initialPaper.sections[0]?.id);
+        setSelectedQuestion(initialPaper.sections[0]?.questions?.[0]?.id);
+      }
+      if (initialPaper.meta) {
+        localStorage.setItem(`${storageKey}_meta`, JSON.stringify(initialPaper.meta));
+      }
+    }
+  }, [initialPaper, storageKey]);
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(sections));
@@ -166,20 +196,42 @@ const QuestionPaperPage = ({ level = "L0" }) => {
     }
 
     const passPercentage = Number(meta.passPercentage) || 80;
+    const testTitle =
+      meta.testTitle?.trim() ||
+      meta.headerTitle?.trim() ||
+      "SKILL EVALUATION TEST PAPER";
+    const course =
+      meta.departments?.trim() ||
+      meta.subTitle?.trim() ||
+      "DOJO Technical Evaluation";
 
-    savePaperToStore({
+    const paperData = {
       id: paperId,
-      title: meta.testTitle || "UNTITLED TEST PAPER",
-      target: `${passPercentage}% or Above`,
-      testType: "Online",
-      course: meta.subTitle || meta.departments || "-",
+      title: testTitle,
+      target: meta.target || `${passPercentage}% or Above`,
+      testType: meta.testType || "Online",
+      course: course,
       passing: `${passPercentage}% or Above`,
       marks: `${totalMarks} Marks`,
       fullMarks: "Full Marks",
       level,
       sections,
-      meta,
-    });
+      meta: {
+        ...meta,
+        testTitle,
+        headerTitle: meta.headerTitle || testTitle,
+        duration: meta.duration || 60,
+        passPercentage,
+      },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      createdRole: "supervisor",
+    };
+
+    savePaperToStore(paperData);
+    if (onSaveSuccess) {
+      onSaveSuccess(paperData);
+    }
 
     setSections((prev) =>
       prev.map((s) => ({
@@ -188,9 +240,17 @@ const QuestionPaperPage = ({ level = "L0" }) => {
       }))
     );
     showToast("Question paper saved successfully");
+
+    // Clear stored paper ID so creating a subsequent paper generates a fresh unique ID
+    try {
+      localStorage.removeItem(`${storageKey}_paper_id`);
+    } catch {
+      /* ignore */
+    }
   };
 
   const getPaperId = () => {
+    if (initialPaper?.id) return initialPaper.id;
     try {
       const key = `${storageKey}_paper_id`;
       const existing = localStorage.getItem(key);
@@ -284,16 +344,30 @@ const QuestionPaperPage = ({ level = "L0" }) => {
 
   const handlePreview = () => {
     saveAll();
-    navigate(previewPath);
+    if (customOnPreview) {
+      customOnPreview();
+    } else {
+      navigate(previewPath);
+    }
   };
 
   return (
     <div className="space-y-4">
       {/* Editor Banner - Exact pattern from main Dashboard */}
       <div className="bg-[#0b295c] text-white rounded-lg px-4 py-2.5 sm:px-5 sm:py-3 shadow-xs mb-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 select-none">
-        <div>
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="p-1 rounded-md bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+              title="Back"
+            >
+              <ArrowBackOutlinedIcon sx={{ fontSize: 18 }} />
+            </button>
+          )}
           <h2 className="text-base sm:text-xl font-bold font-serif tracking-tight text-white select-none">
-            Question Paper Editor ({level})
+            {bannerTitle || `Question Paper Editor (${level})`}
           </h2>
         </div>
       </div>
@@ -306,7 +380,7 @@ const QuestionPaperPage = ({ level = "L0" }) => {
       )}
 
       <TopActions
-        title={`Question Paper Editor (${level})`}
+        title={bannerTitle || (initialPaper ? `Editing: ${initialPaper.title}` : `Question Paper Editor (${level})`)}
         level={level}
         totalQuestions={totalQuestions}
         totalMarks={totalMarks}
@@ -315,7 +389,11 @@ const QuestionPaperPage = ({ level = "L0" }) => {
         onSave={saveAll}
       />
 
-      <BasicInformation onChange={handleMetaChange} />
+      <BasicInformation
+        key={initialPaper?.id || "new_paper"}
+        onChange={handleMetaChange}
+        initialData={initialPaper?.meta || {}}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         <div className="lg:col-span-4 space-y-5">

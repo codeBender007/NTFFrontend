@@ -31,3 +31,14 @@ export const savePaperToStore = (paper) => {
     return false;
   }
 };
+
+export const deletePaperFromStore = (paperId) => {
+  try {
+    const papers = getSavedPapers();
+    const updated = papers.filter((p) => p.id !== paperId);
+    localStorage.setItem(TEST_PAPERS_KEY, JSON.stringify(updated));
+    return true;
+  } catch {
+    return false;
+  }
+};

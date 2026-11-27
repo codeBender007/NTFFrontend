@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { InLMSLayoutContext } from '@/layouts/LMSLayoutContext.js'
 import { useSidebar } from '@/contexts/SidebarContext.jsx'
 import { getUser, clearSession } from '@/features/auth/utils/authStorage.js'
+import { lmsMenus } from '@/features/lms/data/LMSMenu.jsx'
 
 export default function Navbar({ onToggleSidebar, isSidebarOpen, title, children }) {
   const isInsideLayout = useContext(InLMSLayoutContext)
@@ -26,13 +27,69 @@ export default function Navbar({ onToggleSidebar, isSidebarOpen, title, children
   const getPageTitle = () => {
     if (title) return title
     const path = location.pathname
+
+    // 1. LMS: Display the exact menu name matching the currently active LMS page
+    if (path.startsWith('/lms')) {
+      const matched = lmsMenus.find((item) => {
+        if (!item.path || item.path === '#' || item.path === '/home') return false
+        if (path === item.path || path.startsWith(`${item.path}/`)) return true
+        if (Array.isArray(item.nestedPaths)) {
+          return item.nestedPaths.some(
+            (p) => path === p || path.startsWith(`${p}/`)
+          )
+        }
+        return false
+      })
+
+      if (matched) {
+        return matched.label || matched.name
+      }
+
+      // Hierarchy fallbacks if path doesn't directly prefix
+      if (path.includes('/lms/dojo-hiring') || path.includes('/lms/l0') || path.includes('/lms/l1') || path.includes('/lms/paper')) {
+        return 'DOJO Hiring'
+      }
+      if (
+        path.includes('/lms/plant') ||
+        path.includes('/lms/department') ||
+        path.includes('/lms/subdepartment') ||
+        path.includes('/lms/line') ||
+        path.includes('/lms/machine')
+      ) {
+        return 'Plant'
+      }
+      if (
+        path.includes('/lms/operator-observance') ||
+        path.includes('/lms/operators') ||
+        path.includes('/lms/operator')
+      ) {
+        return '10 Cycle Operator'
+      }
+      if (path.includes('/lms/users') || path.includes('/lms/user')) {
+        return 'Users'
+      }
+      if (path.includes('/lms/roles')) {
+        return 'Roles & Permissions'
+      }
+      if (path.includes('/lms/training')) {
+        return 'Training Effectiveness'
+      }
+      if (path.includes('/lms/dashboard')) {
+        return 'Overview'
+      }
+      return 'Overview'
+    }
+
+    // 2. DOJO 2.0 Dashboard Feature pages
     if (path.includes('/dashboard')) return 'Dashboard'
     if (path.includes('/attendance')) return 'Attendance'
     if (path.includes('/requirement')) return 'Requirement'
-    if (path.includes('/lms')) return 'Dashboard'
+
+    // 3. CMS Feature pages
     if (path.includes('/cms/man-related-defects')) return 'Man Related Defects'
     if (path.includes('/cms/total-defects')) return 'Total Defects'
     if (path.includes('/cms')) return 'CMS'
+
     return 'Dashboard'
   }
 

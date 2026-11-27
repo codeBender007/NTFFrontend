@@ -30,7 +30,7 @@ const loadMeta = (storageKey) => {
   }
 };
 
-const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
+const QuestionPaperPreview = ({ level = "L0", paper = null, onBack, onEdit }) => {
   const navigate = useNavigate();
   const storageKey = `${level.toLowerCase()}_question_paper`;
   const editorPath = `/lms/${level.toLowerCase()}/editor`;
@@ -118,9 +118,9 @@ const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
-              onClick={() => navigate("/lms/dojo-hiring")}
-              className="h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-sky-50 hover:text-[#0284c7] transition flex items-center justify-center shrink-0"
-              title="Back to Dojo Hiring"
+              onClick={onBack || (() => navigate("/lms/dojo-hiring"))}
+              className="h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-sky-50 hover:text-[#0284c7] transition flex items-center justify-center shrink-0 cursor-pointer"
+              title="Back"
             >
               <ArrowBackOutlinedIcon sx={{ fontSize: 18 }} />
             </button>
@@ -175,8 +175,8 @@ const QuestionPaperPreview = ({ level = "L0", paper = null }) => {
           <p className="text-sm font-semibold text-slate-500">No questions added yet.</p>
           <button
             type="button"
-            onClick={() => navigate(editorPath)}
-            className="mt-4 inline-flex h-9 items-center rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs"
+            onClick={onEdit || (() => navigate(editorPath))}
+            className="mt-4 inline-flex h-9 items-center rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs cursor-pointer"
           >
             Go to Editor &amp; Add Questions
           </button>

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
 import KeyboardArrowUpOutlinedIcon from "@mui/icons-material/KeyboardArrowUpOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -38,6 +38,12 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
     duration: initialData.duration || "",
     passPercentage: initialData.passPercentage || "",
   });
+
+  useEffect(() => {
+    if (onChange) {
+      onChange(formData);
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

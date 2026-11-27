@@ -4,7 +4,7 @@ import UserProfileDetails from "../components/UserProfileDetails";
 import UserApi from "../services/UserApi";
 import { formatDate } from "../utils/operatorUtils";
 import { SEED_EMPLOYEES } from "../utils/userSchema";
-import { getRoleDesignationOverrides } from "../utils/userUtils";
+import { getRoleDesignationOverrides, getUserLocalOverrides } from "../utils/userUtils";
 
 const getApiErrorMessage = (error, fallback) => {
   const detail = error?.response?.data?.detail;
@@ -94,6 +94,23 @@ const UserProfile = () => {
         }
 
         if (rawUser && !cancelled) {
+          // Check if there is a local user override for rawUser
+          const userOverrides = getUserLocalOverrides();
+          const uId = rawUser.id != null ? String(rawUser.id) : String(id);
+          const uPayCode = rawUser.payCode ? String(rawUser.payCode).trim() : "";
+          const uEmail = rawUser.email ? String(rawUser.email).trim().toLowerCase() : "";
+          const uName = (rawUser.empName || rawUser.name || "").trim().toLowerCase();
+
+          const userOverride =
+            (uId && (userOverrides[`id_${uId}`] || userOverrides[uId])) ||
+            (uPayCode && (userOverrides[`payCode_${uPayCode}`] || userOverrides[uPayCode])) ||
+            (uEmail && userOverrides[`email_${uEmail}`]) ||
+            (uName && userOverrides[`name_${uName}`]);
+
+          if (userOverride) {
+            rawUser = { ...rawUser, ...userOverride };
+          }
+
           const mapped = mapUserForProfile(rawUser);
 
           // Check role designation overrides matching by ID, payCode, email, or name
@@ -175,11 +192,43 @@ const UserProfile = () => {
       });
     };
 
+    const handleUserUpdate = (event) => {
+      const detail = event?.detail;
+      if (!detail) return;
+
+      setUser((prev) => {
+        if (!prev) return prev;
+        const uId = prev.id != null ? String(prev.id) : String(id);
+        const uPayCode = prev.employeeId ? String(prev.employeeId).trim() : "";
+        const uEmail = prev.email ? String(prev.email).trim().toLowerCase() : "";
+        const uName = (prev.name || "").trim().toLowerCase();
+
+        const isMatch =
+          (detail.id != null && (uId === String(detail.id) || String(id) === String(detail.id))) ||
+          (detail.userId != null && (uId === String(detail.userId) || String(id) === String(detail.userId))) ||
+          (detail.payCode && uPayCode === String(detail.payCode).trim()) ||
+          (detail.email && uEmail === String(detail.email).trim().toLowerCase()) ||
+          (detail.empName && uName === String(detail.empName).trim().toLowerCase()) ||
+          (detail.name && uName === String(detail.name).trim().toLowerCase());
+
+        if (isMatch) {
+          return {
+            ...prev,
+            ...mapUserForProfile({ ...prev, ...detail }),
+            id: prev.id ?? detail.id,
+          };
+        }
+        return prev;
+      });
+    };
+
     window.addEventListener("ntf:user-role-updated", handleRoleUpdate);
+    window.addEventListener("ntf:user-updated", handleUserUpdate);
     window.addEventListener("storage", handleRoleUpdate);
 
     return () => {
       window.removeEventListener("ntf:user-role-updated", handleRoleUpdate);
+      window.removeEventListener("ntf:user-updated", handleUserUpdate);
       window.removeEventListener("storage", handleRoleUpdate);
     };
   }, [id]);

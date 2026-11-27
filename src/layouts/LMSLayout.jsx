@@ -38,9 +38,8 @@ export default function LMSLayout() {
 
         {/* Right Main LMS Content */}
         <main
-          className={`flex-1 p-3 sm:p-4 md:p-5 min-h-[calc(100vh-64px)] overflow-x-hidden transition-all duration-300 ${
-            isCollapsed ? 'ml-0 lg:ml-20' : 'ml-0 lg:ml-60'
-          }`}
+          className={`flex-1 p-3 sm:p-4 md:p-5 min-h-[calc(100vh-64px)] overflow-x-hidden transition-all duration-300 ${isCollapsed ? 'ml-0 lg:ml-20' : 'ml-0 lg:ml-60'
+            }`}
         >
           <InLMSLayoutContext.Provider value={true}>
             <Outlet key={location.pathname} />

@@ -37,6 +37,8 @@ export default function EmployeePage() {
     },
   ]
 
+  const displayName = user?.empName || user?.name || user?.username || user?.email || 'Employee'
+
   return (
     <div
       className="min-h-screen w-full flex flex-col justify-center items-center px-4 sm:px-6 md:px-8 py-6 select-none relative font-sans bg-cover bg-center bg-no-repeat"
@@ -44,9 +46,9 @@ export default function EmployeePage() {
     >
       {/* Top right subtle profile/logout */}
       <div className="absolute top-4 sm:top-5 right-4 sm:right-6 z-20 flex items-center gap-2.5 sm:gap-3">
-        {user && (user.username || user.email || user.name || user.empName) && (
+        {user && (
           <span className="text-xs text-slate-600 hidden sm:inline-block font-medium bg-white/70 backdrop-blur-xs px-2.5 py-1 rounded-md border border-slate-200/60 shadow-2xs">
-            {user.username || user.email || user.name || user.empName}
+            {displayName} {user?.payCode ? `(${user.payCode})` : ''}
           </span>
         )}
         <button

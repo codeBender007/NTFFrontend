@@ -1,18 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import Filters from "../../../components/Filters";
-import { getSavedPapers } from "../utils/testPapers";
+import { getSavedPapers, deletePaperFromStore } from "../utils/testPapers";
 
-const QuestionPaperTable = ({ onCreate }) => {
+const QuestionPaperTable = ({
+  onCreate,
+  onView,
+  onEdit,
+  onDelete,
+  customRows,
+  title,
+  subtitle,
+}) => {
   const navigate = useNavigate();
-  const [rows] = useState(() => getSavedPapers());
+  const [rows, setRows] = useState(() =>
+    Array.isArray(customRows) ? customRows : getSavedPapers()
+  );
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  useEffect(() => {
+    if (Array.isArray(customRows)) {
+      setRows(customRows);
+    } else {
+      setRows(getSavedPapers());
+    }
+  }, [customRows]);
+
+  const handleDeleteRow = (paper) => {
+    if (onDelete) {
+      onDelete(paper);
+    } else {
+      deletePaperFromStore(paper.id);
+      setRows((prev) => prev.filter((p) => p.id !== paper.id));
+    }
+  };
 
   const handleChangePage = (_, newPage) => {
     setPage(newPage);
@@ -42,10 +71,10 @@ const QuestionPaperTable = ({ onCreate }) => {
 
           <div>
             <h2 className="text-base font-bold text-slate-900 leading-tight">
-              Test Papers
+              {title || "Test Papers"}
             </h2>
             <p className="text-xs text-slate-500">
-              Browse and manage test papers
+              {subtitle || "Browse and manage test papers"}
             </p>
           </div>
         </div>
@@ -53,7 +82,7 @@ const QuestionPaperTable = ({ onCreate }) => {
         <button
           type="button"
           onClick={onCreate}
-          className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs transition-colors"
+          className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs transition-colors cursor-pointer"
         >
           <AddOutlinedIcon sx={{ fontSize: 18 }} />
           Create Test Paper
@@ -78,11 +107,12 @@ const QuestionPaperTable = ({ onCreate }) => {
                     "Passing Criteria",
                     "Total Marks",
                     "Preview",
+                    "Action",
                   ].map((head) => (
                     <th
                       key={head}
                       className={`px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-white border-r border-[#153e7e] ${
-                        head === "Preview" ? "text-center" : "text-left"
+                        head === "Preview" || head === "Action" ? "text-center" : "text-left"
                       }`}
                     >
                       {head}
@@ -94,7 +124,7 @@ const QuestionPaperTable = ({ onCreate }) => {
                 {displayedRows.length === 0 && (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       className="px-4 py-12 text-center text-sm text-slate-400"
                     >
                       No test papers found
@@ -148,16 +178,38 @@ const QuestionPaperTable = ({ onCreate }) => {
                       </p>
                     </td>
 
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-center border-r border-slate-100">
                       <button
                         type="button"
-                        onClick={() => navigate(`/lms/paper/preview/${row.id}`)}
+                        onClick={() => (onView ? onView(row) : navigate(`/lms/paper/preview/${row.id}`))}
                         title="Preview paper"
-                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 transition hover:border-[#0284c7] hover:text-[#0284c7] hover:bg-sky-50/50 shadow-xs"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 transition hover:border-[#0284c7] hover:text-[#0284c7] hover:bg-sky-50/50 shadow-xs cursor-pointer"
                       >
                         <VisibilityOutlinedIcon sx={{ fontSize: 15 }} />
                         Preview
                       </button>
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => (onEdit ? onEdit(row) : null)}
+                          title="Edit question paper"
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50 transition shadow-2xs cursor-pointer"
+                        >
+                          <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRow(row)}
+                          title="Delete question paper"
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition shadow-2xs cursor-pointer"
+                        >
+                          <DeleteOutlineOutlinedIcon sx={{ fontSize: 16 }} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

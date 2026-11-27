@@ -9,19 +9,22 @@ import {
   LogOut,
   User,
   ArrowRight,
-  RotateCcw,
 } from "lucide-react";
 import { clearSession, getUser } from "@/features/auth/utils/authStorage.js";
 import ntfLogo from "@/assets/images/NTF_logo_black.png";
 import Day1QuestionPaper from "@/features/lms/components/Day1QuestionPaper.jsx";
 import Day2QuestionPaper from "@/features/lms/components/Day2QuestionPaper.jsx";
-import { getSubmittedPapers, resetPaperSubmissions } from "../utils/questionPaperStorage.js";
-import { resetTrainingSchedule } from "../utils/trainingStorage.js";
+import {
+  getSubmittedPapers,
+  getEmployeeStorageKey,
+} from "../utils/questionPaperStorage.js";
 
 export default function PastQuestionPapers() {
   const navigate = useNavigate();
   const user = getUser();
-  const userEmail = user?.email || "emp123@gmail.com";
+  const userKey = getEmployeeStorageKey(user);
+  const displayName = user?.empName || user?.name || user?.username || "Employee";
+  const displayPayCode = user?.payCode ? `(${user.payCode})` : "";
 
   // Submissions map
   const [submittedMap, setSubmittedMap] = useState({});
@@ -34,16 +37,9 @@ export default function PastQuestionPapers() {
     navigate("/login", { replace: true });
   };
 
-  const handleResetDemo = () => {
-    resetPaperSubmissions(userEmail);
-    resetTrainingSchedule(userEmail);
-    setSubmittedMap({});
-    setViewingPaper(null);
-  };
-
   useEffect(() => {
-    setSubmittedMap(getSubmittedPapers(userEmail));
-  }, [userEmail]);
+    setSubmittedMap(getSubmittedPapers(user));
+  }, [userKey]);
 
   const day1Submission = submittedMap.day1;
   const day2Submission = submittedMap.day2;
@@ -77,9 +73,12 @@ export default function PastQuestionPapers() {
           </div>
 
           <div className="flex items-center space-x-3">
-            <span className="text-xs font-medium text-slate-500">
-              {userEmail}
-            </span>
+            <div className="flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/60">
+              <User className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-xs font-semibold text-slate-700">
+                {displayName} {displayPayCode}
+              </span>
+            </div>
           </div>
         </header>
 
@@ -90,10 +89,10 @@ export default function PastQuestionPapers() {
               initialAnswers={day1Submission?.answers}
               isAlreadySubmitted={true}
               initialInfo={{
-                name: user?.name || userEmail.split("@")[0],
+                name: displayName,
                 designation: user?.designation || "Trainee Operator",
                 date: day1Submission?.submittedAt || "",
-                unit: user?.unit || "Plant 1",
+                unit: user?.plant || user?.plantLocation || user?.unit || "Plant 1",
               }}
             />
           )}
@@ -103,10 +102,10 @@ export default function PastQuestionPapers() {
               initialAnswers={day2Submission?.answers}
               isAlreadySubmitted={true}
               initialInfo={{
-                name: user?.name || userEmail.split("@")[0],
+                name: displayName,
                 qualification: user?.designation || "Trainee Operator",
                 date: day2Submission?.submittedAt || "",
-                unit: user?.unit || "Plant 1",
+                unit: user?.plant || user?.plantLocation || user?.unit || "Plant 1",
               }}
             />
           )}
@@ -143,7 +142,7 @@ export default function PastQuestionPapers() {
           <div className="flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/60">
             <User className="w-3.5 h-3.5 text-slate-500" />
             <span className="text-xs font-semibold text-slate-700">
-              {userEmail}
+              {displayName} {displayPayCode}
             </span>
           </div>
 
@@ -170,17 +169,6 @@ export default function PastQuestionPapers() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {hasAnyPastPapers && (
-              <button
-                type="button"
-                onClick={handleResetDemo}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-700 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 shadow-2xs transition-all cursor-pointer inline-flex items-center space-x-1"
-                title="Reset submitted papers back to initial pre-submission state for demo"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Reset for Demo</span>
-              </button>
-            )}
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
               {hasAnyPastPapers ? "Submissions Available" : "0 Completed"}
             </span>

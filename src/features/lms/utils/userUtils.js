@@ -242,12 +242,97 @@ export const saveRoleDesignationOverride = (user, roleName, roleId) => {
   }
 };
 
-export const applyRoleDesignationOverrides = (usersList = []) => {
+/* =========================================================================
+   GENERAL USER EDITS PERSISTENCE & SYNCHRONIZATION HELPERS
+   ========================================================================= */
+
+export const USER_LOCAL_OVERRIDES_KEY = "ntf_user_local_overrides";
+
+export const getUserLocalOverrides = () => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(USER_LOCAL_OVERRIDES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const saveUserLocalOverride = (user) => {
+  if (typeof window === "undefined" || !user) return {};
+  try {
+    const overrides = getUserLocalOverrides();
+    const uId = user.id != null ? String(user.id) : null;
+    const uPayCode = user.payCode ? String(user.payCode).trim() : null;
+    const uEmail = user.email ? String(user.email).trim().toLowerCase() : null;
+    const uName = (user.empName || user.name || "").trim().toLowerCase();
+
+    const entry = {
+      ...user,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (uId) {
+      overrides[`id_${uId}`] = entry;
+      overrides[uId] = entry;
+    }
+    if (uPayCode) {
+      overrides[`payCode_${uPayCode}`] = entry;
+      overrides[uPayCode] = entry;
+    }
+    if (uEmail) {
+      overrides[`email_${uEmail}`] = entry;
+    }
+    if (uName) {
+      overrides[`name_${uName}`] = entry;
+    }
+
+    localStorage.setItem(USER_LOCAL_OVERRIDES_KEY, JSON.stringify(overrides));
+    return overrides;
+  } catch (err) {
+    console.warn("Could not save user local override:", err);
+    return {};
+  }
+};
+
+export const applyUserLocalOverrides = (usersList = []) => {
   if (!Array.isArray(usersList) || usersList.length === 0) return usersList;
-  const overrides = getRoleDesignationOverrides();
+  const overrides = getUserLocalOverrides();
   if (!overrides || Object.keys(overrides).length === 0) return usersList;
 
   return usersList.map((user) => {
+    const uId = user.id != null ? String(user.id) : "";
+    const uPayCode = user.payCode ? String(user.payCode).trim() : "";
+    const uEmail = user.email ? String(user.email).trim().toLowerCase() : "";
+    const uName = (user.empName || user.name || "").trim().toLowerCase();
+
+    const override =
+      (uId && (overrides[`id_${uId}`] || overrides[uId])) ||
+      (uPayCode && (overrides[`payCode_${uPayCode}`] || overrides[uPayCode])) ||
+      (uEmail && overrides[`email_${uEmail}`]) ||
+      (uName && overrides[`name_${uName}`]);
+
+    if (!override) return user;
+
+    return {
+      ...user,
+      ...override,
+      id: user.id ?? override.id,
+      sno: user.sno || override.sno,
+    };
+  });
+};
+
+export const applyRoleDesignationOverrides = (usersList = []) => {
+  if (!Array.isArray(usersList) || usersList.length === 0) return usersList;
+  
+  // First apply general user local overrides (empName, payCode, joiningDate, etc.)
+  const withUserOverrides = applyUserLocalOverrides(usersList);
+  
+  const overrides = getRoleDesignationOverrides();
+  if (!overrides || Object.keys(overrides).length === 0) return withUserOverrides;
+
+  return withUserOverrides.map((user) => {
     const uId = user.id != null ? String(user.id) : "";
     const uPayCode = user.payCode ? String(user.payCode).trim() : "";
     const uEmail = user.email ? String(user.email).trim().toLowerCase() : "";

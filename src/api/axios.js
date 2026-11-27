@@ -3,6 +3,7 @@ import { getToken, clearSession } from "../features/auth/utils/authStorage.js";
 
 const api = axios.create({
   baseURL: (typeof import.meta !== "undefined" && import.meta.env?.VITE_BACKEND_URL) || "",
+  timeout: 4000,
   headers: {
     "Content-Type": "application/json",
   },

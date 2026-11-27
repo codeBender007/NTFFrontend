@@ -1,12 +1,15 @@
 import React from 'react'
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
-import { isAuthenticated, isEmployee } from '@/features/auth/utils/authStorage.js'
+import { isAuthenticated, isEmployee, isSupervisor } from '@/features/auth/utils/authStorage.js'
 
 // Auth Pages
 import Login from '@/features/auth/pages/Login.jsx'
 
 // Home Portal
 import HomePage from '@/pages/HomePage/index.jsx'
+
+// Supervisor Feature Pages (Blank initial page)
+import SupervisorPage from '@/features/supervisor/pages/SupervisorPage.jsx'
 
 // Employee Feature Pages
 import EmployeePage from '@/features/employee/pages/EmployeePage.jsx'
@@ -47,10 +50,13 @@ import CMSLayout from '@/layouts/CMSLayout.jsx'
 import ManRelatedDefects from '@/features/cms/pages/ManRelatedDefects.jsx'
 import TotalDefects from '@/features/cms/pages/TotalDefects.jsx'
 
-// Admin Route Guard: redirects unauthenticated users to /login, and employees to /employee
+// Admin Route Guard: redirects unauthenticated users to /login, employees to /employee, supervisors to /supervisor
 function AdminProtectedRoute() {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />
+  }
+  if (isSupervisor()) {
+    return <Navigate to="/supervisor" replace />
   }
   if (isEmployee()) {
     return <Navigate to="/employee" replace />
@@ -58,12 +64,29 @@ function AdminProtectedRoute() {
   return <Outlet />
 }
 
-// Employee Route Guard: redirects unauthenticated users to /login, and non-employees to /home
+// Employee Route Guard: redirects unauthenticated users to /login, supervisors to /supervisor, non-employees to /home
 function EmployeeProtectedRoute() {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />
   }
+  if (isSupervisor()) {
+    return <Navigate to="/supervisor" replace />
+  }
   if (!isEmployee()) {
+    return <Navigate to="/home" replace />
+  }
+  return <Outlet />
+}
+
+// Supervisor Route Guard: redirects unauthenticated users to /login, employees to /employee, admins to /home
+function SupervisorProtectedRoute() {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />
+  }
+  if (!isSupervisor()) {
+    if (isEmployee()) {
+      return <Navigate to="/employee" replace />
+    }
     return <Navigate to="/home" replace />
   }
   return <Outlet />
@@ -72,6 +95,9 @@ function EmployeeProtectedRoute() {
 // Public-only route: redirects authenticated users to their corresponding page
 function PublicRoute({ children }) {
   if (isAuthenticated()) {
+    if (isSupervisor()) {
+      return <Navigate to="/supervisor" replace />
+    }
     if (isEmployee()) {
       return <Navigate to="/employee" replace />
     }
@@ -84,6 +110,9 @@ function PublicRoute({ children }) {
 function RootRoute() {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />
+  }
+  if (isSupervisor()) {
+    return <Navigate to="/supervisor" replace />
   }
   if (isEmployee()) {
     return <Navigate to="/employee" replace />
@@ -106,6 +135,11 @@ export default function AppRoutes() {
           </PublicRoute>
         }
       />
+
+      {/* Supervisor Protected Routes */}
+      <Route element={<SupervisorProtectedRoute />}>
+        <Route path="/supervisor" element={<SupervisorPage />} />
+      </Route>
 
       {/* Employee Protected Routes */}
       <Route element={<EmployeeProtectedRoute />}>
