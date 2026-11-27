@@ -39,7 +39,7 @@ import UserApi from "../services/UserApi";
 import { isAuthenticated, clearSession } from "../../auth/utils/authStorage";
 
 const ITEMS_PER_PAGE = 10;
-const MAX_USERS_PAGE = 1000;
+const MAX_USERS_PAGE = 5000;
 
 const inputClass =
   "h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-[#0284c7] focus:ring-2 focus:ring-sky-500/15";
@@ -115,8 +115,18 @@ const mapUserFromApi = (user) => {
   };
 };
 
-const mapUsersFromApi = (data) =>
-  (Array.isArray(data) ? data : []).map(mapUserFromApi);
+const mapUsersFromApi = (data) => {
+  const list = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data?.users)
+          ? data.users
+          : [];
+  return list.map(mapUserFromApi);
+};
 
 const USER_TABLE_COLUMNS = [
   { label: "SNo", key: "sno" },
@@ -646,6 +656,7 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
     try {
       const response = await UserApi.getUsers({ limit: MAX_USERS_PAGE });
       const apiUsers = applyRoleDesignationOverrides(mapUsersFromApi(response.data));
+      setLoadError("");
 
       if (updatedOverride && (updatedOverride.id != null || updatedOverride.payCode != null)) {
         const overrideId = updatedOverride.id != null ? String(updatedOverride.id) : null;
@@ -681,8 +692,13 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       } else {
         setUsers(apiUsers);
       }
+      return true;
     } catch (error) {
       console.error("Refresh users error:", error);
+      setLoadError(
+        getApiErrorMessage(error, "Unable to reload users. Please try again."),
+      );
+      return false;
     }
   };
 
@@ -718,13 +734,18 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       const response = await UserApi.uploadExcel(formData);
       const summary = response.data || {};
 
+      setFilterValues({});
+      setSearch("");
+      setCurrentPage(1);
       await refreshUsers();
       showToast(
         `Import complete: ${summary.inserted ?? 0} added, ${summary.updated ?? 0
         } updated.`,
       );
     } catch (error) {
-      if (error?.response?.status === 401) {
+      if (error?.code === "ECONNABORTED") {
+        showToast("Upload timed out. Please try again.");
+      } else if (error?.response?.status === 401) {
         clearSession();
         showToast(
           getApiErrorMessage(error, "Access Denied: You have to login first."),
@@ -738,7 +759,13 @@ const Users = ({ users: propUsers, setUsers: propSetUsers }) => {
       console.error("Excel upload API error:", error);
     } finally {
       setUploading(false);
-      event.target.value = "";
+      setLoading(false);
+      if (event?.target) {
+        event.target.value = "";
+      }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
