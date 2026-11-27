@@ -306,8 +306,8 @@ export default function SubmittedPapersPanel({
   if (reviewingSubmission) {
     return (
       <div className="space-y-4">
-        {/* Top Review Sticky Bar */}
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs px-4 sm:px-5 py-3.5 sticky top-16 z-20 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        {/* Top Review Header Bar */}
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs px-4 sm:px-5 py-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
@@ -321,7 +321,7 @@ export default function SubmittedPapersPanel({
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back to Submitted Papers</span>
             </button>
-            <div className="h-5 w-px bg-slate-200 hidden sm:block" />
+            <div className="h-5 w-px bg-slate-200 hidden sm:block shrink-0" />
             <div className="min-w-0">
               <h2 className="text-sm sm:text-base font-bold text-[#0f1f38] truncate">
                 {reviewingSubmission.questionPaperTitle}
@@ -336,7 +336,7 @@ export default function SubmittedPapersPanel({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap shrink-0">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
               <span className="text-slate-500 font-medium">Total Score:</span>
               <span className="font-bold text-[#0b295c]">
