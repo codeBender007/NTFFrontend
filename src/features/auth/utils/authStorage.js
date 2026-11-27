@@ -201,37 +201,43 @@ export const isAuthenticated = () => {
 };
 
 /**
- * Check if the active session belongs to an Employee
+ * Check if the active session belongs to an Employee / Operator
  */
 export const isEmployee = () => {
   if (localStorage.getItem(EMPLOYEE_SESSION_KEY) === "true") return true;
   const user = getUser();
-  return user?.role === "employee" || user?.isEmployee === true;
+  if (!user) return false;
+  const role = String(user.role || "").trim().toUpperCase();
+  return role === "OPERATOR" || role === "EMPLOYEE" || user.isEmployee === true;
 };
 
 /**
- * Persist employee session in localStorage
+ * Persist live Operator session fetched from backend Users API
  */
 export const saveEmployeeSession = (employeeData = {}) => {
   const user = {
     ...employeeData,
-    email: employeeData.email || "emp123@gmail.com",
-    username: employeeData.username || "emp123",
-    role: "employee",
+    role: employeeData.role || "OPERATOR",
     isEmployee: true,
   };
 
-  const syntheticJwt = `emp_hdr.${btoa(
-    JSON.stringify({
-      role: "employee",
-      sub: user.email,
-      name: user.username,
-      exp: Math.floor(Date.now() / 1000) + 86400 * 30,
-    })
+  const sessionToken = `emp_hdr.${btoa(
+    unescape(
+      encodeURIComponent(
+        JSON.stringify({
+          id: user.id ?? null,
+          role: "OPERATOR",
+          sub: user.email || user.payCode || user.username || "operator",
+          empName: user.empName || user.name || "",
+          payCode: user.payCode || user.paycode || "",
+          exp: Math.floor(Date.now() / 1000) + 86400 * 30,
+        })
+      )
+    )
   )}.emp_sig`;
 
-  localStorage.setItem(TOKEN_KEY, syntheticJwt);
-  localStorage.setItem(ACCESS_TOKEN_KEY, syntheticJwt);
+  localStorage.setItem(TOKEN_KEY, sessionToken);
+  localStorage.setItem(ACCESS_TOKEN_KEY, sessionToken);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   localStorage.setItem(LOGGED_IN_KEY, "true");
   localStorage.setItem(EMPLOYEE_SESSION_KEY, "true");
@@ -244,7 +250,9 @@ export const saveEmployeeSession = (employeeData = {}) => {
 export const isSupervisor = () => {
   if (localStorage.getItem(SUPERVISOR_SESSION_KEY) === "true") return true;
   const user = getUser();
-  return user?.role === "supervisor" || user?.isSupervisor === true;
+  if (!user) return false;
+  const role = String(user.role || "").trim().toUpperCase();
+  return role === "SUPERVISOR" || user.isSupervisor === true;
 };
 
 /**
@@ -272,7 +280,6 @@ export const saveSupervisorSession = (supervisorData = {}) => {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   localStorage.setItem(LOGGED_IN_KEY, "true");
   localStorage.setItem(SUPERVISOR_SESSION_KEY, "true");
-  localStorage.removeItem(EMPLOYEE_SESSION_KEY);
 };
 
 /**
@@ -287,7 +294,7 @@ export const clearSession = () => {
     "authToken",
     USER_KEY,
     LOGGED_IN_KEY,
-    EMPLOYEE_SESSION_KEY,
+    "employee_session",
     SUPERVISOR_SESSION_KEY,
   ];
 

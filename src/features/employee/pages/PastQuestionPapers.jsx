@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -6,17 +6,23 @@ import {
   FileCheck,
   Eye,
   Calendar,
-  LogOut,
-  User,
   ArrowRight,
+  AlertCircle,
 } from "lucide-react";
-import { clearSession, getUser } from "@/features/auth/utils/authStorage.js";
-import ntfLogo from "@/assets/images/NTF_logo_black.png";
+import { getUser } from "@/features/auth/utils/authStorage.js";
 import Day1QuestionPaper from "@/features/lms/components/Day1QuestionPaper.jsx";
 import Day2QuestionPaper from "@/features/lms/components/Day2QuestionPaper.jsx";
+import DynamicDayQuestionPaper from "@/features/lms/components/DynamicDayQuestionPaper.jsx";
+import QuestionPaperApi, {
+  getApiErrorMessage,
+  mapApiResponseToPaper,
+  mapApiSubmissionToModel,
+} from "@/features/lms/services/QuestionPaperApi.js";
+import { getDefaultDayPaper } from "@/features/lms/utils/defaultDayPapers.js";
+import { mergeSubmissionWithGrade } from "@/features/supervisor/utils/submissionGradingStorage.js";
 import {
-  getSubmittedPapers,
   getEmployeeStorageKey,
+  doesSubmissionBelongToEmployee,
 } from "../utils/questionPaperStorage.js";
 
 export default function PastQuestionPapers() {
@@ -26,35 +32,100 @@ export default function PastQuestionPapers() {
   const displayName = user?.empName || user?.name || user?.username || "Employee";
   const displayPayCode = user?.payCode ? `(${user.payCode})` : "";
 
-  // Submissions map
-  const [submittedMap, setSubmittedMap] = useState({});
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Active viewing paper: null | 'day1' | 'day2'
-  const [viewingPaper, setViewingPaper] = useState(null);
+  // Active viewing submission + fetched question paper
+  const [viewingState, setViewingState] = useState(null); // { submission, paper }
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailError, setDetailError] = useState(null);
 
-  const handleLogout = () => {
-    clearSession();
-    navigate("/login", { replace: true });
-  };
+  const fetchSubmissions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const numericUserId =
+        user?.id != null && !Number.isNaN(Number(user.id))
+          ? Number(user.id)
+          : undefined;
 
-  useEffect(() => {
-    setSubmittedMap(getSubmittedPapers(user));
+      const res = await QuestionPaperApi.getSubmissions(
+        numericUserId !== undefined ? { user_id: numericUserId } : {}
+      );
+      const rawList = Array.isArray(res?.data) ? res.data : [];
+      const mapped = rawList
+        .map(mapApiSubmissionToModel)
+        .filter((s) => s && doesSubmissionBelongToEmployee(s, user))
+        .map(mergeSubmissionWithGrade);
+
+      setSubmissions(mapped);
+    } catch (err) {
+      setError(
+        getApiErrorMessage(err, "Failed to load past question paper submissions.")
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [userKey]);
 
-  const day1Submission = submittedMap.day1;
-  const day2Submission = submittedMap.day2;
-  const hasAnyPastPapers = Boolean(day1Submission?.submitted || day2Submission?.submitted);
+  useEffect(() => {
+    fetchSubmissions();
+  }, [fetchSubmissions]);
 
-  // View: Viewing Submitted Day 1 or Day 2 Question Paper
-  if (viewingPaper) {
+  const handleViewSubmission = async (sub) => {
+    if (!sub?.id) return;
+    setLoadingDetail(true);
+    setDetailError(null);
+    setViewingState({ submission: sub, paper: null });
+
+    try {
+      const [subRes, paperRes] = await Promise.all([
+        QuestionPaperApi.getSubmissionById(sub.id),
+        sub.questionPaperId != null
+          ? QuestionPaperApi.getQuestionPaperById(sub.questionPaperId)
+          : Promise.resolve(null),
+      ]);
+
+      const detailedSubmission = mergeSubmissionWithGrade(
+        mapApiSubmissionToModel(subRes?.data) || sub
+      );
+      const detailedPaper = paperRes?.data
+        ? mapApiResponseToPaper(paperRes.data)
+        : getDefaultDayPaper(detailedSubmission.dayType || "DAY_1");
+
+      setViewingState({
+        submission: detailedSubmission,
+        paper: detailedPaper,
+      });
+    } catch (err) {
+      setDetailError(
+        getApiErrorMessage(err, "Failed to load submission details.")
+      );
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const formatTimestamp = (ts) => {
+    if (!ts) return "Recently";
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? String(ts) : d.toLocaleString();
+  };
+
+  // View: Viewing Submitted Question Paper (Read-only)
+  if (viewingState) {
+    const { submission, paper } = viewingState;
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none pb-12">
-        {/* Top bar with back button */}
-        <header className="bg-white border-b border-slate-200/80 sticky top-0 z-30 h-16 px-4 sm:px-6 flex items-center justify-between">
+      <div className="space-y-4 select-none pb-8">
+        <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-3 print:hidden">
           <div className="flex items-center space-x-3">
             <button
               type="button"
-              onClick={() => setViewingPaper(null)}
+              onClick={() => {
+                setViewingState(null);
+                setDetailError(null);
+              }}
               className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer"
               title="Return to list"
             >
@@ -63,120 +134,145 @@ export default function PastQuestionPapers() {
             </button>
             <div className="h-5 w-px bg-slate-200" />
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-[#0f1f38]">
-                {viewingPaper === "day1" ? "Day 1 Question Paper (Submitted)" : "Day 2 Question Paper (Submitted)"}
-              </h1>
+              <h2 className="text-sm sm:text-base font-bold text-[#0f1f38]">
+                {submission.questionPaperTitle} (Submitted)
+              </h2>
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Completed
+                {submission.status || "Completed"}
               </span>
             </div>
           </div>
+        </div>
 
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/60">
-              <User className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-xs font-semibold text-slate-700">
-                {displayName} {displayPayCode}
-              </span>
+        <div className="w-full overflow-x-auto">
+          {loadingDetail ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-12 flex flex-col items-center justify-center gap-3">
+              <span className="h-7 w-7 rounded-full border-3 border-sky-500 border-t-transparent animate-spin" />
+              <p className="text-xs font-semibold text-slate-500">
+                Loading submitted paper details...
+              </p>
             </div>
-          </div>
-        </header>
-
-        {/* Paper Container - Reusing exact Admin LMS / Dojo component in submitted state */}
-        <main className="max-w-5xl mx-auto px-4 py-6 w-full">
-          {viewingPaper === "day1" && (
-            <Day1QuestionPaper
-              initialAnswers={day1Submission?.answers}
-              isAlreadySubmitted={true}
-              initialInfo={{
-                name: displayName,
-                designation: user?.designation || "Trainee Operator",
-                date: day1Submission?.submittedAt || "",
-                unit: user?.plant || user?.plantLocation || user?.unit || "Plant 1",
-              }}
-            />
-          )}
-
-          {viewingPaper === "day2" && (
+          ) : detailError ? (
+            <div className="bg-white rounded-2xl border border-rose-200 p-8 text-center space-y-3">
+              <p className="text-sm font-semibold text-rose-700">{detailError}</p>
+              <button
+                type="button"
+                onClick={() => handleViewSubmission(submission)}
+                className="inline-flex h-9 items-center rounded-lg bg-[#0b295c] hover:bg-[#082046] px-5 text-xs font-semibold text-white shadow-xs transition cursor-pointer"
+              >
+                Retry
+              </button>
+            </div>
+          ) : submission.dayType === "DAY_2" ? (
             <Day2QuestionPaper
-              initialAnswers={day2Submission?.answers}
+              paper={paper}
+              paperId={submission.questionPaperId}
+              initialAnswers={submission.answers}
               isAlreadySubmitted={true}
+              readOnly={true}
+              submission={submission}
               initialInfo={{
                 name: displayName,
                 qualification: user?.designation || "Trainee Operator",
-                date: day2Submission?.submittedAt || "",
-                unit: user?.plant || user?.plantLocation || user?.unit || "Plant 1",
+                date: formatTimestamp(submission.submittedAt),
+                unit:
+                  user?.plant || user?.plantLocation || user?.unit || "Plant 1",
+                ...(submission.participantInfo || {}),
+              }}
+            />
+          ) : submission.dayType === "DAY_1" ? (
+            <Day1QuestionPaper
+              paper={paper}
+              paperId={submission.questionPaperId}
+              initialAnswers={submission.answers}
+              isAlreadySubmitted={true}
+              readOnly={true}
+              submission={submission}
+              initialInfo={{
+                name: displayName,
+                designation: user?.designation || "Trainee Operator",
+                date: formatTimestamp(submission.submittedAt),
+                unit:
+                  user?.plant || user?.plantLocation || user?.unit || "Plant 1",
+                ...(submission.participantInfo || {}),
+              }}
+            />
+          ) : (
+            <DynamicDayQuestionPaper
+              dayType={submission.dayType || "L0"}
+              paper={paper}
+              paperId={submission.questionPaperId}
+              initialAnswers={submission.answers}
+              isAlreadySubmitted={true}
+              readOnly={true}
+              submission={submission}
+              initialInfo={{
+                name: displayName,
+                designation: user?.designation || "Trainee Operator",
+                qualification: user?.designation || "Trainee Operator",
+                date: formatTimestamp(submission.submittedAt),
+                unit:
+                  user?.plant || user?.plantLocation || user?.unit || "Plant 1",
+                ...(submission.participantInfo || {}),
               }}
             />
           )}
-        </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none pb-12">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-30 h-16 px-4 sm:px-6 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <button
-            type="button"
-            onClick={() => navigate("/employee")}
-            className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer"
-            title="Back to Employee Home"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <img
-            src={ntfLogo}
-            alt="NTF"
-            className="h-8 w-auto object-contain mix-blend-multiply"
-          />
-          <div className="h-5 w-px bg-slate-200 hidden sm:block" />
-          <h1 className="text-base sm:text-lg font-bold text-[#0f1f38]">
-            Past Question Papers
-          </h1>
-        </div>
+    <div className="space-y-4 select-none pb-8">
+      {/* Banner matching Admin Portal */}
+      <div className="bg-[#0b295c] text-white rounded-lg px-4 py-2.5 sm:px-5 sm:py-3 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <h2 className="text-base sm:text-xl font-bold font-serif tracking-tight text-white">
+          Past Question Paper
+        </h2>
+      </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/60">
-            <User className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-xs font-semibold text-slate-700">
-              {displayName} {displayPayCode}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 shadow-2xs transition-all cursor-pointer"
-            title="Logout"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 w-full space-y-6">
+      <div className="space-y-5">
         <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex items-center justify-between">
           <div className="space-y-0.5">
             <h2 className="text-sm font-bold text-[#0f1f38]">
               Completed Training Question Papers
             </h2>
             <p className="text-xs text-slate-500">
-              All question papers you have submitted are stored here for your review and records.
+              All question papers you have submitted are stored in the database for your review and records.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-              {hasAnyPastPapers ? "Submissions Available" : "0 Completed"}
+              {submissions.length} Completed
             </span>
           </div>
         </div>
 
-        {/* Row List or Empty State */}
-        {!hasAnyPastPapers ? (
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs text-rose-700 font-medium">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={fetchSubmissions}
+              className="px-3 py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700 text-xs font-semibold transition cursor-pointer shrink-0"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Loading, Empty, or Submissions List */}
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center shadow-2xs flex flex-col items-center gap-3">
+            <span className="h-7 w-7 rounded-full border-3 border-sky-500 border-t-transparent animate-spin" />
+            <p className="text-xs font-semibold text-slate-500">
+              Loading your submitted question papers...
+            </p>
+          </div>
+        ) : submissions.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center shadow-2xs space-y-3">
             <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
               <FileCheck className="w-7 h-7" />
@@ -185,7 +281,7 @@ export default function PastQuestionPapers() {
               No Past Question Papers Yet
             </h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-              You haven't completed any question papers yet. When you complete Day 1 or Day 2 training and submit your paper, it will move here automatically.
+              You haven&apos;t completed any question papers yet. When you complete Day 1 or Day 2 training and submit your paper, it will move here automatically.
             </p>
             <div className="pt-3">
               <button
@@ -200,28 +296,64 @@ export default function PastQuestionPapers() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden divide-y divide-slate-100">
-            {/* ROW: DAY 1 SUBMITTED */}
-            {day1Submission?.submitted && (
-              <div className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
+            {submissions.map((sub) => (
+              <div
+                key={sub.id}
+                className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors"
+              >
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-200/80 shrink-0 mt-0.5">
                     <CheckCircle2 className="w-6 h-6 stroke-[2]" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="text-base font-bold text-[#0f1f38]">
-                        Day 1 Question Paper
+                        {sub.questionPaperTitle}
                       </h3>
-                      <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Submitted
+                      <span
+                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                          sub.isGraded
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                        }`}
+                      >
+                        {sub.isGraded ? "Graded" : "Pending Review"}
                       </span>
+                      {sub.passed !== null && sub.passed !== undefined && (
+                        <span
+                          className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                            sub.passed
+                              ? "bg-sky-50 text-sky-700 border-sky-200"
+                              : "bg-rose-50 text-rose-700 border-rose-200"
+                          }`}
+                        >
+                          {sub.passed ? "Passed" : "Needs Improvement"}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      Company Overview, 5S & Kaizen Induction Evaluation.
-                    </p>
+                    <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500">
+                      <span>
+                        Answered: <strong>{sub.answeredCount}</strong> /{" "}
+                        {sub.totalQuestions}
+                      </span>
+                      {sub.score != null && sub.maxScore != null && (
+                        <>
+                          <span>•</span>
+                          <span>
+                            Score: <strong>{sub.score}</strong> / {sub.maxScore}
+                            {sub.percentage != null ? ` (${sub.percentage}%)` : ""}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {sub.remarks && (
+                      <p className="text-[11px] text-slate-600 mt-1.5 bg-slate-50 border border-slate-200/80 rounded-md px-2.5 py-1 inline-block">
+                        <strong>Supervisor Remarks:</strong> {sub.remarks}
+                      </p>
+                    )}
                     <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-2 font-medium">
                       <Calendar className="w-3 h-3 text-slate-400" />
-                      <span>Submitted on {day1Submission.submittedAt}</span>
+                      <span>Submitted on {formatTimestamp(sub.submittedAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -229,7 +361,7 @@ export default function PastQuestionPapers() {
                 <div className="shrink-0 w-full sm:w-auto flex justify-end">
                   <button
                     type="button"
-                    onClick={() => setViewingPaper("day1")}
+                    onClick={() => handleViewSubmission(sub)}
                     className="w-full sm:w-auto py-2.5 px-5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5 text-slate-500" />
@@ -237,49 +369,10 @@ export default function PastQuestionPapers() {
                   </button>
                 </div>
               </div>
-            )}
-
-            {/* ROW: DAY 2 SUBMITTED */}
-            {day2Submission?.submitted && (
-              <div className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-200/80 shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-6 h-6 stroke-[2]" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-base font-bold text-[#0f1f38]">
-                        Day 2 Question Paper
-                      </h3>
-                      <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Submitted
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      Quality Standards, PPE Guidelines & Process Discipline.
-                    </p>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-2 font-medium">
-                      <Calendar className="w-3 h-3 text-slate-400" />
-                      <span>Submitted on {day2Submission.submittedAt}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="shrink-0 w-full sm:w-auto flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setViewingPaper("day2")}
-                    className="w-full sm:w-auto py-2.5 px-5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-slate-500" />
-                    <span>View Submitted Paper</span>
-                  </button>
-                </div>
-              </div>
-            )}
+            ))}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

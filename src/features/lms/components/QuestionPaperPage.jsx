@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import TopActions from "./TopActions";
 import BasicInformation from "./BasicInformation";
 import QuestionSectionsCard from "./QuestionSectionsCard";
 import QuestionListCard from "./QuestionListCard";
 import QuestionForm from "./QuestionForm";
-import { savePaperToStore } from "../utils/testPapers";
+import QuestionPaperApi, {
+  getApiErrorMessage,
+  mapApiResponseToPaper,
+  mapEditorStateToApiPayload,
+} from "../services/QuestionPaperApi";
 
 const DEFAULT_OPTIONS = [
   { id: 1, label: "A", value: "Option A" },
@@ -27,7 +32,7 @@ const createQuestion = (id, qNum = 1) => ({
   difficulty: "Medium",
   required: true,
   questionType: "Multiple Choice (MCQ)",
-  saved: true,
+  saved: false,
 });
 
 const createSection = (id) => {
@@ -52,36 +57,9 @@ const createInitialPaper = () => [
   createSection(3),
 ];
 
-const loadPaper = (storageKey) => {
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        let loadedSections = parsed;
-        if (!parsed.some((s) => s.questions)) {
-          loadedSections = [{ id: 1, name: "Section A", subtitle: "Multiple Choice Questions", questions: parsed }];
-        }
-        return loadedSections.map((sec, secIdx) => ({
-          ...sec,
-          name: sec.name || `Section ${String.fromCharCode(65 + secIdx)}`,
-          questions: sec.questions.map((q, idx) => ({
-            ...q,
-            title: q.title && !/^Q\d+$/.test(q.title) ? q.title : `Q${idx + 1}`,
-          })),
-        }));
-      }
-    }
-  } catch {
-    /* error */
-  }
-  return createInitialPaper();
-};
-
 const QuestionPaperPage = ({
   level = "L0",
   initialPaper = null,
-  storageKey: customStorageKey,
   previewPath: customPreviewPath,
   onPreview: customOnPreview,
   onSaveSuccess,
@@ -89,42 +67,52 @@ const QuestionPaperPage = ({
   onBack,
 }) => {
   const navigate = useNavigate();
-  const storageKey =
-    customStorageKey ||
-    (initialPaper?.id ? `paper_${initialPaper.id}` : `${level.toLowerCase()}_question_paper`);
-  const previewPath = customPreviewPath || `/lms/${level.toLowerCase()}/preview`;
+
+  const [currentPaperId, setCurrentPaperId] = useState(() =>
+    initialPaper?.id != null ? initialPaper.id : null
+  );
+
+  const [paperMeta, setPaperMeta] = useState(() => initialPaper?.meta || {});
 
   const [sections, setSections] = useState(() => {
     if (initialPaper?.sections?.length) {
       return initialPaper.sections;
     }
-    return loadPaper(storageKey);
+    return createInitialPaper();
   });
+
   const [selectedSection, setSelectedSection] = useState(
-    () => (initialPaper?.sections?.[0]?.id || sections[0]?.id)
+    () => initialPaper?.sections?.[0]?.id ?? sections[0]?.id ?? null
   );
   const [selectedQuestion, setSelectedQuestion] = useState(
-    () => (initialPaper?.sections?.[0]?.questions?.[0]?.id || sections[0]?.questions[0]?.id)
+    () =>
+      initialPaper?.sections?.[0]?.questions?.[0]?.id ??
+      sections[0]?.questions?.[0]?.id ??
+      null
   );
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
   useEffect(() => {
     if (initialPaper) {
+      setCurrentPaperId(initialPaper.id ?? null);
+      setPaperMeta(initialPaper.meta || {});
       if (initialPaper.sections?.length) {
         setSections(initialPaper.sections);
-        setSelectedSection(initialPaper.sections[0]?.id);
-        setSelectedQuestion(initialPaper.sections[0]?.questions?.[0]?.id);
-      }
-      if (initialPaper.meta) {
-        localStorage.setItem(`${storageKey}_meta`, JSON.stringify(initialPaper.meta));
+        setSelectedSection(initialPaper.sections[0]?.id ?? null);
+        setSelectedQuestion(initialPaper.sections[0]?.questions?.[0]?.id ?? null);
       }
     }
-  }, [initialPaper, storageKey]);
+  }, [initialPaper]);
 
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(sections));
-  }, [storageKey, sections]);
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
+  }, []);
 
   const activeSection =
     sections.find((s) => s.id === selectedSection) || sections[0];
@@ -136,10 +124,10 @@ const QuestionPaperPage = ({
     activeSection?.questions[activeQuestionIndex] ||
     activeSection?.questions[0];
 
-  const showToast = (message) => {
-    setToast(message);
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2500);
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
   };
 
   const totalQuestions = sections.reduce(
@@ -155,11 +143,7 @@ const QuestionPaperPage = ({
   );
 
   const handleMetaChange = (meta) => {
-    try {
-      localStorage.setItem(`${storageKey}_meta`, JSON.stringify(meta));
-    } catch {
-      /* ignore */
-    }
+    setPaperMeta(meta);
   };
 
   const nextQuestionId = () =>
@@ -185,81 +169,60 @@ const QuestionPaperPage = ({
     );
   };
 
-  const saveAll = () => {
-    const paperId = getPaperId();
+  const saveAll = async () => {
+    if (isSaving) return null;
 
-    let meta = {};
+    setSaveError(null);
+    setIsSaving(true);
+
     try {
-      meta = JSON.parse(localStorage.getItem(`${storageKey}_meta`)) || {};
-    } catch {
-      /* ignore */
-    }
+      const payload = mapEditorStateToApiPayload({
+        meta: paperMeta,
+        sections,
+        level,
+      });
 
-    const passPercentage = Number(meta.passPercentage) || 80;
-    const testTitle =
-      meta.testTitle?.trim() ||
-      meta.headerTitle?.trim() ||
-      "SKILL EVALUATION TEST PAPER";
-    const course =
-      meta.departments?.trim() ||
-      meta.subTitle?.trim() ||
-      "DOJO Technical Evaluation";
+      const isUpdating = currentPaperId !== null && currentPaperId !== undefined && !Number.isNaN(Number(currentPaperId));
 
-    const paperData = {
-      id: paperId,
-      title: testTitle,
-      target: meta.target || `${passPercentage}% or Above`,
-      testType: meta.testType || "Online",
-      course: course,
-      passing: `${passPercentage}% or Above`,
-      marks: `${totalMarks} Marks`,
-      fullMarks: "Full Marks",
-      level,
-      sections,
-      meta: {
-        ...meta,
-        testTitle,
-        headerTitle: meta.headerTitle || testTitle,
-        duration: meta.duration || 60,
-        passPercentage,
-      },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      createdRole: "supervisor",
-    };
+      const response = isUpdating
+        ? await QuestionPaperApi.updateQuestionPaper(currentPaperId, payload)
+        : await QuestionPaperApi.createQuestionPaper(payload);
 
-    savePaperToStore(paperData);
-    if (onSaveSuccess) {
-      onSaveSuccess(paperData);
-    }
+      const savedPaper = mapApiResponseToPaper(response.data);
 
-    setSections((prev) =>
-      prev.map((s) => ({
-        ...s,
-        questions: s.questions.map((q) => ({ ...q, saved: true })),
-      }))
-    );
-    showToast("Question paper saved successfully");
+      if (savedPaper?.id != null) {
+        setCurrentPaperId(savedPaper.id);
+      }
 
-    // Clear stored paper ID so creating a subsequent paper generates a fresh unique ID
-    try {
-      localStorage.removeItem(`${storageKey}_paper_id`);
-    } catch {
-      /* ignore */
-    }
-  };
+      setSections((prev) =>
+        prev.map((s) => ({
+          ...s,
+          questions: s.questions.map((q) => ({ ...q, saved: true })),
+        }))
+      );
 
-  const getPaperId = () => {
-    if (initialPaper?.id) return initialPaper.id;
-    try {
-      const key = `${storageKey}_paper_id`;
-      const existing = localStorage.getItem(key);
-      if (existing) return existing;
-      const id = `paper_${Date.now()}`;
-      localStorage.setItem(key, id);
-      return id;
-    } catch {
-      return `paper_${Date.now()}`;
+      showToast(
+        isUpdating
+          ? "Question paper updated successfully"
+          : "Question paper created successfully",
+        "success"
+      );
+
+      if (onSaveSuccess) {
+        onSaveSuccess(savedPaper);
+      }
+
+      return savedPaper;
+    } catch (error) {
+      const errMsg = getApiErrorMessage(
+        error,
+        "Failed to save question paper. Please try again."
+      );
+      setSaveError(errMsg);
+      showToast(errMsg, "error");
+      return null;
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -342,14 +305,25 @@ const QuestionPaperPage = ({
     }
   };
 
-  const handlePreview = () => {
-    saveAll();
+  const handlePreview = async () => {
+    const savedPaper = await saveAll();
+    if (!savedPaper) return;
+
     if (customOnPreview) {
-      customOnPreview();
-    } else {
-      navigate(previewPath);
+      customOnPreview(savedPaper);
+    } else if (customPreviewPath) {
+      navigate(customPreviewPath, { state: { paper: savedPaper } });
+    } else if (savedPaper.id != null) {
+      navigate(`/lms/paper/preview/${savedPaper.id}`, {
+        state: { paper: savedPaper },
+      });
     }
   };
+
+  const isEditMode =
+    currentPaperId !== null &&
+    currentPaperId !== undefined &&
+    !Number.isNaN(Number(currentPaperId));
 
   return (
     <div className="space-y-4">
@@ -367,26 +341,60 @@ const QuestionPaperPage = ({
             </button>
           )}
           <h2 className="text-base sm:text-xl font-bold font-serif tracking-tight text-white select-none">
-            {bannerTitle || `Question Paper Editor (${level})`}
+            {bannerTitle ||
+              (isEditMode
+                ? `Edit Question Paper (${level})`
+                : `Question Paper Editor (${level})`)}
           </h2>
         </div>
       </div>
 
       {toast && (
-        <div className="fixed top-16 right-6 z-50 bg-slate-900/95 text-white text-xs font-semibold px-4 py-3 rounded-lg shadow-xl flex items-center gap-2.5 backdrop-blur-md transition-all">
-          <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: "#10B981" }} />
-          <span>{toast}</span>
+        <div
+          className={`fixed top-16 right-6 z-50 text-white text-xs font-semibold px-4 py-3 rounded-lg shadow-xl flex items-center gap-2.5 backdrop-blur-md transition-all ${
+            toast.type === "error" ? "bg-rose-700/95" : "bg-slate-900/95"
+          }`}
+        >
+          {toast.type === "error" ? (
+            <ErrorOutlineOutlinedIcon sx={{ fontSize: 18, color: "#fecdd3" }} />
+          ) : (
+            <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: "#10B981" }} />
+          )}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <ErrorOutlineOutlinedIcon sx={{ fontSize: 18 }} />
+            <span>{saveError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSaveError(null)}
+            className="text-rose-500 hover:text-rose-700 font-semibold cursor-pointer"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
       <TopActions
-        title={bannerTitle || (initialPaper ? `Editing: ${initialPaper.title}` : `Question Paper Editor (${level})`)}
+        title={
+          bannerTitle ||
+          (initialPaper
+            ? `Editing: ${initialPaper.title}`
+            : `Question Paper Editor (${level})`)
+        }
         level={level}
         totalQuestions={totalQuestions}
         totalMarks={totalMarks}
         sectionsCount={sections.length}
         onPreview={handlePreview}
         onSave={saveAll}
+        isSaving={isSaving}
+        isEditMode={isEditMode}
       />
 
       <BasicInformation

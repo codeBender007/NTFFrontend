@@ -66,11 +66,22 @@ export default defineConfig(({ mode }) => {
     server: {
       host: host || "localhost",
       port,
-      strictPort: true, // Prevents falling back to a dynamic/random port if port is busy
+      strictPort: false,
       origin,
       watch: {
-        usePolling: true,
+        ignored: ["**/node_modules/**", "**/.git/**", "**/dist/**"],
       },
+    },
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "react-router-dom",
+        "lucide-react",
+        "axios",
+        "@mui/material",
+        "@mui/icons-material",
+      ],
     },
     preview: {
       host: host || "localhost",

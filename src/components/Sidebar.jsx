@@ -14,6 +14,7 @@ export default function Sidebar({
   onLogout,
   isOpen,
   onClose,
+  homePath = '/home',
 }) {
   const isInsideLayout = useContext(InLMSLayoutContext)
   const navigate = useNavigate()
@@ -74,9 +75,9 @@ export default function Sidebar({
             {!isCollapsed ? (
               <>
                 <Link
-                  to="/home"
+                  to={homePath}
                   className="flex items-center"
-                  title="Return to Home Portal"
+                  title="Home"
                 >
                   <img
                     src={ntfLogo}

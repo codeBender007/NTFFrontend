@@ -7,6 +7,8 @@ const TopActions = ({
   title = "Question Paper",
   onPreview,
   onSave,
+  isSaving = false,
+  isEditMode = false,
 }) => {
   return (
     <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs px-4 sm:px-6 py-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 transition-all">
@@ -33,7 +35,8 @@ const TopActions = ({
         <button
           type="button"
           onClick={onPreview}
-          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:border-[#0284c7] hover:text-[#0284c7] hover:bg-sky-50/50 transition shadow-xs"
+          disabled={isSaving}
+          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:border-[#0284c7] hover:text-[#0284c7] hover:bg-sky-50/50 transition shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           <VisibilityOutlinedIcon sx={{ fontSize: 17 }} />
           Preview Paper
@@ -42,10 +45,20 @@ const TopActions = ({
         <button
           type="button"
           onClick={onSave}
-          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 h-9 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-5 text-xs font-semibold text-white shadow-xs transition"
+          disabled={isSaving}
+          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 h-9 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-5 text-xs font-semibold text-white shadow-xs transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
         >
-          <SaveOutlinedIcon sx={{ fontSize: 17 }} />
-          Save Paper
+          {isSaving ? (
+            <>
+              <span className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <SaveOutlinedIcon sx={{ fontSize: 17 }} />
+              <span>{isEditMode ? "Update Paper" : "Save Paper"}</span>
+            </>
+          )}
         </button>
       </div>
     </div>

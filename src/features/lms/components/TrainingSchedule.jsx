@@ -23,7 +23,7 @@ const createInitialRows = (initialRows = null) => {
   return Array.from({ length: 10 }, () => ({ ...EMPTY_ROW }));
 };
 
-const TrainingSchedule = ({ onSave, defaultDetails = {}, defaultRows = null } = {}) => {
+const TrainingSchedule = ({ onSave, isSaving = false, defaultDetails = {}, defaultRows = null } = {}) => {
   const [rows, setRows] = useState(() => createInitialRows(defaultRows));
 
   // Training information
@@ -67,10 +67,18 @@ const TrainingSchedule = ({ onSave, defaultDetails = {}, defaultRows = null } = 
         {onSave && (
           <button
             type="button"
+            disabled={isSaving}
             onClick={() => onSave({ details, rows })}
-            className="flex cursor-pointer items-center gap-2 rounded-lg bg-[#0b295c] hover:bg-[#123977] px-5 py-2 text-sm font-semibold text-white shadow-xs transition-colors"
+            className="flex cursor-pointer items-center gap-2 rounded-lg bg-[#0b295c] hover:bg-[#123977] px-5 py-2 text-sm font-semibold text-white shadow-xs transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Save
+            {isSaving ? (
+              <>
+                <span className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                <span>Submitting...</span>
+              </>
+            ) : (
+              "Save"
+            )}
           </button>
         )}
 

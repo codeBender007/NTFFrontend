@@ -3,7 +3,39 @@ import api from "../../../api/axios";
 const UserApi = {
   // GET - /lms/users/
   // Filters: plantId, departmentId, subDepartmentId, lineId, machineId, shift, startDate, endDate, skillLevel, active, skip, limit
-  getUsers: (params) => api.get("/lms/users/", { params }),
+  getUsers: (params, config = {}) => api.get("/lms/users/", { params, ...config }),
+
+  // Fetch all pages of live users directly from GET /lms/users/ (handles pagination so newly created users are always included)
+  getAllUsers: async (extraParams = {}) => {
+    const pageSize = 1000;
+    const maxPages = 10;
+    const allUsers = [];
+
+    for (let page = 0; page < maxPages; page += 1) {
+      const res = await api.get("/lms/users/", {
+        params: {
+          ...extraParams,
+          skip: page * pageSize,
+          limit: pageSize,
+        },
+        timeout: 15000,
+      });
+
+      const batch = Array.isArray(res?.data)
+        ? res.data
+        : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+
+      allUsers.push(...batch);
+
+      if (batch.length < pageSize) {
+        break;
+      }
+    }
+
+    return allUsers;
+  },
 
   // POST - /lms/users/
   createUser: (userData) => api.post("/lms/users/", userData),

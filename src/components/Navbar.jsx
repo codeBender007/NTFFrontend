@@ -90,6 +90,20 @@ export default function Navbar({ onToggleSidebar, isSidebarOpen, title, children
     if (path.includes('/cms/total-defects')) return 'Total Defects'
     if (path.includes('/cms')) return 'CMS'
 
+    // 4. Employee Portal pages
+    if (path.includes('/employee/past-papers')) return 'Past Question Paper'
+    if (path.includes('/employee/upcoming-papers')) return 'Current Question Paper'
+    if (path.startsWith('/employee')) return 'Current Question Paper'
+
+    // 5. Supervisor Portal pages
+    if (path.includes('/supervisor/submitted-papers')) return 'Submitted Papers'
+    if (path.includes('/supervisor/saved-papers') || path.includes('/supervisor/preview')) {
+      return 'Saved Test Papers'
+    }
+    if (path.includes('/supervisor/assign-operators')) return 'Assign to Operators'
+    if (path.includes('/supervisor/edit')) return 'Edit Question Paper'
+    if (path.startsWith('/supervisor')) return 'Create Question Paper'
+
     return 'Dashboard'
   }
 

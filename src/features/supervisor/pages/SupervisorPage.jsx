@@ -1,302 +1,322 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  LogOut,
-  FilePlus,
-  FileText,
-  User,
-  ShieldCheck,
-  CheckCircle2,
-  Sparkles,
-} from "lucide-react";
-import ntfLogo from "@/assets/images/NTF_logo_black.png";
-import { clearSession, getUser } from "@/features/auth/utils/authStorage.js";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { CheckCircle2, AlertCircle } from "lucide-react";
+import { getUser } from "@/features/auth/utils/authStorage.js";
 import QuestionPaperPage from "@/features/lms/components/QuestionPaperPage.jsx";
 import QuestionPaperTable from "@/features/lms/components/QuestionPaperTable.jsx";
 import QuestionPaperPreview from "@/features/lms/components/QuestionPaperPreview.jsx";
-import {
-  saveSupervisorPaper,
-  getSupervisorPapers,
-  getActiveSupervisorPaper,
-  setActiveSupervisorPaper,
-  deleteSupervisorPaper,
-} from "../utils/supervisorStorage.js";
+import QuestionPaperApi, {
+  getApiErrorMessage,
+  mapApiResponseToPaper,
+} from "@/features/lms/services/QuestionPaperApi.js";
+import OperatorAssignmentPanel from "../components/OperatorAssignmentPanel.jsx";
+import SubmittedPapersPanel from "../components/SubmittedPapersPanel.jsx";
 
 /**
- * Supervisor Portal: Test Paper Management & Creation View
- * Reuses the existing LMS -> Dojo Hiring Test Paper module in an isolated Supervisor portal layout.
+ * Supervisor Portal Route Views (rendered inside persistent SupervisorLayout):
+ * - mode="create"  : /supervisor/create           -> POST /api/v1/lms/question-papers/
+ * - mode="edit"    : /supervisor/edit/:id         -> GET & PUT /api/v1/lms/question-papers/{paper_id}
+ * - mode="list"    : /supervisor/saved-papers     -> GET & DELETE /api/v1/lms/question-papers/
+ * - mode="preview" : /supervisor/preview/:id      -> GET /api/v1/lms/question-papers/{paper_id}
+ * - mode="assign"  : /supervisor/assign-operators -> Assign saved papers to Operators
  */
-export default function SupervisorPage() {
+export default function SupervisorPage({ mode = "create" }) {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const location = useLocation();
   const user = getUser();
-  const supervisorName = user?.name || user?.username || "Supervisor";
+  const supervisorName =
+    user?.empName || user?.name || user?.username || "Supervisor";
 
-  // Views: 'create' (Editor) | 'list' (Table) | 'preview' (Paper Preview)
-  const [activeTab, setActiveTab] = useState("create");
-  const [editingPaper, setEditingPaper] = useState(null);
-  const [selectedPaperForPreview, setSelectedPaperForPreview] = useState(null);
-  const [savedPapers, setSavedPapers] = useState(() => getSupervisorPapers());
-  const [activePaper, setActivePaper] = useState(() => getActiveSupervisorPaper());
-  const [showSavedToast, setShowSavedToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
+  const [savedPapers, setSavedPapers] = useState([]);
+  const [loadingPapers, setLoadingPapers] = useState(
+    mode === "list" || mode === "assign"
+  );
+
+  const [activePaper, setActivePaper] = useState(
+    () => location.state?.selectedPaper || location.state?.paper || null
+  );
+  const [loadingDetail, setLoadingDetail] = useState(
+    (mode === "edit" || mode === "preview") && !location.state?.paper
+  );
+
+  const [apiError, setApiError] = useState(null);
+  const [toastMessage, setToastMessage] = useState(
+    () => location.state?.toastMessage || ""
+  );
+
+  const showToast = useCallback((message) => {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage("");
+    }, 4500);
+  }, []);
 
   useEffect(() => {
-    setSavedPapers(getSupervisorPapers());
-  }, [activeTab]);
+    if (location.state?.toastMessage) {
+      const timer = setTimeout(() => setToastMessage(""), 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state?.toastMessage]);
 
-  const handleLogout = () => {
-    clearSession();
-    navigate("/login", { replace: true });
-  };
-
-  const handlePaperSaved = (savedData) => {
-    // 1. Persist into supervisor storage & mark active
-    const saved = saveSupervisorPaper(savedData);
-    const updatedList = getSupervisorPapers();
-    setSavedPapers(updatedList);
-    setActivePaper(saved || savedData);
-    setActiveSupervisorPaper(saved || savedData);
-    setEditingPaper(null);
-
-    const paperTitle = saved?.title || savedData?.title || "Test Paper";
-    setToastMessage(`"${paperTitle}" saved successfully! It is now visible in the table.`);
-    setShowSavedToast(true);
-
-    // 2. Automatically navigate to the table view so the newly saved paper is immediately visible
-    setActiveTab("list");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-
-    setTimeout(() => {
-      setShowSavedToast(false);
-    }, 4500);
-  };
-
-  const handleEditPaper = (paper) => {
-    setEditingPaper(paper);
-    setSelectedPaperForPreview(null);
-    setActiveTab("create");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleDeletePaper = (paper) => {
-    if (paper?.id) {
-      deleteSupervisorPaper(paper.id);
-      const updated = getSupervisorPapers();
-      setSavedPapers(updated);
-      if (editingPaper?.id === paper.id) {
-        setEditingPaper(null);
+  // GET /api/v1/lms/question-papers/ for Saved Test Papers & Assign to Operators
+  const fetchPapers = useCallback(async (signal) => {
+    setLoadingPapers(true);
+    setApiError(null);
+    try {
+      const res = await QuestionPaperApi.getQuestionPapers(
+        {},
+        signal ? { signal } : {}
+      );
+      const rawList = Array.isArray(res?.data) ? res.data : [];
+      const mapped = rawList.map(mapApiResponseToPaper).filter(Boolean);
+      setSavedPapers(mapped);
+    } catch (err) {
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") {
+        return;
       }
-      setToastMessage(`"${paper.title || "Question Paper"}" deleted successfully.`);
-      setShowSavedToast(true);
-      setTimeout(() => {
-        setShowSavedToast(false), 3500;
-      });
+      setApiError(
+        getApiErrorMessage(err, "Failed to load question papers from server.")
+      );
+    } finally {
+      setLoadingPapers(false);
+    }
+  }, []);
+
+  // GET /api/v1/lms/question-papers/{paper_id} for Edit & Preview
+  const fetchPaperById = useCallback(
+    async (paperId, signal) => {
+      if (!paperId) return;
+      setLoadingDetail(true);
+      setApiError(null);
+      try {
+        const res = await QuestionPaperApi.getQuestionPaperById(
+          paperId,
+          signal ? { signal } : {}
+        );
+        const mapped = mapApiResponseToPaper(res.data);
+        setActivePaper(mapped);
+      } catch (err) {
+        if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") {
+          return;
+        }
+        setApiError(
+          getApiErrorMessage(err, "Failed to load question paper details.")
+        );
+      } finally {
+        setLoadingDetail(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    if (mode === "list" || mode === "assign") {
+      fetchPapers(controller.signal);
+    } else if ((mode === "edit" || mode === "preview") && id) {
+      fetchPaperById(id, controller.signal);
+    }
+
+    return () => controller.abort();
+  }, [mode, id, fetchPapers, fetchPaperById]);
+
+  // DELETE /api/v1/lms/question-papers/{paper_id}
+  const handleDeletePaper = async (paper) => {
+    if (!paper?.id) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${paper.title || "this question paper"}"?`
+    );
+    if (!confirmed) return;
+
+    setApiError(null);
+    try {
+      await QuestionPaperApi.deleteQuestionPaper(paper.id);
+      setSavedPapers((prev) => prev.filter((p) => p.id !== paper.id));
+      showToast(`"${paper.title || "Question Paper"}" deleted successfully.`);
+    } catch (err) {
+      setApiError(
+        getApiErrorMessage(
+          err,
+          "Failed to delete question paper. Please try again."
+        )
+      );
     }
   };
 
-  const handleViewPreview = (paper) => {
-    setSelectedPaperForPreview(paper);
-    setActiveTab("preview");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const handlePaperSaved = (savedPaper) => {
+    const paperTitle = savedPaper?.title || "Test Paper";
+    navigate("/supervisor/assign-operators", {
+      state: {
+        selectedPaper: savedPaper,
+        toastMessage: `"${paperTitle}" saved! Select Operators below to send it.`,
+      },
+    });
+  };
+
+  const handlePreviewFromEditor = (savedPaper) => {
+    if (savedPaper?.id != null) {
+      navigate(`/supervisor/preview/${savedPaper.id}`, {
+        state: { paper: savedPaper },
+      });
+    } else {
+      navigate("/supervisor/saved-papers");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none pb-12">
-      {/* ── Top Header Bar ── */}
-      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-30 px-4 sm:px-6 shadow-xs">
-        <div className="max-w-7xl mx-auto h-16 flex items-center justify-between gap-4">
-          {/* Left: Branding & Role Title */}
-          <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
-            <img
-              src={ntfLogo}
-              alt="NTF Group"
-              className="h-8 sm:h-9 w-auto object-contain shrink-0"
-            />
-            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
-            <div className="min-w-0">
-              <div className="flex items-center space-x-2">
-                <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight leading-none truncate">
-                  Supervisor Portal
-                </h1>
-                <span className="hidden sm:inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
-                  <ShieldCheck className="w-3 h-3 text-sky-600" />
-                  <span>Supervisor</span>
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium leading-none mt-1 truncate">
-                DOJO Hiring &bull; Test Paper Creation Module
-              </p>
-            </div>
-          </div>
-
-          {/* Center / Navigation Switcher Tabs */}
-          <div className="hidden md:flex items-center bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 space-x-1">
-            <button
-              type="button"
-              onClick={() => {
-                setEditingPaper(null);
-                setActiveTab("create");
-                setSelectedPaperForPreview(null);
-              }}
-              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === "create"
-                  ? "bg-white text-[#0b295c] shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-              }`}
-            >
-              <FilePlus className="w-3.5 h-3.5" />
-              <span>Create Test Paper</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("list");
-                setSelectedPaperForPreview(null);
-              }}
-              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === "list"
-                  ? "bg-white text-[#0b295c] shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Saved Test Papers</span>
-              {savedPapers.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-sky-100 text-sky-800 font-bold">
-                  {savedPapers.length}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Right: Supervisor Profile & Logout */}
-          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
-            <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs">
-              <div className="w-6 h-6 rounded-full bg-[#0b295c] text-white flex items-center justify-center font-bold text-[10px]">
-                <User className="w-3.5 h-3.5" />
-              </div>
-              <span className="font-semibold text-slate-800">{supervisorName}</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex items-center space-x-1.5 py-2 px-3 sm:px-3.5 bg-rose-50 hover:bg-rose-100/90 text-rose-700 border border-rose-200/90 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
-              title="Sign Out"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Sub-Navigation Bar */}
-        <div className="flex md:hidden items-center justify-center border-t border-slate-100 py-2 space-x-2">
-          <button
-            type="button"
-            onClick={() => {
-              setEditingPaper(null);
-              setActiveTab("create");
-              setSelectedPaperForPreview(null);
-            }}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "create"
-                ? "bg-[#0b295c] text-white shadow-xs"
-                : "text-slate-600 bg-slate-100"
-            }`}
-          >
-            <FilePlus className="w-3.5 h-3.5" />
-            <span>Create Test Paper</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("list");
-              setSelectedPaperForPreview(null);
-            }}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "list"
-                ? "bg-[#0b295c] text-white shadow-xs"
-                : "text-slate-600 bg-slate-100"
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Saved Papers ({savedPapers.length})</span>
-          </button>
-        </div>
-      </header>
-
-      {/* ── Active Saved Toast Notification ── */}
-      {showSavedToast && (
+    <div className="space-y-4 select-none pb-8">
+      {/* Toast Notification */}
+      {toastMessage && (
         <div className="fixed top-20 right-6 z-50 bg-emerald-700 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center space-x-2.5 animate-in fade-in slide-in-from-top-3">
-          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+          <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* ── Main Workspace Content ── */}
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 pt-6">
-        {/* ── VIEW 1: Test Paper Creator / Editor ── */}
-        {activeTab === "create" && (
-          <div className="space-y-4">
-            <QuestionPaperPage
-              key={editingPaper?.id || "create_new_paper"}
-              level="L0"
-              initialPaper={editingPaper}
-              bannerTitle={
-                editingPaper
-                  ? `Edit Question Paper: ${editingPaper.title || ""}`
-                  : "Supervisor Test Paper Creator"
-              }
-              onSaveSuccess={handlePaperSaved}
-              onPreview={() => {
-                const active = getActiveSupervisorPaper();
-                if (active) {
-                  setSelectedPaperForPreview(active);
-                }
-                setActiveTab("preview");
-              }}
-              onBack={() => {
-                setEditingPaper(null);
-                setActiveTab("list");
-              }}
-            />
+      {/* API Error Banner */}
+      {apiError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{apiError}</span>
           </div>
-        )}
+          <button
+            type="button"
+            onClick={() => setApiError(null)}
+            className="text-rose-500 hover:text-rose-700 font-semibold cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
-        {/* ── VIEW 2: Saved Test Papers Table (Full View) ── */}
-        {activeTab === "list" && (
-          <div className="space-y-4">
+      {/* VIEW 1: Create Question Paper */}
+      {mode === "create" && (
+        <QuestionPaperPage
+          key="supervisor_create_paper"
+          level="L0"
+          bannerTitle="Create Question Paper"
+          onSaveSuccess={handlePaperSaved}
+          onPreview={handlePreviewFromEditor}
+        />
+      )}
+
+      {/* VIEW 2: Edit Question Paper */}
+      {mode === "edit" && (
+        loadingDetail ? (
+          <div className="bg-white rounded-xl border border-slate-200/90 p-12 flex flex-col items-center justify-center gap-3">
+            <span className="h-7 w-7 rounded-full border-3 border-sky-500 border-t-transparent animate-spin" />
+            <p className="text-xs font-semibold text-slate-500">
+              Loading question paper...
+            </p>
+          </div>
+        ) : (
+          <QuestionPaperPage
+            key={activePaper?.id || id || "edit_paper"}
+            level={activePaper?.level || "L0"}
+            initialPaper={activePaper}
+            bannerTitle={
+              activePaper?.title
+                ? `Edit Question Paper: ${activePaper.title}`
+                : "Edit Question Paper"
+            }
+            onSaveSuccess={handlePaperSaved}
+            onPreview={handlePreviewFromEditor}
+            onBack={() => navigate("/supervisor/saved-papers")}
+          />
+        )
+      )}
+
+      {/* VIEW 3: Saved Test Papers */}
+      {mode === "list" && (
+        <div className="space-y-4">
+          <div className="bg-[#0b295c] text-white rounded-lg px-4 py-2.5 sm:px-5 sm:py-3 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <h2 className="text-base sm:text-xl font-bold font-serif tracking-tight text-white">
+              Saved Test Papers
+            </h2>
+          </div>
+
+          {loadingPapers && savedPapers.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200/90 p-12 flex flex-col items-center justify-center gap-3">
+              <span className="h-7 w-7 rounded-full border-3 border-sky-500 border-t-transparent animate-spin" />
+              <p className="text-xs font-semibold text-slate-500">
+                Loading saved test papers...
+              </p>
+            </div>
+          ) : (
             <QuestionPaperTable
-              onCreate={() => {
-                setEditingPaper(null);
-                setActiveTab("create");
-                setSelectedPaperForPreview(null);
-              }}
-              onView={handleViewPreview}
-              onEdit={handleEditPaper}
+              onCreate={() => navigate("/supervisor/create")}
+              onView={(paper) =>
+                navigate(`/supervisor/preview/${paper.id}`, {
+                  state: { paper },
+                })
+              }
+              onEdit={(paper) =>
+                navigate(`/supervisor/edit/${paper.id}`, {
+                  state: { paper },
+                })
+              }
               onDelete={handleDeletePaper}
               customRows={savedPapers}
-              title="Supervisor Test Papers"
-              subtitle="All question and assessment papers saved in supervisor repository"
+              title="Saved Test Papers"
+              subtitle="All question and assessment papers stored in the database"
             />
-          </div>
-        )}
+          )}
+        </div>
+      )}
 
-        {/* ── VIEW 3: Question Paper Preview ── */}
-        {activeTab === "preview" && (
-          <div className="space-y-4">
-            <QuestionPaperPreview
-              level="L0"
-              paper={selectedPaperForPreview}
-              onBack={() => setActiveTab("list")}
-              onEdit={() => setActiveTab("create")}
-            />
+      {/* VIEW 4: Assign to Operators */}
+      {mode === "assign" && (
+        <OperatorAssignmentPanel
+          selectedPaper={activePaper || savedPapers[0] || null}
+          savedPapers={savedPapers}
+          onSelectPaper={(paper) => setActivePaper(paper)}
+          supervisorName={supervisorName}
+          onAssignmentComplete={({ summaryText }) => {
+            showToast(summaryText);
+          }}
+          onBack={() => navigate("/supervisor/saved-papers")}
+        />
+      )}
+
+      {/* VIEW 5: Submitted Papers / Evaluation */}
+      {mode === "submitted" && (
+        <SubmittedPapersPanel
+          supervisorName={supervisorName}
+          onGradeSaved={(summaryText) => {
+            showToast(summaryText);
+          }}
+        />
+      )}
+
+      {/* VIEW 5: Question Paper Preview */}
+      {mode === "preview" && (
+        loadingDetail ? (
+          <div className="bg-white rounded-xl border border-slate-200/90 p-12 flex flex-col items-center justify-center gap-3">
+            <span className="h-7 w-7 rounded-full border-3 border-sky-500 border-t-transparent animate-spin" />
+            <p className="text-xs font-semibold text-slate-500">
+              Loading question paper preview...
+            </p>
           </div>
-        )}
-      </main>
+        ) : (
+          <QuestionPaperPreview
+            level={activePaper?.level || "L0"}
+            paper={activePaper}
+            onBack={() => navigate("/supervisor/saved-papers")}
+            onEdit={() => {
+              if (activePaper?.id != null) {
+                navigate(`/supervisor/edit/${activePaper.id}`, {
+                  state: { paper: activePaper },
+                });
+              } else {
+                navigate("/supervisor/create");
+              }
+            }}
+          />
+        )
+      )}
     </div>
   );
 }

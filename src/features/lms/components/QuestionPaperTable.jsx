@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
@@ -7,8 +7,13 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
+import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import Filters from "../../../components/Filters";
-import { getSavedPapers, deletePaperFromStore } from "../utils/testPapers";
+import QuestionPaperApi, {
+  getApiErrorMessage,
+  mapApiResponseToPaper,
+} from "../services/QuestionPaperApi";
 
 const QuestionPaperTable = ({
   onCreate,
@@ -20,26 +25,91 @@ const QuestionPaperTable = ({
   subtitle,
 }) => {
   const navigate = useNavigate();
-  const [rows, setRows] = useState(() =>
-    Array.isArray(customRows) ? customRows : getSavedPapers()
-  );
+  const isControlled = Array.isArray(customRows);
+
+  const [rows, setRows] = useState(() => (isControlled ? customRows : []));
+  const [loading, setLoading] = useState(!isControlled);
+  const [error, setError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  useEffect(() => {
-    if (Array.isArray(customRows)) {
-      setRows(customRows);
-    } else {
-      setRows(getSavedPapers());
+  const fetchPapers = useCallback(async (signal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await QuestionPaperApi.getQuestionPapers(
+        {},
+        signal ? { signal } : {}
+      );
+      const list = Array.isArray(response.data) ? response.data : [];
+      const mapped = list.map(mapApiResponseToPaper).filter(Boolean);
+      setRows(mapped);
+    } catch (err) {
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") {
+        return;
+      }
+      setError(
+        getApiErrorMessage(err, "Failed to load question papers from server.")
+      );
+    } finally {
+      setLoading(false);
     }
-  }, [customRows]);
+  }, []);
 
-  const handleDeleteRow = (paper) => {
+  useEffect(() => {
+    if (isControlled) {
+      setRows(customRows);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    fetchPapers(controller.signal);
+    return () => controller.abort();
+  }, [isControlled, customRows, fetchPapers]);
+
+  const handleDeleteRow = async (paper) => {
+    if (!paper?.id) return;
+
     if (onDelete) {
       onDelete(paper);
-    } else {
-      deletePaperFromStore(paper.id);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${paper.title || "this question paper"}"?`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(paper.id);
+    setError(null);
+    try {
+      await QuestionPaperApi.deleteQuestionPaper(paper.id);
       setRows((prev) => prev.filter((p) => p.id !== paper.id));
+    } catch (err) {
+      setError(
+        getApiErrorMessage(err, "Failed to delete question paper. Please try again.")
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleEditRow = (paper) => {
+    if (onEdit) {
+      onEdit(paper);
+    } else if (paper?.id != null) {
+      navigate(`/lms/paper/edit/${paper.id}`);
+    }
+  };
+
+  const handleViewRow = (paper) => {
+    if (onView) {
+      onView(paper);
+    } else if (paper?.id != null) {
+      navigate(`/lms/paper/preview/${paper.id}`);
     }
   };
 
@@ -52,14 +122,15 @@ const QuestionPaperTable = ({
     setPage(0);
   };
 
+  const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
+  const safePage = Math.min(page, totalPages - 1);
   const displayedRows = rows.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+    safePage * rowsPerPage,
+    safePage * rowsPerPage + rowsPerPage
   );
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
-  const from = rows.length === 0 ? 0 : page * rowsPerPage + 1;
-  const to = Math.min(rows.length, (page + 1) * rowsPerPage);
+  const from = rows.length === 0 ? 0 : safePage * rowsPerPage + 1;
+  const to = Math.min(rows.length, (safePage + 1) * rowsPerPage);
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
@@ -79,19 +150,55 @@ const QuestionPaperTable = ({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onCreate}
-          className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs transition-colors cursor-pointer"
-        >
-          <AddOutlinedIcon sx={{ fontSize: 18 }} />
-          Create Test Paper
-        </button>
+        <div className="flex items-center gap-2">
+          {!isControlled && (
+            <button
+              type="button"
+              onClick={() => fetchPapers()}
+              disabled={loading}
+              title="Refresh test papers"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 px-3 text-xs font-semibold text-slate-700 shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshOutlinedIcon
+                sx={{ fontSize: 16 }}
+                className={loading ? "animate-spin" : ""}
+              />
+              Refresh
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={onCreate}
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs transition-colors cursor-pointer"
+          >
+            <AddOutlinedIcon sx={{ fontSize: 18 }} />
+            Create Test Paper
+          </button>
+        </div>
       </div>
 
       <div className="px-5 pb-4 pt-4">
         <Filters />
       </div>
+
+      {error && (
+        <div className="mx-5 mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <ErrorOutlineOutlinedIcon sx={{ fontSize: 18 }} />
+            <span>{error}</span>
+          </div>
+          {!isControlled && (
+            <button
+              type="button"
+              onClick={() => fetchPapers()}
+              className="px-3 py-1 rounded-md bg-rose-600 text-white hover:bg-rose-700 text-[11px] font-semibold transition cursor-pointer shrink-0"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="px-5 pb-5">
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
@@ -121,7 +228,21 @@ const QuestionPaperTable = ({
                 </tr>
               </thead>
               <tbody>
-                {displayedRows.length === 0 && (
+                {loading && (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-12 text-center text-xs font-medium text-slate-500"
+                    >
+                      <div className="inline-flex items-center gap-2.5">
+                        <span className="h-4 w-4 rounded-full border-2 border-sky-500 border-t-transparent animate-spin" />
+                        <span>Loading question papers...</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!loading && displayedRows.length === 0 && (
                   <tr>
                     <td
                       colSpan={8}
@@ -132,87 +253,98 @@ const QuestionPaperTable = ({
                   </tr>
                 )}
 
-                {displayedRows.map((row, rowIdx) => (
-                  <tr
-                    key={row.id}
-                    className={`whitespace-nowrap transition hover:bg-slate-50 border-b border-slate-100 ${
-                      rowIdx % 2 === 1 ? "bg-slate-50/40" : "bg-white"
-                    }`}
-                  >
-                    <td className="px-4 py-3">
-                      <p className="max-w-[210px] text-xs font-medium text-slate-800 leading-4">
-                        {row.title}
-                      </p>
-                    </td>
-
-                    <td className="px-4 py-3 border-r border-slate-100">
-                      <p className="max-w-[100px] text-xs leading-4 text-slate-600">
-                        {row.target}
-                      </p>
-                    </td>
-
-                    <td className="px-4 py-3 border-r border-slate-100">
-                      <span className="text-xs font-semibold text-slate-900">
-                        {row.testType}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-3 text-xs text-slate-600 border-r border-slate-100">
-                      {row.course}
-                    </td>
-
-                    <td className="px-4 py-3 border-r border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span className="max-w-[95px] text-xs text-slate-600">
-                          {row.passing}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3 border-r border-slate-100">
-                      <p className="text-xs font-medium text-slate-700">
-                        {row.marks}
-                      </p>
-                      <p className="text-[11px] font-medium text-emerald-600">
-                        {row.fullMarks}
-                      </p>
-                    </td>
-
-                    <td className="px-4 py-3 text-center border-r border-slate-100">
-                      <button
-                        type="button"
-                        onClick={() => (onView ? onView(row) : navigate(`/lms/paper/preview/${row.id}`))}
-                        title="Preview paper"
-                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 transition hover:border-[#0284c7] hover:text-[#0284c7] hover:bg-sky-50/50 shadow-xs cursor-pointer"
+                {!loading &&
+                  displayedRows.map((row, rowIdx) => {
+                    const isDeleting = deletingId === row.id;
+                    return (
+                      <tr
+                        key={row.id}
+                        className={`whitespace-nowrap transition hover:bg-slate-50 border-b border-slate-100 ${
+                          rowIdx % 2 === 1 ? "bg-slate-50/40" : "bg-white"
+                        } ${isDeleting ? "opacity-50" : ""}`}
                       >
-                        <VisibilityOutlinedIcon sx={{ fontSize: 15 }} />
-                        Preview
-                      </button>
-                    </td>
+                        <td className="px-4 py-3">
+                          <p className="max-w-[210px] truncate text-xs font-medium text-slate-800 leading-4">
+                            {row.title}
+                          </p>
+                        </td>
 
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => (onEdit ? onEdit(row) : null)}
-                          title="Edit question paper"
-                          className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50 transition shadow-2xs cursor-pointer"
-                        >
-                          <EditOutlinedIcon sx={{ fontSize: 16 }} />
-                        </button>
+                        <td className="px-4 py-3 border-r border-slate-100">
+                          <p className="max-w-[120px] truncate text-xs leading-4 text-slate-600">
+                            {row.target}
+                          </p>
+                        </td>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteRow(row)}
-                          title="Delete question paper"
-                          className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition shadow-2xs cursor-pointer"
-                        >
-                          <DeleteOutlineOutlinedIcon sx={{ fontSize: 16 }} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        <td className="px-4 py-3 border-r border-slate-100">
+                          <span className="text-xs font-semibold text-slate-900">
+                            {row.testType}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3 text-xs text-slate-600 border-r border-slate-100">
+                          {row.course}
+                        </td>
+
+                        <td className="px-4 py-3 border-r border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <span className="max-w-[110px] truncate text-xs text-slate-600">
+                              {row.passing}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-3 border-r border-slate-100">
+                          <p className="text-xs font-medium text-slate-700">
+                            {row.marks}
+                          </p>
+                          <p className="text-[11px] font-medium text-emerald-600">
+                            {row.fullMarks}
+                          </p>
+                        </td>
+
+                        <td className="px-4 py-3 text-center border-r border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => handleViewRow(row)}
+                            disabled={isDeleting}
+                            title="Preview paper"
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 transition hover:border-[#0284c7] hover:text-[#0284c7] hover:bg-sky-50/50 shadow-xs disabled:opacity-50 cursor-pointer"
+                          >
+                            <VisibilityOutlinedIcon sx={{ fontSize: 15 }} />
+                            Preview
+                          </button>
+                        </td>
+
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleEditRow(row)}
+                              disabled={isDeleting}
+                              title="Edit question paper"
+                              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50 transition shadow-2xs disabled:opacity-50 cursor-pointer"
+                            >
+                              <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRow(row)}
+                              disabled={isDeleting}
+                              title="Delete question paper"
+                              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition shadow-2xs disabled:opacity-50 cursor-pointer"
+                            >
+                              {isDeleting ? (
+                                <span className="block h-4 w-4 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
+                              ) : (
+                                <DeleteOutlineOutlinedIcon sx={{ fontSize: 16 }} />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
@@ -241,8 +373,8 @@ const QuestionPaperTable = ({
 
               <button
                 type="button"
-                onClick={() => handleChangePage(null, page - 1)}
-                disabled={page === 0}
+                onClick={() => handleChangePage(null, safePage - 1)}
+                disabled={safePage === 0}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-200/70 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <KeyboardArrowLeftIcon sx={{ fontSize: 20 }} />
@@ -250,8 +382,8 @@ const QuestionPaperTable = ({
 
               <button
                 type="button"
-                onClick={() => handleChangePage(null, page + 1)}
-                disabled={page >= totalPages - 1}
+                onClick={() => handleChangePage(null, safePage + 1)}
+                disabled={safePage >= totalPages - 1}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-200/70 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <KeyboardArrowRightIcon sx={{ fontSize: 20 }} />

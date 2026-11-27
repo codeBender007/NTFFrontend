@@ -12,9 +12,7 @@ const selectClass =
 
 const textareaClass =
   "w-full resize-none rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm outline-none bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#0284c7] focus:ring-2 focus:ring-sky-500/15 transition";
-
 const labelClass = "block text-xs font-semibold text-slate-700 mb-1.5";
-
 const hintClass = "mt-1 text-[11px] text-slate-400";
 
 const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
@@ -51,8 +49,6 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
     setFormData(updated);
     if (onChange) onChange(updated);
   };
-
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -282,6 +278,8 @@ const BasicInformation = ({ onNext, initialData = {}, onChange }) => {
                   <option value="">Select Level</option>
                   <option value="Level 1">Level 1</option>
                   <option value="Level 2">Level 2</option>
+                  <option value="Level 3">Level 3</option>
+                  <option value="Level 4">Level 4</option>
                 </select>
                 <KeyboardArrowDownOutlinedIcon
                   className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"

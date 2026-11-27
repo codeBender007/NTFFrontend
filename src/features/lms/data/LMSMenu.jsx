@@ -34,6 +34,8 @@ export const lmsMenus = [
     path: "/lms/dojo-hiring",
     nestedPaths: [
       "/lms/dojo-hiring",
+      "/lms/day-1",
+      "/lms/day-2",
       "/lms/l0",
       "/lms/l1",
       "/lms/paper",

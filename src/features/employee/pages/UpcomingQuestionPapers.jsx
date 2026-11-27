@@ -1,33 +1,35 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   FileText,
-  Clock,
   CheckCircle2,
   Calendar,
   AlertCircle,
   PlayCircle,
   ArrowRight,
-  LogOut,
-  User,
   ClipboardList,
-  Sparkles,
 } from "lucide-react";
-import { clearSession, getUser } from "@/features/auth/utils/authStorage.js";
-import ntfLogo from "@/assets/images/NTF_logo_black.png";
+import { getUser } from "@/features/auth/utils/authStorage.js";
 import Day1QuestionPaper from "@/features/lms/components/Day1QuestionPaper.jsx";
 import Day2QuestionPaper from "@/features/lms/components/Day2QuestionPaper.jsx";
+import DynamicDayQuestionPaper from "@/features/lms/components/DynamicDayQuestionPaper.jsx";
 import TrainingSchedule from "@/features/lms/components/TrainingSchedule.jsx";
+import QuestionPaperApi, {
+  findCanonicalDayPaper,
+  getApiErrorMessage,
+  mapApiResponseToPaper,
+  mapApiSubmissionToModel,
+} from "@/features/lms/services/QuestionPaperApi.js";
+import { getDefaultDayPaper } from "@/features/lms/utils/defaultDayPapers.js";
+import { getAssignedPapersForOperator } from "@/features/supervisor/utils/supervisorAssignmentStorage.js";
 import {
   fetchEmployeeJoiningDate,
   getCalendarDayDifference,
   formatDisplayDate,
-  getSubmittedPapers,
-  savePaperSubmission,
   getEmployeeStorageKey,
+  doesSubmissionBelongToEmployee,
 } from "../utils/questionPaperStorage.js";
-import { saveTrainingSchedule } from "../utils/trainingStorage.js";
 
 export default function UpcomingQuestionPapers() {
   const navigate = useNavigate();
@@ -40,118 +42,351 @@ export default function UpcomingQuestionPapers() {
   const [joiningDate, setJoiningDate] = useState("");
   const [diffDays, setDiffDays] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
-  // Active attempted paper: null | 'day1' | 'day2'
+  // Backend-fetched Day 1 & Day 2 papers (defaulting to canonical templates until DB papers arrive)
+  const [day1Paper, setDay1Paper] = useState(() => getDefaultDayPaper("DAY_1"));
+  const [day2Paper, setDay2Paper] = useState(() => getDefaultDayPaper("DAY_2"));
+
+  // Backend-fetched submissions map { day1: submission, day2: submission } + submitted paper IDs
+  const [submittedMap, setSubmittedMap] = useState({});
+  const [submittedPaperIds, setSubmittedPaperIds] = useState(() => new Set());
+
+  // Supervisor-assigned papers for this specific employee
+  const [assignedPapers, setAssignedPapers] = useState([]);
+
+  // Active attempted paper: null | 'day1' | 'day2' | 'assigned'
   const [selectedPaper, setSelectedPaper] = useState(null);
+  const [activePaperDetail, setActivePaperDetail] = useState(null);
+  const [loadingPaperDetail, setLoadingPaperDetail] = useState(false);
 
-  // Workflow step for Day 1: 'paper' | 'schedule'
+  // Workflow step: 'paper' | 'schedule'
   const [currentStep, setCurrentStep] = useState("paper");
   const [pendingAnswers, setPendingAnswers] = useState({});
+  const [pendingParticipantInfo, setPendingParticipantInfo] = useState({});
+  const [pendingScoreSummary, setPendingScoreSummary] = useState(null);
+
+  // Submission state
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   // Success Modal State
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successInfo, setSuccessInfo] = useState({
     title: "",
     message: "",
+    submission: null,
   });
 
-  // Submissions map
-  const [submittedMap, setSubmittedMap] = useState({});
-
-  const handleLogout = () => {
-    clearSession();
-    navigate("/login", { replace: true });
-  };
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
-    const dateStr = await fetchEmployeeJoiningDate(user);
-    setJoiningDate(dateStr);
-    const diff = getCalendarDayDifference(dateStr);
-    setDiffDays(diff);
-    setSubmittedMap(getSubmittedPapers(user));
-    setLoading(false);
-  };
+    setLoadError(null);
+    try {
+      const numericUserId =
+        user?.id != null && !Number.isNaN(Number(user.id))
+          ? Number(user.id)
+          : undefined;
+
+      const [dateStr, papersRes, submissionsRes] = await Promise.all([
+        fetchEmployeeJoiningDate(user),
+        QuestionPaperApi.getQuestionPapers({ is_active: true }),
+        QuestionPaperApi.getSubmissions(
+          numericUserId !== undefined ? { user_id: numericUserId } : {}
+        ),
+      ]);
+
+      setJoiningDate(dateStr);
+      setDiffDays(getCalendarDayDifference(dateStr));
+
+      const rawPapers = Array.isArray(papersRes?.data) ? papersRes.data : [];
+      const mappedPapers = rawPapers.map(mapApiResponseToPaper).filter(Boolean);
+
+      const d1 = findCanonicalDayPaper(mappedPapers, "DAY_1");
+      const d2 = findCanonicalDayPaper(mappedPapers, "DAY_2");
+      setDay1Paper(d1 || getDefaultDayPaper("DAY_1"));
+      setDay2Paper(d2 || getDefaultDayPaper("DAY_2"));
+
+      const rawSubs = Array.isArray(submissionsRes?.data)
+        ? submissionsRes.data
+        : [];
+      const employeeSubs = rawSubs
+        .map(mapApiSubmissionToModel)
+        .filter((s) => s && doesSubmissionBelongToEmployee(s, user));
+
+      const nextSubmittedMap = {};
+      const nextSubmittedIds = new Set();
+      employeeSubs.forEach((sub) => {
+        if (sub.questionPaperId != null) {
+          nextSubmittedIds.add(String(sub.questionPaperId));
+        }
+        if (sub.dayType === "DAY_1" && !nextSubmittedMap.day1) {
+          nextSubmittedMap.day1 = sub;
+        } else if (sub.dayType === "DAY_2" && !nextSubmittedMap.day2) {
+          nextSubmittedMap.day2 = sub;
+        }
+      });
+      setSubmittedMap(nextSubmittedMap);
+      setSubmittedPaperIds(nextSubmittedIds);
+
+      // Load Supervisor-assigned papers strictly for this employee
+      const rawAssigned = getAssignedPapersForOperator(user);
+      const pendingAssigned = rawAssigned.filter(
+        (ap) => !nextSubmittedIds.has(String(ap.paperId))
+      );
+      setAssignedPapers(pendingAssigned);
+    } catch (err) {
+      setLoadError(
+        getApiErrorMessage(
+          err,
+          "Failed to load question papers and submission status from server."
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [userKey]);
 
   useEffect(() => {
     loadData();
-  }, [userKey]);
+  }, [loadData]);
 
-  // When Day 1 Question Paper Submit button is clicked:
-  // Open the Training Schedule sheet next!
-  const handleDay1Submit = (answers) => {
-    setPendingAnswers(answers);
+  // Open paper by fetching fresh full details via GET /api/v1/lms/question-papers/{paper_id}
+  const handleAttemptPaper = async (paperKey, summaryPaper) => {
+    setSelectedPaper(paperKey);
+    setCurrentStep("paper");
+    setSubmitError(null);
+    setPendingAnswers({});
+    setPendingParticipantInfo({});
+    setPendingScoreSummary(null);
+
+    if (summaryPaper?.id != null) {
+      setLoadingPaperDetail(true);
+      try {
+        const res = await QuestionPaperApi.getQuestionPaperById(summaryPaper.id);
+        setActivePaperDetail(mapApiResponseToPaper(res.data) || summaryPaper);
+      } catch {
+        setActivePaperDetail(summaryPaper);
+      } finally {
+        setLoadingPaperDetail(false);
+      }
+    } else {
+      setActivePaperDetail(summaryPaper || null);
+    }
+  };
+
+  // Open Supervisor-assigned paper by fetching full details via GET /api/v1/lms/question-papers/{paper_id}
+  const handleAttemptAssignedPaper = async (assignedItem) => {
+    setSelectedPaper("assigned");
+    setCurrentStep("paper");
+    setSubmitError(null);
+    setPendingAnswers({});
+    setPendingParticipantInfo({});
+    setPendingScoreSummary(null);
+    setLoadingPaperDetail(true);
+
+    try {
+      const res = await QuestionPaperApi.getQuestionPaperById(assignedItem.paperId);
+      const mapped = mapApiResponseToPaper(res.data);
+      setActivePaperDetail(mapped);
+    } catch (err) {
+      setSubmitError(
+        getApiErrorMessage(err, "Failed to load the assigned question paper.")
+      );
+      setActivePaperDetail(null);
+    } finally {
+      setLoadingPaperDetail(false);
+    }
+  };
+
+  // Direct submission for Supervisor-assigned question paper -> POST /api/v1/lms/question-papers/{paper_id}/submit
+  const handleSubmitAssignedPaper = async (answers, details = {}) => {
+    if (submitting) return;
+    const targetPaper = details.paper || activePaperDetail;
+    if (!targetPaper?.id) {
+      setSubmitError("Invalid question paper. Please go back and try again.");
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const numericUserId =
+        user?.id != null && !Number.isNaN(Number(user.id))
+          ? Number(user.id)
+          : null;
+
+      const scoreSummary = details.scoreSummary || {};
+      const payload = {
+        question_paper_id: targetPaper.id,
+        user_id: numericUserId,
+        day_type: targetPaper.raw?.day_type || targetPaper.dayType || "L0",
+        answers: answers || {},
+        participant_info: details.participantInfo || {},
+        score: scoreSummary.score ?? null,
+        max_score: scoreSummary.maxScore ?? null,
+        percentage: scoreSummary.percentage ?? null,
+        passed: scoreSummary.passed ?? null,
+        status: "SUBMITTED",
+      };
+
+      const res = await QuestionPaperApi.submitQuestionPaperById(
+        targetPaper.id,
+        payload
+      );
+      let submissionModel = mapApiSubmissionToModel(res.data);
+
+      if (submissionModel?.id != null) {
+        try {
+          const detailRes = await QuestionPaperApi.getSubmissionById(
+            submissionModel.id
+          );
+          submissionModel =
+            mapApiSubmissionToModel(detailRes.data) || submissionModel;
+        } catch {
+          // Retain POST response if follow-up GET fails
+        }
+      }
+
+      setSuccessInfo({
+        title: "Submitted Successfully!",
+        message: `Your responses for "${targetPaper.title}" have been submitted and moved to Past Question Papers.`,
+        submission: submissionModel,
+      });
+      setShowSuccessModal(true);
+    } catch (err) {
+      setSubmitError(
+        getApiErrorMessage(err, "Failed to submit question paper. Please try again.")
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Step 1 -> Step 2: Move from Question Paper to Training Schedule Sheet
+  const handlePaperStepComplete = (answers, details = {}) => {
+    setPendingAnswers(answers || {});
+    setPendingParticipantInfo(details.participantInfo || {});
+    setPendingScoreSummary(details.scoreSummary || null);
+    if (details.paper) {
+      setActivePaperDetail(details.paper);
+    }
+    setSubmitError(null);
     setCurrentStep("schedule");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // When Training Schedule Sheet Save button is clicked:
-  const handleSaveSchedule = (scheduleData) => {
+  // Step 2 Save: Submit Question Paper + Training Schedule to Backend API
+  const handleSaveSchedule = async (scheduleData) => {
+    if (submitting) return;
+
     const isDay2 = selectedPaper === "day2";
-    const paperType = isDay2 ? "day2" : "day1";
     const paperLabel = isDay2 ? "Day 2" : "Day 1";
+    const targetPaper = activePaperDetail || (isDay2 ? day2Paper : day1Paper);
+    const canonicalDayType = isDay2 ? "DAY_2" : "DAY_1";
 
-    // 1. Save question paper submission strictly per employee
-    savePaperSubmission(paperType, pendingAnswers, user);
+    setSubmitting(true);
+    setSubmitError(null);
 
-    // 2. Save training schedule sheet strictly per employee
-    saveTrainingSchedule(user, scheduleData);
+    try {
+      const numericUserId =
+        user?.id != null && !Number.isNaN(Number(user.id))
+          ? Number(user.id)
+          : null;
 
-    // 3. Update state & trigger success popup
-    setSubmittedMap(getSubmittedPapers(user));
-    setSuccessInfo({
-      title: "Submitted Successfully!",
-      message: `Your ${paperLabel} Question Paper and Training Schedule Sheet have been successfully submitted and recorded.`,
-    });
-    setShowSuccessModal(true);
-  };
+      const payload = {
+        question_paper_id: targetPaper?.id ?? null,
+        user_id: numericUserId,
+        day_type: targetPaper?.raw?.day_type || canonicalDayType,
+        answers: pendingAnswers,
+        participant_info: pendingParticipantInfo,
+        training_schedule: scheduleData,
+        score: pendingScoreSummary?.score ?? null,
+        max_score: pendingScoreSummary?.maxScore ?? null,
+        percentage: pendingScoreSummary?.percentage ?? null,
+        passed: pendingScoreSummary?.passed ?? null,
+        status: "SUBMITTED",
+      };
 
-  // When Day 2 Paper is submitted:
-  // Open the Training Schedule sheet next!
-  const handleDay2Submit = (answers) => {
-    setPendingAnswers(answers);
-    setCurrentStep("schedule");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+      const res =
+        targetPaper?.id != null
+          ? await QuestionPaperApi.submitQuestionPaperById(targetPaper.id, payload)
+          : await QuestionPaperApi.submitQuestionPaper(payload);
+
+      let submissionModel = mapApiSubmissionToModel(res.data);
+
+      // Fetch persisted submission details via GET /submissions/{submission_id}
+      if (submissionModel?.id != null) {
+        try {
+          const detailRes = await QuestionPaperApi.getSubmissionById(
+            submissionModel.id
+          );
+          submissionModel =
+            mapApiSubmissionToModel(detailRes.data) || submissionModel;
+        } catch {
+          // Retain POST response if immediate follow-up GET fails
+        }
+      }
+
+      setSuccessInfo({
+        title: "Submitted Successfully!",
+        message: `Your ${paperLabel} Question Paper and Training Schedule Sheet have been successfully submitted and saved to the database.`,
+        submission: submissionModel,
+      });
+      setShowSuccessModal(true);
+    } catch (err) {
+      setSubmitError(
+        getApiErrorMessage(
+          err,
+          `Failed to submit ${paperLabel} Question Paper. Please try again.`
+        )
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCloseSuccessModal = () => {
     setShowSuccessModal(false);
     setSelectedPaper(null);
+    setActivePaperDetail(null);
     setCurrentStep("paper");
     setPendingAnswers({});
+    setPendingParticipantInfo({});
+    setPendingScoreSummary(null);
+    setSubmitError(null);
     loadData();
   };
 
-  // Check which papers remain in Upcoming (not yet submitted)
-  const isDay1Submitted = Boolean(submittedMap.day1?.submitted);
-  const isDay2Submitted = Boolean(submittedMap.day2?.submitted);
-
-  // Both papers submitted check
+  // Check which papers have already been submitted (from backend DB)
+  const isDay1Submitted = Boolean(submittedMap.day1);
+  const isDay2Submitted = Boolean(submittedMap.day2);
   const allPapersSubmitted = isDay1Submitted && isDay2Submitted;
 
   // Strict Date-Comparison Rules (using joiningDate vs. Today's Date):
-  // Case 1 — Joining Date is Today (diffDays === 0):
-  //   Display ONLY Day 1 Question Paper directly (if not yet submitted). Hide Day 2 completely.
-  // Case 2 — Joining Date is Yesterday / Next Day Login (diffDays === 1):
-  //   Display ONLY Day 2 Question Paper directly (if not yet submitted). Hide Day 1 completely.
-  // Case 3 — Past Joining Date or Any Other Date (diffDays > 1 or diffDays < 0):
-  //   Do NOT display any question paper entries at all on Current & Upcoming (show clean empty state).
-  const showDay1 = diffDays === 0 && !isDay1Submitted;
-  const showDay2 = diffDays === 1 && !isDay2Submitted;
-  const hasPaperToday = showDay1 || showDay2;
+  // Case 1 — Joining Date is Today (diffDays === 0): Display ONLY Day 1 (if not yet submitted).
+  // Case 2 — Joining Date is Yesterday (diffDays === 1): Display ONLY Day 2 (if not yet submitted).
+  // Case 3 — Past or Future Joining Date: Display empty state.
+  const showDay1 = diffDays === 0 && !isDay1Submitted && Boolean(day1Paper);
+  const showDay2 = diffDays === 1 && !isDay2Submitted && Boolean(day2Paper);
+  const missingDay1InDb = diffDays === 0 && !isDay1Submitted && !day1Paper;
+  const missingDay2InDb = diffDays === 1 && !isDay2Submitted && !day2Paper;
+  const hasAssignedPapers = assignedPapers.length > 0;
+  const hasPaperToday = showDay1 || showDay2 || hasAssignedPapers;
 
   // View: Attempting Day 1 or Day 2 Question Paper / Training Schedule
   if (selectedPaper) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none pb-12">
-        {/* Top bar with back button */}
-        <header className="bg-white border-b border-slate-200/80 sticky top-0 z-30 h-16 px-4 sm:px-6 flex items-center justify-between">
+      <div className="space-y-4 select-none pb-8">
+        {/* Compact Action Bar inside EmployeeLayout */}
+        <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-3 print:hidden">
           <div className="flex items-center space-x-3">
             <button
               type="button"
               onClick={() => {
                 setSelectedPaper(null);
+                setActivePaperDetail(null);
                 setCurrentStep("paper");
+                setSubmitError(null);
               }}
               className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer"
               title="Return to list"
@@ -160,127 +395,175 @@ export default function UpcomingQuestionPapers() {
               <span>Back to Question Papers</span>
             </button>
             <div className="h-5 w-px bg-slate-200" />
-            <h1 className="text-base font-bold text-[#0f1f38]">
-              {selectedPaper === "day1"
-                ? currentStep === "schedule"
-                  ? "Training Schedule Sheet (Day 1)"
-                  : "Day 1 Question Paper"
-                : currentStep === "schedule"
-                  ? "Training Schedule Sheet (Day 2)"
-                  : "Day 2 Question Paper"}
-            </h1>
+            <h2 className="text-sm sm:text-base font-bold text-[#0f1f38]">
+              {selectedPaper === "assigned"
+                ? activePaperDetail?.title || "Assigned Question Paper"
+                : selectedPaper === "day1"
+                  ? currentStep === "schedule"
+                    ? "Training Schedule Sheet (Day 1)"
+                    : activePaperDetail?.title || "Day 1 Question Paper"
+                  : currentStep === "schedule"
+                    ? "Training Schedule Sheet (Day 2)"
+                    : activePaperDetail?.title || "Day 2 Question Paper"}
+            </h2>
           </div>
 
-          <div className="flex items-center space-x-3">
-            {(selectedPaper === "day1" || selectedPaper === "day2") && (
-              <div className="hidden sm:flex items-center space-x-2 text-xs font-medium">
-                <span
-                  className={`px-2.5 py-1 rounded-md ${currentStep === "paper"
+          {(selectedPaper === "day1" || selectedPaper === "day2") && (
+            <div className="hidden sm:flex items-center space-x-2 text-xs font-medium">
+              <span
+                className={`px-2.5 py-1 rounded-md ${
+                  currentStep === "paper"
                     ? "bg-[#0b295c] text-white font-bold"
                     : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    }`}
-                >
-                  Step 1: Question Paper {currentStep === "schedule" && "✓"}
-                </span>
-                <span className="text-slate-300">→</span>
-                <span
-                  className={`px-2.5 py-1 rounded-md ${currentStep === "schedule"
+                }`}
+              >
+                Step 1: Question Paper {currentStep === "schedule" && "✓"}
+              </span>
+              <span className="text-slate-300">→</span>
+              <span
+                className={`px-2.5 py-1 rounded-md ${
+                  currentStep === "schedule"
                     ? "bg-[#0b295c] text-white font-bold"
                     : "bg-slate-100 text-slate-500"
-                    }`}
-                >
-                  Step 2: Training Schedule Sheet
-                </span>
-              </div>
-            )}
-            <div className="flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/60">
-              <User className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-xs font-semibold text-slate-700">
-                {displayName} {displayPayCode}
+                }`}
+              >
+                Step 2: Training Schedule Sheet
               </span>
             </div>
-          </div>
-        </header>
+          )}
+        </div>
 
         {/* Informative Guidance Banner when on Schedule Sheet */}
         {currentStep === "schedule" && (
-          <div className="max-w-5xl mx-auto px-4 pt-6 w-full">
+          <div className="space-y-3">
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between text-xs text-emerald-900 shadow-2xs">
               <div className="flex items-center space-x-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>
                   <strong>
-                    {selectedPaper === "day2" ? "Day 2" : "Day 1"} Question Paper submitted!
+                    {selectedPaper === "day2" ? "Day 2" : "Day 1"} Question Paper answers recorded!
                   </strong>{" "}
                   Please fill the Training Schedule sheet below and click <strong>Save</strong> to complete your submission.
                 </span>
               </div>
             </div>
+
+            {submitError && (
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 flex items-center gap-2 text-xs font-medium text-rose-700">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{submitError}</span>
+              </div>
+            )}
           </div>
         )}
 
         {/* Paper & Schedule Container */}
-        <main className="max-w-5xl mx-auto px-4 py-6 w-full">
-          {selectedPaper === "day1" && currentStep === "paper" && (
-            <Day1QuestionPaper
-              initialAnswers={pendingAnswers}
-              onSubmitSuccess={handleDay1Submit}
-              initialInfo={{
-                name: displayName,
-                designation: user?.designation || "Trainee Operator",
-                date: formatDisplayDate(joiningDate || new Date()),
-                unit: user?.plant || user?.plantLocation || user?.unit || "Plant 1",
-              }}
-            />
-          )}
-
-          {selectedPaper === "day1" && currentStep === "schedule" && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs">
-              <TrainingSchedule
-                onSave={handleSaveSchedule}
-                defaultDetails={{
-                  title: "Day 1 Initial Plant Training",
-                  trainer: "Line Leader",
-                  date: formatDisplayDate(joiningDate || new Date()),
-                  periodFrom: "09:00 AM",
-                  periodTo: "05:00 PM",
-                  internalExternal: "Internal",
-                  venue: "Plant DOJO Center",
-                }}
-              />
+        <div className="w-full overflow-x-auto">
+          {loadingPaperDetail ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-12 flex flex-col items-center justify-center gap-3">
+              <span className="h-7 w-7 rounded-full border-3 border-sky-500 border-t-transparent animate-spin" />
+              <p className="text-xs font-semibold text-slate-500">
+                Loading question paper...
+              </p>
             </div>
-          )}
+          ) : (
+            <>
+              {selectedPaper === "assigned" && (
+                <>
+                  {submitError && (
+                    <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl p-3.5 flex items-center gap-2 text-xs font-medium text-rose-700">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{submitError}</span>
+                    </div>
+                  )}
+                  <DynamicDayQuestionPaper
+                    dayType={activePaperDetail?.dayType || "L0"}
+                    paper={activePaperDetail}
+                    initialAnswers={pendingAnswers}
+                    onSubmitSuccess={handleSubmitAssignedPaper}
+                    initialInfo={{
+                      name: displayName,
+                      designation: user?.designation || "Trainee Operator",
+                      qualification: user?.designation || "Trainee Operator",
+                      date: formatDisplayDate(new Date()),
+                      unit:
+                        user?.plant ||
+                        user?.plantLocation ||
+                        user?.unit ||
+                        "Plant 1",
+                    }}
+                  />
+                </>
+              )}
 
-          {selectedPaper === "day2" && currentStep === "paper" && (
-            <Day2QuestionPaper
-              initialAnswers={pendingAnswers}
-              onSubmitSuccess={handleDay2Submit}
-              initialInfo={{
-                name: displayName,
-                qualification: user?.designation || "Trainee Operator",
-                date: formatDisplayDate(new Date()),
-                unit: user?.plant || user?.plantLocation || user?.unit || "Plant 1",
-              }}
-            />
-          )}
+              {selectedPaper === "day1" && currentStep === "paper" && (
+                <Day1QuestionPaper
+                  paper={activePaperDetail}
+                  initialAnswers={pendingAnswers}
+                  onSubmitSuccess={handlePaperStepComplete}
+                  initialInfo={{
+                    name: displayName,
+                    designation: user?.designation || "Trainee Operator",
+                    date: formatDisplayDate(joiningDate || new Date()),
+                    unit:
+                      user?.plant || user?.plantLocation || user?.unit || "Plant 1",
+                  }}
+                />
+              )}
 
-          {selectedPaper === "day2" && currentStep === "schedule" && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs">
-              <TrainingSchedule
-                onSave={handleSaveSchedule}
-                defaultDetails={{
-                  title: "Day 2 Technical & Safety Training",
-                  trainer: "Line Leader",
-                  date: formatDisplayDate(joiningDate || new Date()),
-                  periodFrom: "09:00 AM",
-                  periodTo: "05:00 PM",
-                  internalExternal: "Internal",
-                  venue: "Plant DOJO Center",
-                }}
-              />
-            </div>
+              {selectedPaper === "day1" && currentStep === "schedule" && (
+                <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs">
+                  <TrainingSchedule
+                    onSave={handleSaveSchedule}
+                    isSaving={submitting}
+                    defaultDetails={{
+                      title: "Day 1 Initial Plant Training",
+                      trainer: "Line Leader",
+                      date: formatDisplayDate(joiningDate || new Date()),
+                      periodFrom: "09:00 AM",
+                      periodTo: "05:00 PM",
+                      internalExternal: "Internal",
+                      venue: "Plant DOJO Center",
+                    }}
+                  />
+                </div>
+              )}
+
+              {selectedPaper === "day2" && currentStep === "paper" && (
+                <Day2QuestionPaper
+                  paper={activePaperDetail}
+                  initialAnswers={pendingAnswers}
+                  onSubmitSuccess={handlePaperStepComplete}
+                  initialInfo={{
+                    name: displayName,
+                    qualification: user?.designation || "Trainee Operator",
+                    date: formatDisplayDate(new Date()),
+                    unit:
+                      user?.plant || user?.plantLocation || user?.unit || "Plant 1",
+                  }}
+                />
+              )}
+
+              {selectedPaper === "day2" && currentStep === "schedule" && (
+                <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs">
+                  <TrainingSchedule
+                    onSave={handleSaveSchedule}
+                    isSaving={submitting}
+                    defaultDetails={{
+                      title: "Day 2 Technical & Safety Training",
+                      trainer: "Line Leader",
+                      date: formatDisplayDate(joiningDate || new Date()),
+                      periodFrom: "09:00 AM",
+                      periodTo: "05:00 PM",
+                      internalExternal: "Internal",
+                      venue: "Plant DOJO Center",
+                    }}
+                  />
+                </div>
+              )}
+            </>
           )}
-        </main>
+        </div>
 
         {/* Pop-up Message Dialog on Successful Save */}
         {showSuccessModal && (
@@ -299,16 +582,42 @@ export default function UpcomingQuestionPapers() {
                   "Your Question Paper and Training Schedule Sheet have been successfully submitted."}
               </p>
 
-              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 mb-5 text-[11px] text-slate-500 space-y-1">
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 mb-5 text-[11px] text-slate-500 space-y-1.5">
                 <div className="flex justify-between">
                   <span>Participant:</span>
                   <span className="font-semibold text-slate-700">
                     {displayName} {displayPayCode}
                   </span>
                 </div>
+                {successInfo.submission && (
+                  <>
+                    <div className="flex justify-between">
+                      <span>Questions Answered:</span>
+                      <span className="font-semibold text-slate-700">
+                        {successInfo.submission.answeredCount} /{" "}
+                        {successInfo.submission.totalQuestions}
+                      </span>
+                    </div>
+                    {successInfo.submission.score != null &&
+                      successInfo.submission.maxScore != null && (
+                        <div className="flex justify-between">
+                          <span>Score:</span>
+                          <span className="font-semibold text-slate-700">
+                            {successInfo.submission.score} /{" "}
+                            {successInfo.submission.maxScore}
+                            {successInfo.submission.percentage != null
+                              ? ` (${successInfo.submission.percentage}%)`
+                              : ""}
+                          </span>
+                        </div>
+                      )}
+                  </>
+                )}
                 <div className="flex justify-between">
                   <span>Status:</span>
-                  <span className="font-semibold text-emerald-700">Completed & Recorded</span>
+                  <span className="font-semibold text-emerald-700">
+                    {successInfo.submission?.status || "Completed & Recorded"}
+                  </span>
                 </div>
               </div>
 
@@ -327,54 +636,19 @@ export default function UpcomingQuestionPapers() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none pb-12">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-30 h-16 px-4 sm:px-6 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <button
-            type="button"
-            onClick={() => navigate("/employee")}
-            className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer"
-            title="Back to Employee Home"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <img
-            src={ntfLogo}
-            alt="NTF"
-            className="h-8 w-auto object-contain mix-blend-multiply"
-          />
-          <div className="h-5 w-px bg-slate-200 hidden sm:block" />
-          <h1 className="text-base sm:text-lg font-bold text-[#0f1f38]">
-            Current & Upcoming Question Papers
-          </h1>
-        </div>
+    <div className="space-y-4 select-none pb-8">
+      {/* Banner matching Admin Portal */}
+      <div className="bg-[#0b295c] text-white rounded-lg px-4 py-2.5 sm:px-5 sm:py-3 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <h2 className="text-base sm:text-xl font-bold font-serif tracking-tight text-white">
+          Current Question Paper
+        </h2>
+      </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/60">
-            <User className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-xs font-semibold text-slate-700">
-              {displayName} {displayPayCode}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 shadow-2xs transition-all cursor-pointer"
-            title="Logout"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 w-full space-y-6">
+      <div className="space-y-5">
         {/* Status / Joining Date Context Bar */}
         <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Calendar className="w-4 h-4 text-[#0284c7]" />
               <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">
                 Joining Date:
@@ -387,12 +661,13 @@ export default function UpcomingQuestionPapers() {
                 Current Status:
               </span>
               <span
-                className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${diffDays === 0
-                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                  : diffDays === 1
-                    ? "bg-sky-50 text-sky-700 border border-sky-200"
-                    : "bg-slate-100 text-slate-600 border border-slate-200"
-                  }`}
+                className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                  diffDays === 0
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : diffDays === 1
+                      ? "bg-sky-50 text-sky-700 border border-sky-200"
+                      : "bg-slate-100 text-slate-600 border border-slate-200"
+                }`}
               >
                 {diffDays === 0
                   ? "Day 1 (Joining Date)"
@@ -409,11 +684,35 @@ export default function UpcomingQuestionPapers() {
           </div>
         </div>
 
-        {/* Strict Day-Based Question Paper Display */}
-        {hasPaperToday ? (
+        {/* Error Banner */}
+        {loadError && (
+          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs text-rose-700 font-medium">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{loadError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={loadData}
+              className="px-3 py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700 text-xs font-semibold transition cursor-pointer shrink-0"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center shadow-2xs flex flex-col items-center gap-3">
+            <span className="h-7 w-7 rounded-full border-3 border-sky-500 border-t-transparent animate-spin" />
+            <p className="text-xs font-semibold text-slate-500">
+              Loading today&apos;s question papers...
+            </p>
+          </div>
+        ) : hasPaperToday ? (
           /* Structured Row List Layout: strictly shows only today's eligible paper */
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden divide-y divide-slate-100">
-            {/* ROW 1: DAY 1 QUESTION PAPER (Visible ONLY if today is Day 1 and not yet submitted) */}
+            {/* ROW 1: DAY 1 QUESTION PAPER */}
             {showDay1 && (
               <div className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
                 <div className="flex items-start space-x-4">
@@ -421,21 +720,24 @@ export default function UpcomingQuestionPapers() {
                     <FileText className="w-6 h-6 stroke-[1.8]" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="text-base font-bold text-[#0f1f38]">
-                        Day 1 Question Paper
+                        {day1Paper.title || "Day 1 Question Paper"}
                       </h3>
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                         Available Today (Day 1)
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed max-w-lg">
-                      NTF Company History, Overview, 5S, Kaizen, and General Plant Safety.
+                      {day1Paper.description ||
+                        "NTF Company History, Overview, 5S, Kaizen, and General Plant Safety."}
                     </p>
                     <div className="flex items-center gap-4 text-[11px] text-slate-400 mt-2 font-medium">
-                      <span>20 Multiple Choice Questions</span>
+                      <span>{day1Paper.totalQuestions || 0} Questions</span>
                       <span>•</span>
-                      <span>Duration: 30 Mins</span>
+                      <span>
+                        Duration: {day1Paper.meta?.duration || 30} Mins
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -443,10 +745,7 @@ export default function UpcomingQuestionPapers() {
                 <div className="shrink-0 w-full sm:w-auto flex justify-end">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedPaper("day1");
-                      setCurrentStep("paper");
-                    }}
+                    onClick={() => handleAttemptPaper("day1", day1Paper)}
                     className="w-full sm:w-auto py-2.5 px-5 bg-[#0d254c] hover:bg-[#153466] active:scale-[0.99] text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
                   >
                     <PlayCircle className="w-4 h-4 stroke-[2]" />
@@ -457,7 +756,7 @@ export default function UpcomingQuestionPapers() {
               </div>
             )}
 
-            {/* ROW 2: DAY 2 QUESTION PAPER (Visible ONLY if today is Day 2 and not yet submitted) */}
+            {/* ROW 2: DAY 2 QUESTION PAPER */}
             {showDay2 && (
               <div className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
                 <div className="flex items-start space-x-4">
@@ -465,21 +764,24 @@ export default function UpcomingQuestionPapers() {
                     <FileText className="w-6 h-6 stroke-[1.8]" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="text-base font-bold text-[#0f1f38]">
-                        Day 2 Question Paper
+                        {day2Paper.title || "Day 2 Question Paper"}
                       </h3>
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                         Available Today (Day 2)
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed max-w-lg">
-                      Quality Standards, PPE Guidelines, Defect Types, and Process Discipline.
+                      {day2Paper.description ||
+                        "Quality Standards, PPE Guidelines, Defect Types, and Process Discipline."}
                     </p>
                     <div className="flex items-center gap-4 text-[11px] text-slate-400 mt-2 font-medium">
-                      <span>20 Multiple Choice Questions</span>
+                      <span>{day2Paper.totalQuestions || 0} Questions</span>
                       <span>•</span>
-                      <span>Duration: 30 Mins</span>
+                      <span>
+                        Duration: {day2Paper.meta?.duration || 30} Mins
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -487,10 +789,7 @@ export default function UpcomingQuestionPapers() {
                 <div className="shrink-0 w-full sm:w-auto flex justify-end">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedPaper("day2");
-                      setCurrentStep("paper");
-                    }}
+                    onClick={() => handleAttemptPaper("day2", day2Paper)}
                     className="w-full sm:w-auto py-2.5 px-5 bg-[#0d254c] hover:bg-[#153466] active:scale-[0.99] text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
                   >
                     <PlayCircle className="w-4 h-4 stroke-[2]" />
@@ -500,6 +799,52 @@ export default function UpcomingQuestionPapers() {
                 </div>
               </div>
             )}
+            {/* SUPERVISOR-ASSIGNED QUESTION PAPERS (Per-Employee Isolated) */}
+            {assignedPapers.map((ap) => (
+              <div
+                key={ap.paperId}
+                className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-200/80 flex items-center justify-center text-[#0284c7] shrink-0 mt-0.5">
+                    <FileText className="w-6 h-6 stroke-[1.8]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="text-base font-bold text-[#0f1f38]">
+                        {ap.title || "Assigned Question Paper"}
+                      </h3>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-sky-50 text-[#0284c7] border border-sky-200">
+                        Assigned by Supervisor
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed max-w-lg">
+                      {ap.description ||
+                        "Assessment paper assigned by your supervisor. Complete and submit your responses."}
+                    </p>
+                    <div className="flex items-center gap-4 text-[11px] text-slate-400 mt-2 font-medium">
+                      <span>{ap.totalQuestions || 0} Questions</span>
+                      <span>•</span>
+                      <span>{ap.totalMarks || 0} Marks</span>
+                      <span>•</span>
+                      <span>Duration: {ap.duration || 60} Mins</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="shrink-0 w-full sm:w-auto flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleAttemptAssignedPaper(ap)}
+                    className="w-full sm:w-auto py-2.5 px-5 bg-[#0d254c] hover:bg-[#153466] active:scale-[0.99] text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+                  >
+                    <PlayCircle className="w-4 h-4 stroke-[2]" />
+                    <span>Attempt Paper</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           /* Empty / Notice State when no question paper is eligible for today */
@@ -519,7 +864,11 @@ export default function UpcomingQuestionPapers() {
                   ? "Today's Day 1 Question Paper Completed!"
                   : diffDays === 1 && isDay2Submitted
                     ? "Today's Day 2 Question Paper Completed!"
-                    : "No question papers available for today"}
+                    : missingDay1InDb
+                      ? "Day 1 Question Paper Not Published Yet"
+                      : missingDay2InDb
+                        ? "Day 2 Question Paper Not Published Yet"
+                        : "No question papers available for today"}
             </h3>
 
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
@@ -529,14 +878,18 @@ export default function UpcomingQuestionPapers() {
                   ? "You have already completed and submitted your Day 1 Question Paper today. Day 2 Question Paper will unlock tomorrow."
                   : diffDays === 1 && isDay2Submitted
                     ? "You have already completed and submitted your Day 2 Question Paper today. You can review your submission under Past Question Papers."
-                    : diffDays !== null && diffDays > 1
-                      ? "Induction question papers are scheduled strictly for Day 1 (joining date) and Day 2 (next day). Because your joining date has passed, there are no active question papers scheduled for today."
-                      : diffDays !== null && diffDays < 0
-                        ? `Your training begins on your official joining date (${formatDisplayDate(joiningDate)}). Your Day 1 Question Paper will unlock on that day.`
-                        : "There are no question papers scheduled for today."}
+                    : missingDay1InDb
+                      ? "No active Day 1 Question Paper is currently configured in the database. Please contact your trainer or administrator."
+                      : missingDay2InDb
+                        ? "No active Day 2 Question Paper is currently configured in the database. Please contact your trainer or administrator."
+                        : diffDays !== null && diffDays > 1
+                          ? "Induction question papers are scheduled strictly for Day 1 (joining date) and Day 2 (next day). Because your joining date has passed, there are no active question papers scheduled for today."
+                          : diffDays !== null && diffDays < 0
+                            ? `Your training begins on your official joining date (${formatDisplayDate(joiningDate)}). Your Day 1 Question Paper will unlock on that day.`
+                            : "There are no question papers scheduled for today."}
             </p>
 
-            {(isDay1Submitted || isDay2Submitted) && (
+            {(isDay1Submitted || isDay2Submitted || submittedPaperIds.size > 0) && (
               <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
                 <button
                   type="button"
@@ -550,7 +903,7 @@ export default function UpcomingQuestionPapers() {
             )}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

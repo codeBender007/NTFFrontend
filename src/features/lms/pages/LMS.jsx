@@ -17,11 +17,15 @@ export default function LMS() {
   };
 
   const handleViewPaper = (paper) => {
-    console.log("View paper:", paper);
+    if (paper?.id != null) {
+      navigate(`/lms/paper/preview/${paper.id}`);
+    }
   };
 
-  const handleRefresh = () => {
-    console.log("Refresh");
+  const handleEditPaper = (paper) => {
+    if (paper?.id != null) {
+      navigate(`/lms/paper/edit/${paper.id}`);
+    }
   };
 
   const handleTabChange = (tab) => {
@@ -50,7 +54,7 @@ export default function LMS() {
           <QuestionPaperTable
             onCreate={handleCreatePaper}
             onView={handleViewPaper}
-            onRefresh={handleRefresh}
+            onEdit={handleEditPaper}
           />
         )}
 

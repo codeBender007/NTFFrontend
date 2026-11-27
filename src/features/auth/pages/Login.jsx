@@ -3,13 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, AlertCircle } from "lucide-react";
 import AuthApi from "../services/AuthApi";
 import UserApi from "@/features/lms/services/UserApi.js";
-import { SEED_EMPLOYEES } from "@/features/lms/utils/userSchema.js";
-import { applyRoleDesignationOverrides } from "@/features/lms/utils/userUtils.js";
 import {
   saveSession,
+  saveEmployeeSession,
   isAuthenticated,
   isEmployee,
-  saveEmployeeSession,
   isSupervisor,
   saveSupervisorSession,
 } from "../utils/authStorage";
@@ -25,7 +23,7 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // If already authenticated, redirect straight to the homepage or employee portal
+  // If already authenticated, redirect straight to the corresponding portal
   useEffect(() => {
     if (isAuthenticated()) {
       if (isSupervisor()) {
@@ -41,10 +39,11 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
-    const trimmedEmail = email.trim();
+    const trimmedInput = email.trim();
+    const trimmedPassword = String(password).trim();
 
     // 1. Client-side empty field validation
-    if (!trimmedEmail) {
+    if (!trimmedInput) {
       setErrorMessage("Please enter your username or email.");
       return;
     }
@@ -56,22 +55,12 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // 2. Build credentials payload (backend strictly requires 'email' along with 'password')
-      const credentials = {
-        email: trimmedEmail,
-        username: trimmedEmail,
-        password: password,
-      };
+      const normalizedInput = trimmedInput.toLowerCase();
 
-      // Dynamic Employee Login: authenticate Operators from Users table
-      // Username matches employee Name (empName / name), Password matches employee Paycode (paycode / payCode)
-      const inputUsername = trimmedEmail.toLowerCase();
-      const inputPassword = String(password).trim();
-
-      // Supervisor Login: authenticate with exact credentials (supervisor / supervisor123)
+      // 2. Supervisor Login (isolated frontend role flow)
       if (
-        inputUsername === "supervisor" &&
-        inputPassword === "supervisor123"
+        normalizedInput === "supervisor" &&
+        trimmedPassword === "supervisor123"
       ) {
         saveSupervisorSession({
           id: "supervisor_1",
@@ -84,219 +73,123 @@ export default function Login() {
         return;
       }
 
-      // Quick Employee Demo Login fallback
-      if (
-        (inputUsername === "emp123@gmail.com" ||
-          inputUsername === "emp123" ||
-          inputUsername === "employee") &&
-        inputPassword === "12345"
-      ) {
-        saveEmployeeSession({
-          id: "op_demo_123",
-          name: "Demo Operator",
-          empName: "Demo Operator",
-          payCode: "12345",
-          paycode: "12345",
-          joiningDate: new Date().toISOString().slice(0, 10),
-          dateOfJoining: new Date().toISOString().slice(0, 10),
-          designation: "OPERATOR",
-          email: "emp123@gmail.com",
-          username: "emp123",
-          role: "employee",
-          isEmployee: true,
-        });
-        navigate("/employee", { replace: true });
-        return;
-      }
-
-      let matchedOperator = null;
+      // 3. Primary Backend Auth API login (Admin & email/DOB-authenticated users)
+      let authApiError = null;
       try {
-        let usersList = [];
-        try {
-          // Timeout after 1500ms so login never hangs if backend is unreachable
-          const usersResPromise = UserApi.getUsers({ limit: 1000 });
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("UserApi timeout")), 1500)
-          );
-          const usersRes = await Promise.race([usersResPromise, timeoutPromise]);
-          const raw = Array.isArray(usersRes?.data)
-            ? usersRes.data
-            : Array.isArray(usersRes?.data?.data)
-              ? usersRes.data.data
-              : [];
-          if (raw.length > 0) {
-            usersList = raw.map((u) => ({
-              id: u.id,
-              empName: u.name ?? u.empName ?? "",
-              name: u.name ?? u.empName ?? "",
-              payCode: u.payCode ?? u.paycode ?? "",
-              paycode: u.payCode ?? u.paycode ?? "",
-              cardNo: u.cardNo ?? "",
-              joiningDate: u.dateOfJoining ?? u.joiningDate ?? "",
-              dateOfJoining: u.dateOfJoining ?? u.joiningDate ?? "",
-              department: u.departmentName ?? u.department ?? "",
-              subDepartment: u.subDepartmentName ?? u.subDepartment ?? "",
-              line: u.lineName ?? u.line ?? "",
-              machine: u.machineName ?? u.machine ?? "",
-              shift: u.shift ?? "",
-              plant: u.plantId != null ? String(u.plantId) : (u.plant ?? ""),
-              plantLocation: u.plantLocation ?? "",
-              grade: u.grade ?? "",
-              designation: u.designation ?? "",
-              category: u.category ?? "",
-              gender: u.gender ?? "",
-              bloodGroup: u.bloodGroup ?? "",
-              maritalStatus: u.maritalStatus ?? "",
-              email: u.email ?? "",
-              number: u.mobileNo ?? u.number ?? "",
-              salary: u.salary != null ? String(u.salary) : "",
-            }));
-          }
-        } catch (fetchErr) {
-          console.warn("Could not load users list from API for Operator check:", fetchErr?.message || fetchErr);
-        }
-
-        // Merge with SEED_EMPLOYEES if needed
-        if (usersList.length === 0) {
-          usersList = [...SEED_EMPLOYEES];
-        } else {
-          SEED_EMPLOYEES.forEach((seed) => {
-            const seedPay = String(seed.payCode || seed.paycode).trim();
-            if (seedPay && !usersList.some((u) => String(u.payCode || u.paycode).trim() === seedPay)) {
-              usersList.push(seed);
-            }
-          });
-        }
-
-        // Apply any saved role designation overrides
-        const syncedUsers = applyRoleDesignationOverrides(usersList);
-
-        // Filter for Operator designation and match Username (Name) and Password (Paycode)
-        matchedOperator = syncedUsers.find((u) => {
-          const designation = String(u.designation || u.role || u.roleName || "").trim().toLowerCase();
-          if (designation !== "operator") return false;
-
-          const uPayCode = String(u.payCode || u.paycode || "").trim();
-          if (!uPayCode || uPayCode.toLowerCase() !== inputPassword.toLowerCase()) {
-            return false;
-          }
-
-          const uName = String(u.empName || u.name || "").trim().toLowerCase();
-          const uUsername = String(u.username || "").trim().toLowerCase();
-          const uEmail = String(u.email || "").trim().toLowerCase();
-
-          return (
-            (uName && uName === inputUsername) ||
-            (uUsername && uUsername === inputUsername) ||
-            (uEmail && uEmail === inputUsername)
-          );
+        const res = await AuthApi.login({
+          email: trimmedInput,
+          password: password,
         });
-      } catch (checkErr) {
-        console.warn("Operator login check error:", checkErr);
-      }
-
-      if (matchedOperator) {
-        const operatorProfile = {
-          id: matchedOperator.id || `op_${matchedOperator.payCode || matchedOperator.paycode || Date.now()}`,
-          name: matchedOperator.empName || matchedOperator.name || trimmedEmail,
-          empName: matchedOperator.empName || matchedOperator.name || trimmedEmail,
-          paycode: matchedOperator.paycode || matchedOperator.payCode || inputPassword,
-          payCode: matchedOperator.payCode || matchedOperator.paycode || inputPassword,
-          cardNo: matchedOperator.cardNo || "",
-          joiningDate: matchedOperator.joiningDate || matchedOperator.dateOfJoining || "",
-          dateOfJoining: matchedOperator.dateOfJoining || matchedOperator.joiningDate || "",
-          department: matchedOperator.department || "Production",
-          subDepartment: matchedOperator.subDepartment || "",
-          line: matchedOperator.line || "",
-          machine: matchedOperator.machine || "",
-          plant: matchedOperator.plant || "",
-          plantLocation: matchedOperator.plantLocation || "",
-          designation: matchedOperator.designation || "Operator",
-          email:
-            matchedOperator.email ||
-            `${String(matchedOperator.payCode || matchedOperator.paycode || "operator").trim().toLowerCase()}@ntf.com`,
-          username: matchedOperator.empName || matchedOperator.name || trimmedEmail,
-          role: "employee",
-          isEmployee: true,
-        };
-
-        saveEmployeeSession(operatorProfile);
-        navigate("/employee", { replace: true });
-        return;
-      }
-
-      // 3. Admin / standard API Login call
-      try {
-        const res = await AuthApi.login(credentials);
         saveSession(res.data);
-        if (isEmployee()) {
+
+        if (isSupervisor()) {
+          navigate("/supervisor", { replace: true });
+        } else if (isEmployee()) {
           navigate("/employee", { replace: true });
         } else {
           navigate("/home", { replace: true });
         }
         return;
-      } catch (apiErr) {
-        // If API fails because of connection / network / offline timeout, allow standard admin login
-        const isOfflineOrNetwork =
-          !apiErr?.response ||
-          apiErr.code === "ECONNABORTED" ||
-          apiErr.message?.includes("Network Error") ||
-          apiErr.message?.includes("timeout");
+      } catch (err) {
+        authApiError = err;
+      }
 
-        const isAdminOffline =
-          (inputUsername === "admin" ||
-            inputUsername === "admin@ntf.com" ||
-            inputUsername.includes("admin")) &&
-          (inputPassword === "admin" ||
-            inputPassword === "admin123" ||
-            inputPassword === "admin@123" ||
-            inputPassword.length >= 4);
+      // 4. Live Operator Login via fresh backend Users API (no stale localStorage / seed lists)
+      // Matches Designation === "Operator" (case-insensitive, trimmed),
+      // Username/Email === name/empName (case-insensitive, trimmed),
+      // Password === paycode/payCode (trimmed string comparison)
+      try {
+        const liveUsers = await UserApi.getAllUsers();
+        const matchedOperator = liveUsers.find((u) => {
+          const designation = String(u?.designation || "").trim().toLowerCase();
+          if (designation !== "operator") return false;
 
-        if (isAdminOffline || (isOfflineOrNetwork && inputUsername.includes("admin"))) {
-          const syntheticJwt = `adm_hdr.${btoa(
-            JSON.stringify({
-              role: "admin",
-              sub: inputUsername,
-              name: "Administrator",
-              exp: Math.floor(Date.now() / 1000) + 86400 * 30,
-            })
-          )}.adm_sig`;
+          const uPayCode = String(u?.payCode ?? u?.paycode ?? "").trim();
+          if (!uPayCode || uPayCode.toLowerCase() !== trimmedPassword.toLowerCase()) {
+            return false;
+          }
 
-          saveSession({
-            token: syntheticJwt,
-            access_token: syntheticJwt,
-            user: {
-              id: "admin_1",
-              username: inputUsername,
-              name: "Administrator",
-              email: inputUsername.includes("@") ? inputUsername : "admin@ntf.com",
-              role: "admin",
-            },
+          const uEmpName = String(u?.empName ?? "").trim().toLowerCase();
+          const uName = String(u?.name ?? "").trim().toLowerCase();
+          const uUsername = String(u?.username ?? "").trim().toLowerCase();
+          const uEmail = String(u?.email ?? "").trim().toLowerCase();
+
+          return (
+            (uEmpName && uEmpName === normalizedInput) ||
+            (uName && uName === normalizedInput) ||
+            (uUsername && uUsername === normalizedInput) ||
+            (uEmail && uEmail === normalizedInput)
+          );
+        });
+
+        if (matchedOperator) {
+          const resolvedName =
+            matchedOperator.empName ?? matchedOperator.name ?? trimmedInput;
+          const resolvedPayCode = String(
+            matchedOperator.payCode ?? matchedOperator.paycode ?? trimmedPassword
+          ).trim();
+          const resolvedJoiningDate =
+            matchedOperator.dateOfJoining ?? matchedOperator.joiningDate ?? "";
+
+          saveEmployeeSession({
+            id: matchedOperator.id,
+            name: resolvedName,
+            empName: resolvedName,
+            username: resolvedName,
+            payCode: resolvedPayCode,
+            paycode: resolvedPayCode,
+            cardNo: matchedOperator.cardNo ?? "",
+            joiningDate: resolvedJoiningDate,
+            dateOfJoining: resolvedJoiningDate,
+            department:
+              matchedOperator.departmentName ?? matchedOperator.department ?? "",
+            subDepartment:
+              matchedOperator.subDepartmentName ??
+              matchedOperator.subDepartment ??
+              "",
+            line: matchedOperator.lineName ?? matchedOperator.line ?? "",
+            machine:
+              matchedOperator.machineName ?? matchedOperator.machine ?? "",
+            shift: matchedOperator.shift ?? "",
+            plant:
+              matchedOperator.plantId != null
+                ? String(matchedOperator.plantId)
+                : (matchedOperator.plant ?? ""),
+            plantLocation: matchedOperator.plantLocation ?? "",
+            designation: matchedOperator.designation ?? "Operator",
+            email: matchedOperator.email ?? "",
+            mobileNo: matchedOperator.mobileNo ?? "",
+            role: "OPERATOR",
+            isEmployee: true,
           });
-          navigate("/home", { replace: true });
+
+          navigate("/employee", { replace: true });
           return;
         }
-
-        // Rethrow if not admin offline fallback
-        throw apiErr;
+      } catch (usersErr) {
+        console.warn("Live Users API check failed during login:", usersErr?.message);
       }
+
+      // 5. Neither Auth API nor live Operator lookup matched -> surface error
+      throw authApiError || new Error("Invalid username/email or password.");
     } catch (err) {
-      // Extract detailed error message from response
       const data = err?.response?.data;
       let backendError = null;
 
       if (typeof data?.detail === "string") {
         backendError = data.detail;
       } else if (Array.isArray(data?.errors)) {
-        backendError = data.errors.map((e) => e.msg || e.detail).join("; ");
+        backendError = data.errors.map((item) => item.msg || item.detail).join("; ");
       } else if (Array.isArray(data?.detail)) {
-        backendError = data.detail.map((e) => e.msg || e.detail).join("; ");
+        backendError = data.detail.map((item) => item.msg || item.detail).join("; ");
       } else if (data?.message) {
         backendError = data.message;
       } else if (err?.response?.status === 401) {
-        backendError = "Invalid email or password. Please try again.";
+        backendError = "Invalid username/email or password. Please try again.";
       } else if (err?.response?.status === 422) {
-        backendError = "Validation error: please verify your email and password format.";
+        backendError = "Invalid credentials. Please verify your username/email and password.";
+      } else if (!err?.response) {
+        backendError = "Unable to connect to authentication server. Please try again.";
       } else {
         backendError = err?.message || "An unexpected error occurred. Please try again.";
       }

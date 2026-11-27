@@ -17,7 +17,7 @@ const getAuthBaseUrl = () => {
 
 const api = axios.create({
   baseURL: getAuthBaseUrl(),
-  timeout: 3500,
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },

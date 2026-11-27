@@ -8,41 +8,16 @@ import logo from "../../../assets/images/NTF_logo_black.png";
 
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz";
 
-const loadSavedPaper = (storageKey) => {
-  try {
-    const raw = localStorage.getItem(storageKey);
-    const parsed = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(parsed)) return [];
-    if (parsed.some((s) => s.questions)) return parsed;
-    if (parsed.length > 0) return [{ id: 1, name: "Section A", questions: parsed }];
-    return [];
-  } catch {
-    return [];
-  }
-};
-
-const loadMeta = (storageKey) => {
-  try {
-    const raw = localStorage.getItem(`${storageKey}_meta`);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-};
-
 const QuestionPaperPreview = ({ level = "L0", paper = null, onBack, onEdit }) => {
   const navigate = useNavigate();
-  const storageKey = `${level.toLowerCase()}_question_paper`;
-  const editorPath = `/lms/${level.toLowerCase()}/editor`;
-  const [sections] = useState(() =>
-    paper
-      ? paper.sections?.length
-        ? paper.sections
-        : loadSavedPaper(storageKey)
-      : loadSavedPaper(storageKey)
-  );
+  const editorPath = paper?.id != null
+    ? `/lms/paper/edit/${paper.id}`
+    : `/lms/${level.toLowerCase()}/editor`;
+
+  const sections = Array.isArray(paper?.sections) ? paper.sections : [];
+  const paperMeta = paper?.meta && typeof paper.meta === "object" ? paper.meta : {};
+
   const [showAnswerKey, setShowAnswerKey] = useState(false);
-  const [paperMeta] = useState(() => (paper ? paper.meta || {} : loadMeta(storageKey)));
 
   const totalQuestions = sections.reduce((acc, s) => acc + (s.questions?.length || 0), 0);
   const totalMarks = sections.reduce(
@@ -50,10 +25,20 @@ const QuestionPaperPreview = ({ level = "L0", paper = null, onBack, onEdit }) =>
     0
   );
 
-  const testTitle = paperMeta.headerTitle || "SKILL EVALUATION TEST PAPER";
+  const testTitle = paperMeta.headerTitle || paper?.title || "SKILL EVALUATION TEST PAPER";
   const subTitle = paperMeta.subTitle || "New Manpower for DOJO Hiring";
   const duration = paperMeta.duration || 60;
   const passPercentage = Number(paperMeta.passPercentage) || 80;
+  const documentCode = paperMeta.documentCode || "F18(AMD-02)";
+  const revision = paperMeta.revision || "Rev. 00";
+
+  const handleEditClick = () => {
+    if (onEdit) {
+      onEdit();
+    } else {
+      navigate(editorPath);
+    }
+  };
 
   const Question = ({ number, question }) => (
     <div className="mb-5 break-inside-avoid">
@@ -69,7 +54,7 @@ const QuestionPaperPreview = ({ level = "L0", paper = null, onBack, onEdit }) =>
               const isCorrect = showAnswerKey && question.correctOption === option.id;
               return (
                 <div
-                  key={option.id}
+                  key={option.id ?? index}
                   className={`flex items-start text-[11px] leading-[1.4] ${
                     isCorrect ? "font-bold text-emerald-700" : "text-black"
                   }`}
@@ -89,8 +74,8 @@ const QuestionPaperPreview = ({ level = "L0", paper = null, onBack, onEdit }) =>
 
   const renderFooter = () => (
     <div className="mt-auto flex items-center justify-between px-2 pt-8 text-[10px] text-black">
-      <span>F18(AMD-02)</span>
-      <span>Rev. 00</span>
+      <span>{documentCode}</span>
+      <span>{revision}</span>
     </div>
   );
 
@@ -136,7 +121,7 @@ const QuestionPaperPreview = ({ level = "L0", paper = null, onBack, onEdit }) =>
             <button
               type="button"
               onClick={() => setShowAnswerKey(!showAnswerKey)}
-              className={`h-9 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border ${
+              className={`h-9 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border cursor-pointer ${
                 showAnswerKey
                   ? "bg-emerald-50 text-emerald-700 border-emerald-300"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
@@ -148,8 +133,8 @@ const QuestionPaperPreview = ({ level = "L0", paper = null, onBack, onEdit }) =>
 
             <button
               type="button"
-              onClick={() => navigate(editorPath)}
-              className="h-9 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-sky-50/50 hover:border-[#0284c7] hover:text-[#0284c7] transition flex items-center gap-1.5 shadow-xs"
+              onClick={handleEditClick}
+              className="h-9 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-sky-50/50 hover:border-[#0284c7] hover:text-[#0284c7] transition flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <EditOutlinedIcon sx={{ fontSize: 15 }} />
               <span className="hidden sm:inline">Edit</span>
@@ -158,7 +143,7 @@ const QuestionPaperPreview = ({ level = "L0", paper = null, onBack, onEdit }) =>
             <button
               type="button"
               onClick={() => window.print()}
-              className="h-9 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs transition flex items-center gap-1.5"
+              className="h-9 rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
             >
               <PrintOutlinedIcon sx={{ fontSize: 15 }} />
               Print
@@ -175,7 +160,7 @@ const QuestionPaperPreview = ({ level = "L0", paper = null, onBack, onEdit }) =>
           <p className="text-sm font-semibold text-slate-500">No questions added yet.</p>
           <button
             type="button"
-            onClick={onEdit || (() => navigate(editorPath))}
+            onClick={handleEditClick}
             className="mt-4 inline-flex h-9 items-center rounded-lg bg-[#0b295c] hover:bg-[#082046] px-4 text-xs font-semibold text-white shadow-xs cursor-pointer"
           >
             Go to Editor &amp; Add Questions
